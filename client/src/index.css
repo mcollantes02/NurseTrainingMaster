@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 210 11% 98%; /* #F5F7FA */
+  --foreground: 222 16% 13%; /* #202938 */
+  --muted: 210 40% 96%; /* #F1F5F9 */
+  --muted-foreground: 215 13% 37%; /* #64748B */
+  --popover: 0 0% 100%; /* #FFFFFF */
+  --popover-foreground: 222 16% 13%; /* #202938 */
+  --card: 0 0% 100%; /* #FFFFFF */
+  --card-foreground: 222 16% 13%; /* #202938 */
+  --border: 214 31% 91%; /* #E2E8F0 */
+  --input: 214 31% 91%; /* #E2E8F0 */
+  --primary: 207 90% 54%; /* #1976D2 - Medical Blue */
+  --primary-foreground: 210 40% 98%; /* #F8FAFC */
+  --secondary: 210 40% 96%; /* #F1F5F9 */
+  --secondary-foreground: 222 16% 13%; /* #202938 */
+  --accent: 210 40% 96%; /* #F1F5F9 */
+  --accent-foreground: 222 16% 13%; /* #202938 */
+  --destructive: 0 84% 60%; /* #EF4444 */
+  --destructive-foreground: 210 40% 98%; /* #F8FAFC */
+  --ring: 207 90% 54%; /* #1976D2 */
+  --radius: 0.5rem;
+  --chart-1: 12 76% 61%; /* #E2725B */
+  --chart-2: 173 58% 39%; /* #4ECDC4 */
+  --chart-3: 197 37% 24%; /* #334155 */
+  --chart-4: 43 74% 66%; /* #F4D03F */
+  --chart-5: 27 87% 67%; /* #FF7043 */
+  
+  /* Medical Education Theme Colors */
+  --medical-blue: 207 90% 54%; /* #1976D2 */
+  --learned-green: 142 76% 36%; /* #16A34A */
+  --doubt-orange: 36 100% 50%; /* #FF9800 */
+  --error-red: 4 90% 58%; /* #F44336 */
+}
+
+.dark {
+  --background: 224 71% 4%; /* #0F172A */
+  --foreground: 213 31% 91%; /* #E2E8F0 */
+  --muted: 223 47% 11%; /* #1E293B */
+  --muted-foreground: 215 20% 65%; /* #94A3B8 */
+  --popover: 224 71% 4%; /* #0F172A */
+  --popover-foreground: 213 31% 91%; /* #E2E8F0 */
+  --card: 224 71% 4%; /* #0F172A */
+  --card-foreground: 213 31% 91%; /* #E2E8F0 */
+  --border: 216 34% 17%; /* #334155 */
+  --input: 216 34% 17%; /* #334155 */
+  --primary: 207 90% 54%; /* #1976D2 */
+  --primary-foreground: 210 40% 98%; /* #F8FAFC */
+  --secondary: 222 47% 11%; /* #1E293B */
+  --secondary-foreground: 213 31% 91%; /* #E2E8F0 */
+  --accent: 216 34% 17%; /* #334155 */
+  --accent-foreground: 213 31% 91%; /* #E2E8F0 */
+  --destructive: 0 63% 31%; /* #B91C1C */
+  --destructive-foreground: 213 31% 91%; /* #E2E8F0 */
+  --ring: 207 90% 54%; /* #1976D2 */
+  
+  /* Dark theme medical colors */
+  --medical-blue: 207 90% 54%; /* #1976D2 */
+  --learned-green: 142 76% 36%; /* #16A34A */
+  --doubt-orange: 36 100% 50%; /* #FF9800 */
+  --error-red: 4 90% 58%; /* #F44336 */
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+}
+
+@layer utilities {
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+  
+  .medical-blue {
+    color: hsl(var(--medical-blue));
+  }
+  
+  .bg-medical-blue {
+    background-color: hsl(var(--medical-blue));
+  }
+  
+  .learned-green {
+    color: hsl(var(--learned-green));
+  }
+  
+  .bg-learned-green {
+    background-color: hsl(var(--learned-green));
+  }
+  
+  .doubt-orange {
+    color: hsl(var(--doubt-orange));
+  }
+  
+  .bg-doubt-orange {
+    background-color: hsl(var(--doubt-orange));
+  }
+  
+  .error-red {
+    color: hsl(var(--error-red));
+  }
+  
+  .bg-error-red {
+    background-color: hsl(var(--error-red));
+  }
+}
