@@ -82,6 +82,16 @@ export function QuestionGrid({ filters }: QuestionGridProps) {
 
   return (
     <div className="space-y-6">
+      {/* Total Questions Counter */}
+      {(filters.mockExamIds?.length || filters.subjectIds?.length || filters.topicIds?.length || filters.keywords || filters.learningStatus?.length) ? (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-600">
+            <span className="font-medium">{questions.length}</span>{" "}
+            {t("questions.found")}
+          </span>
+        </div>
+      ) : null}
+
       {/* Questions List - Single column vertical layout */}
       <div className="space-y-3">
         {currentQuestions.map((question) => (
