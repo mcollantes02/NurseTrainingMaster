@@ -157,6 +157,7 @@ export const translations = {
     "mockExam.create": "Create Mock Exam",
     "mockExam.select": "Select mock exam",
     "mockExam.selectMultiple": "Select mock exams",
+    "mockExam.selected": "Selected Mock Exams",
     "mockExam.titlePlaceholder": "e.g. April 2025",
     "mockExam.created": "Mock exam created",
     "mockExam.createdDescription": "The mock exam has been created successfully",
@@ -175,6 +176,7 @@ export const translations = {
     "question.markAsLearned": "Mark as learned",
     "question.theoryPlaceholder": "Write the theoretical explanation of the question...",
     "questions.total": "total questions",
+    "questions.found": "questions found",
     "questions.noResults": "No questions found",
     
     // Subjects

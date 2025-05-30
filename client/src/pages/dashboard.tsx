@@ -109,80 +109,24 @@ export default function Dashboard() {
 
           {/* Main Content */}
           <div className="flex-1">
-            {/* Mock Exam Tabs */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <div className="border-b border-gray-200">
-                  <div className="flex flex-wrap items-center">
-                    <TabsList className="h-auto p-0 bg-transparent">
-                      {mockExams.map((exam) => (
-                        <TabsTrigger
-                          key={exam.id}
-                          value={exam.id.toString()}
-                          className="px-6 py-3 text-sm font-medium data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-50 rounded-none border-b-2 border-transparent"
-                        >
+            {appliedFilters.mockExamIds.length > 0 ? (
+              /* Filtered Mock Exams View */
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+                {/* Selected Exams Header */}
+                <div className="p-6 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    {t("mockExam.selected")}
+                  </h2>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {appliedFilters.mockExamIds.map(examId => {
+                      const exam = mockExams.find(e => e.id === examId);
+                      return exam ? (
+                        <Badge key={examId} className="bg-blue-100 text-blue-800 px-3 py-1">
                           {exam.title}
-                          <Badge className="ml-2 bg-blue-600 text-white text-xs">
-                            {exam.questionCount}
-                          </Badge>
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                    
-                    {/* Add New Mock Exam */}
-                    <Dialog
-                      open={isCreateExamModalOpen}
-                      onOpenChange={setIsCreateExamModalOpen}
-                    >
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="px-6 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50"
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          {t("mockExam.new")}
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>{t("mockExam.create")}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="exam-title">{t("mockExam.title")}</Label>
-                            <Input
-                              id="exam-title"
-                              value={newExamTitle}
-                              onChange={(e) => setNewExamTitle(e.target.value)}
-                              placeholder={t("mockExam.titlePlaceholder")}
-                            />
-                          </div>
-                          <div className="flex justify-end space-x-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setIsCreateExamModalOpen(false);
-                                setNewExamTitle("");
-                              }}
-                            >
-                              {t("cancel")}
-                            </Button>
-                            <Button
-                              onClick={handleCreateExam}
-                              disabled={!newExamTitle.trim() || createExamMutation.isPending}
-                              className="bg-blue-600 hover:bg-blue-700"
-                            >
-                              {t("create")}
-                            </Button>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                        </Badge>
+                      ) : null;
+                    })}
                   </div>
-                </div>
-
-                {/* Action Bar */}
-                <div className="p-4 flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center space-x-4">
                     <Button
                       onClick={() => setIsAddQuestionModalOpen(true)}
@@ -191,31 +135,120 @@ export default function Dashboard() {
                       <Plus className="w-4 h-4 mr-2" />
                       {t("question.add")}
                     </Button>
-                    {activeExam && (
-                      <span className="text-sm text-gray-600">
-                        <span className="font-medium">{activeExam.questionCount}</span>{" "}
-                        {t("questions.total")}
-                      </span>
-                    )}
                   </div>
                 </div>
 
-                {/* Tab Content */}
-                {mockExams.map((exam) => (
-                  <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
-                    <QuestionGrid 
-                      filters={{
-                        ...appliedFilters,
-                        // Only override mockExamIds if no specific exams are selected in filters
-                        mockExamIds: appliedFilters.mockExamIds.length > 0 
-                          ? appliedFilters.mockExamIds 
-                          : [exam.id]
-                      }} 
-                    />
-                  </TabsContent>
-                ))}
-              </Tabs>
-            </div>
+                {/* Questions Content */}
+                <div className="p-6">
+                  <QuestionGrid filters={appliedFilters} />
+                </div>
+              </div>
+            ) : (
+              /* Mock Exam Tabs */
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <div className="border-b border-gray-200">
+                    <div className="flex flex-wrap items-center">
+                      <TabsList className="h-auto p-0 bg-transparent">
+                        {mockExams.map((exam) => (
+                          <TabsTrigger
+                            key={exam.id}
+                            value={exam.id.toString()}
+                            className="px-6 py-3 text-sm font-medium data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-50 rounded-none border-b-2 border-transparent"
+                          >
+                            {exam.title}
+                            <Badge className="ml-2 bg-blue-600 text-white text-xs">
+                              {exam.questionCount}
+                            </Badge>
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      
+                      {/* Add New Mock Exam */}
+                      <Dialog
+                        open={isCreateExamModalOpen}
+                        onOpenChange={setIsCreateExamModalOpen}
+                      >
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="px-6 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                          >
+                            <Plus className="w-4 h-4 mr-1" />
+                            {t("mockExam.new")}
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>{t("mockExam.create")}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <Label htmlFor="exam-title">{t("mockExam.title")}</Label>
+                              <Input
+                                id="exam-title"
+                                value={newExamTitle}
+                                onChange={(e) => setNewExamTitle(e.target.value)}
+                                placeholder={t("mockExam.titlePlaceholder")}
+                              />
+                            </div>
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                variant="outline"
+                                onClick={() => {
+                                  setIsCreateExamModalOpen(false);
+                                  setNewExamTitle("");
+                                }}
+                              >
+                                {t("cancel")}
+                              </Button>
+                              <Button
+                                onClick={handleCreateExam}
+                                disabled={!newExamTitle.trim() || createExamMutation.isPending}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                {t("create")}
+                              </Button>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className="p-4 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center space-x-4">
+                      <Button
+                        onClick={() => setIsAddQuestionModalOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        {t("question.add")}
+                      </Button>
+                      {activeExam && (
+                        <span className="text-sm text-gray-600">
+                          <span className="font-medium">{activeExam.questionCount}</span>{" "}
+                          {t("questions.total")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tab Content */}
+                  {mockExams.map((exam) => (
+                    <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
+                      <QuestionGrid 
+                        filters={{
+                          ...appliedFilters,
+                          mockExamIds: [exam.id]
+                        }} 
+                      />
+                    </TabsContent>
+                  ))}
+                </Tabs>
+              </div>
+            )}
           </div>
         </div>
       </div>
