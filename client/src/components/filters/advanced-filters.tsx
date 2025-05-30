@@ -30,8 +30,6 @@ export function AdvancedFilters({
   onApplyFilters,
 }: AdvancedFiltersProps) {
   const { t } = useLanguage();
-  const [subjectSearch, setSubjectSearch] = useState("");
-  const [topicSearch, setTopicSearch] = useState("");
 
   const { data: mockExams = [] } = useQuery<MockExamWithQuestionCount[]>({
     queryKey: ["/api/mock-exams"],
@@ -50,13 +48,15 @@ export function AdvancedFilters({
     label: exam.title,
   }));
 
-  const filteredSubjects = subjects.filter((subject) =>
-    subject.name.toLowerCase().includes(subjectSearch.toLowerCase())
-  );
+  const subjectOptions = subjects.map((subject) => ({
+    value: subject.id.toString(),
+    label: subject.name,
+  }));
 
-  const filteredTopics = topics.filter((topic) =>
-    topic.name.toLowerCase().includes(topicSearch.toLowerCase())
-  );
+  const topicOptions = topics.map((topic) => ({
+    value: topic.id.toString(),
+    label: topic.name,
+  }));
 
   const handleMockExamChange = (values: string[]) => {
     onFiltersChange({
@@ -65,25 +65,17 @@ export function AdvancedFilters({
     });
   };
 
-  const handleSubjectChange = (subjectId: number, checked: boolean) => {
-    const newSubjectIds = checked
-      ? [...filters.subjectIds, subjectId]
-      : filters.subjectIds.filter((id) => id !== subjectId);
-    
+  const handleSubjectChange = (values: string[]) => {
     onFiltersChange({
       ...filters,
-      subjectIds: newSubjectIds,
+      subjectIds: values.map(Number),
     });
   };
 
-  const handleTopicChange = (topicId: number, checked: boolean) => {
-    const newTopicIds = checked
-      ? [...filters.topicIds, topicId]
-      : filters.topicIds.filter((id) => id !== topicId);
-    
+  const handleTopicChange = (values: string[]) => {
     onFiltersChange({
       ...filters,
-      topicIds: newTopicIds,
+      topicIds: values.map(Number),
     });
   };
 
@@ -91,7 +83,7 @@ export function AdvancedFilters({
     const newStatus = checked
       ? [...filters.learningStatus, value]
       : filters.learningStatus.filter((status) => status !== value);
-    
+
     onFiltersChange({
       ...filters,
       learningStatus: newStatus,
@@ -126,31 +118,13 @@ export function AdvancedFilters({
           <Label className="text-sm font-medium text-gray-700 mb-2 block">
             {t("subject.title")}
           </Label>
-          <div className="relative mb-2">
-            <Input
-              placeholder={t("subject.search")}
-              value={subjectSearch}
-              onChange={(e) => setSubjectSearch(e.target.value)}
-              className="pr-8"
-            />
-            <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-          </div>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {filteredSubjects.map((subject) => (
-              <div key={subject.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`subject-${subject.id}`}
-                  checked={filters.subjectIds.includes(subject.id)}
-                  onCheckedChange={(checked) =>
-                    handleSubjectChange(subject.id, !!checked)
-                  }
-                />
-                <Label htmlFor={`subject-${subject.id}`} className="text-sm">
-                  {subject.name}
-                </Label>
-              </div>
-            ))}
-          </div>
+          <MultiSelect
+            options={subjectOptions}
+            value={filters.subjectIds.map(String)}
+            onChange={handleSubjectChange}
+            placeholder={t("subject.selectMultiple")}
+            searchPlaceholder={t("subject.search")}
+          />
         </div>
 
         {/* Topic Filter */}
@@ -158,31 +132,13 @@ export function AdvancedFilters({
           <Label className="text-sm font-medium text-gray-700 mb-2 block">
             {t("topic.title")}
           </Label>
-          <div className="relative mb-2">
-            <Input
-              placeholder={t("topic.search")}
-              value={topicSearch}
-              onChange={(e) => setTopicSearch(e.target.value)}
-              className="pr-8"
-            />
-            <Search className="absolute right-3 top-3 h-4 w-4 text-gray-400" />
-          </div>
-          <div className="space-y-2 max-h-32 overflow-y-auto">
-            {filteredTopics.map((topic) => (
-              <div key={topic.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`topic-${topic.id}`}
-                  checked={filters.topicIds.includes(topic.id)}
-                  onCheckedChange={(checked) =>
-                    handleTopicChange(topic.id, !!checked)
-                  }
-                />
-                <Label htmlFor={`topic-${topic.id}`} className="text-sm">
-                  {topic.name}
-                </Label>
-              </div>
-            ))}
-          </div>
+          <MultiSelect
+            options={topicOptions}
+            value={filters.topicIds.map(String)}
+            onChange={handleTopicChange}
+            placeholder={t("topic.selectMultiple")}
+            searchPlaceholder={t("topic.search")}
+          />
         </div>
 
         {/* Keyword Search */}
