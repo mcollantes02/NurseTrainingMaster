@@ -62,6 +62,11 @@ export function QuestionGrid({ filters }: QuestionGridProps) {
     console.log("Question clicked:", question);
   };
 
+  const handleQuestionEdit = (question: QuestionWithRelations) => {
+    // TODO: Open edit question modal
+    console.log("Edit question:", question);
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -99,6 +104,7 @@ export function QuestionGrid({ filters }: QuestionGridProps) {
             key={question.id}
             question={question}
             onClick={() => handleQuestionClick(question)}
+            onEdit={() => handleQuestionEdit(question)}
           />
         ))}
       </div>
