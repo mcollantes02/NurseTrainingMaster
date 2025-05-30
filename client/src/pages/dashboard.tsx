@@ -206,7 +206,10 @@ export default function Dashboard() {
                     <QuestionGrid 
                       filters={{
                         ...appliedFilters,
-                        mockExamIds: [exam.id]
+                        // Only override mockExamIds if no specific exams are selected in filters
+                        mockExamIds: appliedFilters.mockExamIds.length > 0 
+                          ? appliedFilters.mockExamIds 
+                          : [exam.id]
                       }} 
                     />
                   </TabsContent>
