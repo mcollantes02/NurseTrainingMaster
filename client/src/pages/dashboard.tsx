@@ -203,7 +203,12 @@ export default function Dashboard() {
                 {/* Tab Content */}
                 {mockExams.map((exam) => (
                   <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
-                    <QuestionGrid filters={appliedFilters} />
+                    <QuestionGrid 
+                      filters={{
+                        ...appliedFilters,
+                        mockExamIds: [exam.id]
+                      }} 
+                    />
                   </TabsContent>
                 ))}
               </Tabs>
