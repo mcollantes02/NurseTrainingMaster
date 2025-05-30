@@ -205,6 +205,7 @@ export default function Dashboard() {
                   <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
                     <QuestionGrid 
                       filters={{
+                        ...appliedFilters,
                         mockExamIds: [exam.id]
                       }} 
                     />

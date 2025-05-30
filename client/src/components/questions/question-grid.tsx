@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/useLanguage";
 import { QuestionCard } from "./question-card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,11 @@ export function QuestionGrid({ filters }: QuestionGridProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
   const queryParams = new URLSearchParams();
   if (filters.mockExamIds?.length) {
     filters.mockExamIds.forEach(id => queryParams.append('mockExamIds', id.toString()));
@@ -40,6 +46,10 @@ export function QuestionGrid({ filters }: QuestionGridProps) {
 
   const { data: questions = [], isLoading } = useQuery<QuestionWithRelations[]>({
     queryKey: ["/api/questions", queryParams.toString()],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/questions?${queryParams.toString()}`);
+      return response.json();
+    },
   });
 
   const totalPages = Math.ceil(questions.length / itemsPerPage);
