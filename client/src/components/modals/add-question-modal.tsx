@@ -130,9 +130,37 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
       });
       return response.json();
     },
+    onMutate: async (data) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
+      
+      // Snapshot the previous value
+      const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
+      
+      // Create optimistic question
+      const optimisticQuestion = {
+        id: Date.now(), // temporary ID
+        mockExamId: data.mockExamId,
+        subjectId: subjects.find(s => s.name === data.subjectName)?.id || 0,
+        topicId: topics.find(t => t.name === data.topicName)?.id || 0,
+        type: data.type,
+        theory: data.theory,
+        isLearned: data.isLearned,
+        createdAt: new Date().toISOString(),
+        subject: subjects.find(s => s.name === data.subjectName) || { name: data.subjectName },
+        topic: topics.find(t => t.name === data.topicName) || { name: data.topicName },
+        mockExam: mockExams.find(m => m.id === data.mockExamId)
+      };
+      
+      // Optimistically update
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return [optimisticQuestion];
+        return [optimisticQuestion, ...old];
+      });
+      
+      return { previousQuestions };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
       toast({
         title: t("question.added"),
         description: t("question.addedDescription"),
@@ -140,12 +168,22 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
       form.reset();
       onClose();
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousQuestions) {
+        context.previousQuestions.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
       toast({
         title: t("error.title"),
         description: t("error.addQuestion"),
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
     },
   });
 

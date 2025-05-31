@@ -45,24 +45,47 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
   });
 
   const deleteQuestionMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("DELETE", `/api/questions/${question.id}`);
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/questions/${id}`);
       return response.json();
     },
+    onMutate: async (questionId) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
+
+      // Snapshot the previous value
+      const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
+
+      // Optimistically remove the question
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return old;
+        return old.filter((q: any) => q.id !== questionId);
+      });
+
+      return { previousQuestions };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
       toast({
         title: t("question.deleted"),
         description: t("question.deletedDescription"),
       });
     },
-    onError: () => {
+    onError: (error, questionId, context) => {
+      // Rollback on error
+      if (context?.previousQuestions) {
+        context.previousQuestions.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
       toast({
         title: t("error.title"),
         description: t("error.deleteQuestion"),
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
     },
   });
 
@@ -79,7 +102,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm(t("question.deleteConfirm"))) {
-      deleteQuestionMutation.mutate();
+      deleteQuestionMutation.mutate(question.id);
     }
   };
 
@@ -132,13 +155,13 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             >
               {question.isLearned ? t("question.learned") : t("question.unlearned")}
             </Badge>
-            
+
             <div className="flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap">
               <span className="font-medium">{question.subject.name}</span>
               <span className="text-gray-400">•</span>
               <span>{question.topic.name}</span>
             </div>
-            
+
             <Badge className={cn("text-xs px-2 py-1 whitespace-nowrap", getTypeColor(question.type))}>
               {getTypeLabel(question.type)}
             </Badge>
@@ -160,7 +183,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
               <Calendar className="h-3 w-3 mr-1" />
               {question.createdAt ? formatDate(question.createdAt) : ''}
             </div>
-            
+
             <Button
               variant="ghost"
               size="sm"
@@ -179,7 +202,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             >
               <Trash2 className="h-4 w-4" />
             </Button>
-            
+
             <Button
               variant="ghost"
               size="sm"
