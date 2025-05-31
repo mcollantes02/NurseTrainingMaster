@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle, Circle, Calendar, Edit, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle, Circle, Calendar, Edit, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -44,6 +44,28 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     },
   });
 
+  const deleteQuestionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", `/api/questions/${question.id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      toast({
+        title: t("question.deleted"),
+        description: t("question.deletedDescription"),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("error.title"),
+        description: t("error.deleteQuestion"),
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleToggleLearned = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleLearnedMutation.mutate(!question.isLearned);
@@ -54,9 +76,20 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     onEdit();
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(t("question.deleteConfirm"))) {
+      deleteQuestionMutation.mutate();
+    }
+  };
+
   const handleCardClick = () => {
     setIsExpanded(!isExpanded);
-    onClick();
+  };
+
+  const handleExpandToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
   };
 
   const getTypeColor = (type: string) => {
@@ -136,6 +169,16 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             >
               <Edit className="h-4 w-4" />
             </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 h-auto text-gray-400 hover:text-red-600"
+              onClick={handleDelete}
+              disabled={deleteQuestionMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
             
             <Button
               variant="ghost"
@@ -155,6 +198,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
               variant="ghost"
               size="sm"
               className="p-1 h-auto text-gray-400 hover:text-gray-600"
+              onClick={handleExpandToggle}
             >
               {isExpanded ? (
                 <ChevronUp className="h-4 w-4" />
