@@ -50,7 +50,17 @@ export interface IStorage {
     userId: number;
   }): Promise<QuestionWithRelations[]>;
   createQuestion(question: InsertQuestion): Promise<Question>;
-  updateQuestionLearned(id: number, isLearned: boolean, userId: number): Promise<Question | undefined>;
+  updateQuestionLearned(id: number, isLearned: boolean, userId: number): Promise<QuestionWithRelations | undefined>;
+  deleteQuestion(id: number, userId: number): Promise<boolean>;
+  updateQuestion(id: number, data: {
+    mockExamId: number;
+    subjectId: number;
+    topicId: number;
+    type: string;
+    theory: string;
+    isLearned: boolean;
+  }, userId: number): Promise<QuestionWithRelations | undefined>;
+  getQuestionById(id: number): Promise<QuestionWithRelations | undefined>;
 
   // Stats
   getUserStats(userId: number): Promise<{
@@ -224,17 +234,91 @@ export class DatabaseStorage implements IStorage {
     return newQuestion;
   }
 
-  async updateQuestionLearned(
-    id: number,
-    isLearned: boolean,
-    userId: number
-  ): Promise<Question | undefined> {
-    const [updatedQuestion] = await db
+  async updateQuestion(id: number, data: {
+    mockExamId: number;
+    subjectId: number;
+    topicId: number;
+    type: string;
+    theory: string;
+    isLearned: boolean;
+  }, userId: number): Promise<QuestionWithRelations | undefined> {
+    // First check if the question belongs to the user
+    const existingQuestion = await db
+      .select()
+      .from(questions)
+      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
+      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
+      .limit(1);
+
+    if (existingQuestion.length === 0) {
+      return undefined;
+    }
+
+    await db
+      .update(questions)
+      .set(data)
+      .where(eq(questions.id, id));
+
+    return this.getQuestionById(id);
+  }
+
+  async updateQuestionLearned(id: number, isLearned: boolean, userId: number): Promise<QuestionWithRelations | undefined> {
+    // First check if the question belongs to the user
+    const existingQuestion = await db
+      .select()
+      .from(questions)
+      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
+      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
+      .limit(1);
+
+    if (existingQuestion.length === 0) {
+      return undefined;
+    }
+
+    await db
       .update(questions)
       .set({ isLearned })
-      .where(and(eq(questions.id, id), eq(questions.createdBy, userId)))
-      .returning();
-    return updatedQuestion;
+      .where(eq(questions.id, id));
+
+    return this.getQuestionById(id);
+  }
+
+  async deleteQuestion(id: number, userId: number): Promise<boolean> {
+    // First check if the question belongs to the user
+    const existingQuestion = await db
+      .select()
+      .from(questions)
+      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
+      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
+      .limit(1);
+
+    if (existingQuestion.length === 0) {
+      return false;
+    }
+
+    await db.delete(questions).where(eq(questions.id, id));
+    return true;
+  }
+
+  async getQuestionById(id: number): Promise<QuestionWithRelations | undefined> {
+    const [question] = await db
+      .select()
+      .from(questions)
+      .leftJoin(mockExams, eq(questions.mockExamId, mockExams.id))
+      .leftJoin(subjects, eq(questions.subjectId, subjects.id))
+      .leftJoin(topics, eq(questions.topicId, topics.id))
+      .leftJoin(users, eq(questions.createdBy, users.id))
+      .where(eq(questions.id, id));
+
+    if (!question) return undefined;
+
+    return {
+      ...question.questions,
+      mockExam: question.mock_exams!,
+      subject: question.subjects!,
+      topic: question.topics!,
+      createdBy: question.users!,
+    };
   }
 
   async getUserStats(userId: number): Promise<{
