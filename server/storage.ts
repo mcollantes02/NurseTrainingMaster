@@ -4,6 +4,7 @@ import {
   subjects,
   topics,
   questions,
+  trashedQuestions,
   type User,
   type InsertUser,
   type MockExam,
@@ -16,6 +17,9 @@ import {
   type Question,
   type InsertQuestion,
   type QuestionWithRelations,
+  type TrashedQuestion,
+  type InsertTrashedQuestion,
+  type TrashedQuestionWithUser,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, like, inArray, count, sql } from "drizzle-orm";
@@ -61,6 +65,12 @@ export interface IStorage {
     isLearned: boolean;
   }, userId: number): Promise<QuestionWithRelations | undefined>;
   getQuestionById(id: number): Promise<QuestionWithRelations | undefined>;
+
+  // Trash operations
+  getTrashedQuestions(userId: number): Promise<TrashedQuestionWithUser[]>;
+  restoreQuestion(trashedId: number, userId: number): Promise<boolean>;
+  permanentlyDeleteQuestion(trashedId: number, userId: number): Promise<boolean>;
+  emptyTrash(userId: number): Promise<boolean>;
 
   // Stats
   getUserStats(userId: number): Promise<{
@@ -284,18 +294,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteQuestion(id: number, userId: number): Promise<boolean> {
-    // First check if the question belongs to the user
-    const existingQuestion = await db
-      .select()
+    // First get the full question details
+    const questionWithRelations = await db
+      .select({
+        question: questions,
+        mockExam: mockExams,
+        subject: subjects,
+        topic: topics,
+      })
       .from(questions)
       .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
+      .innerJoin(subjects, eq(questions.subjectId, subjects.id))
+      .innerJoin(topics, eq(questions.topicId, topics.id))
       .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
       .limit(1);
 
-    if (existingQuestion.length === 0) {
+    if (questionWithRelations.length === 0) {
       return false;
     }
 
+    const { question, mockExam, subject, topic } = questionWithRelations[0];
+
+    // Move to trash
+    await db.insert(trashedQuestions).values({
+      originalId: question.id,
+      mockExamId: question.mockExamId,
+      mockExamTitle: mockExam.title,
+      subjectId: question.subjectId,
+      subjectName: subject.name,
+      topicId: question.topicId,
+      topicName: topic.name,
+      type: question.type,
+      theory: question.theory,
+      isLearned: question.isLearned,
+      createdBy: question.createdBy,
+      createdAt: question.createdAt!,
+    });
+
+    // Delete from questions table
     await db.delete(questions).where(eq(questions.id, id));
     return true;
   }
@@ -355,6 +391,74 @@ export class DatabaseStorage implements IStorage {
       totalQuestions,
       progressPercentage,
     };
+  }
+
+  async getTrashedQuestions(userId: number): Promise<TrashedQuestionWithUser[]> {
+    const result = await db
+      .select({
+        trashedQuestion: trashedQuestions,
+        createdBy: users,
+      })
+      .from(trashedQuestions)
+      .innerJoin(users, eq(trashedQuestions.createdBy, users.id))
+      .where(eq(trashedQuestions.createdBy, userId))
+      .orderBy(trashedQuestions.deletedAt);
+
+    return result.map(row => ({
+      ...row.trashedQuestion,
+      createdBy: row.createdBy,
+    }));
+  }
+
+  async restoreQuestion(trashedId: number, userId: number): Promise<boolean> {
+    // Get the trashed question
+    const [trashedQuestion] = await db
+      .select()
+      .from(trashedQuestions)
+      .where(and(eq(trashedQuestions.id, trashedId), eq(trashedQuestions.createdBy, userId)));
+
+    if (!trashedQuestion) {
+      return false;
+    }
+
+    // Check if the mock exam still exists
+    const [mockExam] = await db
+      .select()
+      .from(mockExams)
+      .where(and(eq(mockExams.id, trashedQuestion.mockExamId), eq(mockExams.createdBy, userId)));
+
+    if (!mockExam) {
+      return false;
+    }
+
+    // Restore the question
+    await db.insert(questions).values({
+      mockExamId: trashedQuestion.mockExamId,
+      subjectId: trashedQuestion.subjectId,
+      topicId: trashedQuestion.topicId,
+      type: trashedQuestion.type,
+      theory: trashedQuestion.theory,
+      isLearned: trashedQuestion.isLearned,
+      createdBy: trashedQuestion.createdBy,
+      createdAt: trashedQuestion.createdAt,
+    });
+
+    // Remove from trash
+    await db.delete(trashedQuestions).where(eq(trashedQuestions.id, trashedId));
+    return true;
+  }
+
+  async permanentlyDeleteQuestion(trashedId: number, userId: number): Promise<boolean> {
+    const result = await db
+      .delete(trashedQuestions)
+      .where(and(eq(trashedQuestions.id, trashedId), eq(trashedQuestions.createdBy, userId)));
+
+    return result.rowCount > 0;
+  }
+
+  async emptyTrash(userId: number): Promise<boolean> {
+    await db.delete(trashedQuestions).where(eq(trashedQuestions.createdBy, userId));
+    return true;
   }
 }
 

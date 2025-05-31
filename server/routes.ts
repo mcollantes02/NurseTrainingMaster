@@ -316,6 +316,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Trash routes
+  app.get("/api/trash", requireAuth, async (req, res) => {
+    try {
+      const trashedQuestions = await storage.getTrashedQuestions(req.session.userId!);
+      res.json(trashedQuestions);
+    } catch (error) {
+      console.error("Get trashed questions error:", error);
+      res.status(500).json({ message: "Failed to get trashed questions" });
+    }
+  });
+
+  app.post("/api/trash/:id/restore", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.restoreQuestion(id, req.session.userId!);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Question not found or cannot be restored" });
+      }
+
+      res.json({ message: "Question restored successfully" });
+    } catch (error) {
+      console.error("Restore question error:", error);
+      res.status(500).json({ message: "Failed to restore question" });
+    }
+  });
+
+  app.delete("/api/trash/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.permanentlyDeleteQuestion(id, req.session.userId!);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Question not found" });
+      }
+
+      res.json({ message: "Question permanently deleted" });
+    } catch (error) {
+      console.error("Permanently delete question error:", error);
+      res.status(500).json({ message: "Failed to permanently delete question" });
+    }
+  });
+
+  app.delete("/api/trash", requireAuth, async (req, res) => {
+    try {
+      await storage.emptyTrash(req.session.userId!);
+      res.json({ message: "Trash emptied successfully" });
+    } catch (error) {
+      console.error("Empty trash error:", error);
+      res.status(500).json({ message: "Failed to empty trash" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

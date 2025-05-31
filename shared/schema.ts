@@ -49,6 +49,24 @@ export const questions = pgTable("questions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Trash table for deleted questions
+export const trashedQuestions = pgTable("trashed_questions", {
+  id: serial("id").primaryKey(),
+  originalId: integer("original_id").notNull(),
+  mockExamId: integer("mock_exam_id").notNull(),
+  mockExamTitle: text("mock_exam_title").notNull(),
+  subjectId: integer("subject_id").notNull(),
+  subjectName: text("subject_name").notNull(),
+  topicId: integer("topic_id").notNull(),
+  topicName: text("topic_name").notNull(),
+  type: text("type").notNull(),
+  theory: text("theory").notNull(),
+  isLearned: boolean("is_learned").default(false),
+  createdBy: integer("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").notNull(),
+  deletedAt: timestamp("deleted_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   mockExams: many(mockExams),
@@ -84,6 +102,13 @@ export const questionsRelations = relations(questions, ({ one }) => ({
 
 export const subjectsRelations = relations(subjects, ({ many }) => ({
   questions: many(questions),
+}));
+
+export const trashedQuestionsRelations = relations(trashedQuestions, ({ one }) => ({
+  createdBy: one(users, {
+    fields: [trashedQuestions.createdBy],
+    references: [users.id],
+  }),
 }));
 
 export const topicsRelations = relations(topics, ({ many }) => ({
@@ -137,6 +162,13 @@ export type QuestionWithRelations = Question & {
   mockExam: MockExam;
   subject: Subject;
   topic: Topic;
+  createdBy: User;
+};
+
+export type TrashedQuestion = typeof trashedQuestions.$inferSelect;
+export type InsertTrashedQuestion = typeof trashedQuestions.$inferInsert;
+
+export type TrashedQuestionWithUser = TrashedQuestion & {
   createdBy: User;
 };
 
