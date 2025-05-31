@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/useLanguage";
 import { QuestionCard } from "./question-card";
+import { EditQuestionModal } from "@/components/modals/edit-question-modal";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { QuestionWithRelations } from "@shared/schema";
@@ -20,6 +21,8 @@ interface QuestionGridProps {
 export function QuestionGrid({ filters }: QuestionGridProps) {
   const { t } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
+  const [editingQuestion, setEditingQuestion] = useState<QuestionWithRelations | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const itemsPerPage = 12;
 
   // Reset page when filters change
@@ -58,13 +61,17 @@ export function QuestionGrid({ filters }: QuestionGridProps) {
   const currentQuestions = questions.slice(startIndex, endIndex);
 
   const handleQuestionClick = (question: QuestionWithRelations) => {
-    // TODO: Open question detail modal or navigate to detail page
-    console.log("Question clicked:", question);
+    // Question click is now handled by the card itself for expansion
   };
 
   const handleQuestionEdit = (question: QuestionWithRelations) => {
-    // TODO: Open edit question modal
-    console.log("Edit question:", question);
+    setEditingQuestion(question);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditModalClose = () => {
+    setEditingQuestion(null);
+    setIsEditModalOpen(false);
   };
 
   if (isLoading) {
@@ -108,6 +115,13 @@ export function QuestionGrid({ filters }: QuestionGridProps) {
           />
         ))}
       </div>
+
+      {/* Edit Question Modal */}
+      <EditQuestionModal
+        isOpen={isEditModalOpen}
+        onClose={handleEditModalClose}
+        question={editingQuestion}
+      />
 
       {/* Pagination */}
       {totalPages > 1 && (

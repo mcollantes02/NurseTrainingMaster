@@ -2,7 +2,7 @@ export const translations = {
   es: {
     // App
     "app.title": "EIR Mock Exam Manager",
-    
+
     // Auth
     "auth.login": "Iniciar Sesión",
     "auth.register": "Registrarse",
@@ -32,13 +32,13 @@ export const translations = {
     "auth.welcomeMessage": "¡Bienvenido a EIR Mock Exam Manager!",
     "auth.loginError": "Error al iniciar sesión",
     "auth.registerError": "Error al registrarse",
-    
+
     // User
     "user.profile": "Perfil de Usuario",
     "user.logout": "Cerrar Sesión",
     "user.student": "Estudiante",
     "user.admin": "Administrador",
-    
+
     // Mock Exams
     "mockExam.title": "Examen Simulacro",
     "mockExam.new": "Nuevo Simulacro",
@@ -48,12 +48,19 @@ export const translations = {
     "mockExam.titlePlaceholder": "Ej: Abril 2025",
     "mockExam.created": "Simulacro creado",
     "mockExam.createdDescription": "El simulacro se ha creado exitosamente",
-    
+
     // Questions
     "question.add": "Agregar Pregunta",
     "question.addNew": "Agregar Nueva Pregunta",
+    "question.edit": "Editar Pregunta",
     "question.added": "Pregunta agregada",
     "question.addedDescription": "La pregunta se ha agregado exitosamente",
+    "question.updated": "Pregunta Actualizada",
+    "question.updatedDescription": "La pregunta se ha actualizado exitosamente.",
+    "question.deleted": "Pregunta Eliminada",
+    "question.deletedDescription": "La pregunta se ha eliminado exitosamente.",
+    "question.deleteConfirm": "¿Estás seguro de que quieres eliminar esta pregunta? Esta acción no se puede deshacer.",
+    "question.save": "Guardar Cambios",
     "question.type": "Tipo",
     "question.theory": "Teoría",
     "question.error": "Error",
@@ -64,35 +71,35 @@ export const translations = {
     "question.theoryPlaceholder": "Escriba la explicación teórica de la pregunta...",
     "questions.total": "preguntas totales",
     "questions.noResults": "No se encontraron preguntas",
-    
+
     // Subjects
     "subject.title": "Asignatura",
     "subject.search": "Buscar asignatura...",
     "subject.searchOrAdd": "Buscar o agregar asignatura...",
-    
+
     // Topics
     "topic.title": "Tema",
     "topic.search": "Buscar tema...",
-    "topic.searchOrAdd": "Buscar o agregar tema...",
-    
+    "subject.searchOrAdd": "Buscar o agregar tema...",
+
     // Filters
     "filters.advanced": "Filtros Avanzados",
     "filters.keywords": "Palabras Clave",
     "filters.keywordsPlaceholder": "Buscar en preguntas...",
     "filters.learningStatus": "Estado de Aprendizaje",
     "filters.apply": "Aplicar Filtros",
-    
+
     // Stats
     "stats.completedExams": "Simulacros completados",
     "stats.learnedQuestions": "Preguntas aprendidas",
     "stats.totalQuestions": "Total de preguntas",
     "stats.overallProgress": "de progreso general",
-    
+
     // Pagination
     "pagination.showing": "Mostrando",
     "pagination.of": "de",
     "pagination.questions": "preguntas",
-    
+
     // Common
     "search": "Buscar",
     "cancel": "Cancelar",
@@ -104,7 +111,7 @@ export const translations = {
     "next": "Siguiente",
     "previous": "Anterior",
     "loading": "Cargando...",
-    
+
     // Errors
     "error.title": "Error",
     "error.addQuestion": "Error al agregar la pregunta",
@@ -114,7 +121,7 @@ export const translations = {
   en: {
     // App
     "app.title": "EIR Mock Exam Manager",
-    
+
     // Auth
     "auth.login": "Sign In",
     "auth.register": "Sign Up",
@@ -144,13 +151,13 @@ export const translations = {
     "auth.welcomeMessage": "Welcome to EIR Mock Exam Manager!",
     "auth.loginError": "Login error",
     "auth.registerError": "Registration error",
-    
+
     // User
     "user.profile": "User Profile",
     "user.logout": "Sign Out",
     "user.student": "Student",
     "user.admin": "Administrator",
-    
+
     // Mock Exams
     "mockExam.title": "Mock Exam",
     "mockExam.new": "New Mock Exam",
@@ -161,12 +168,19 @@ export const translations = {
     "mockExam.titlePlaceholder": "e.g. April 2025",
     "mockExam.created": "Mock exam created",
     "mockExam.createdDescription": "The mock exam has been created successfully",
-    
+
     // Questions
     "question.add": "Add Question",
     "question.addNew": "Add New Question",
+    "question.edit": "Edit Question",
     "question.added": "Question added",
     "question.addedDescription": "The question has been added successfully",
+    "question.updated": "Question Updated",
+    "question.updatedDescription": "The question has been successfully updated.",
+    "question.deleted": "Question Deleted",
+    "question.deletedDescription": "The question has been successfully deleted.",
+    "question.deleteConfirm": "Are you sure you want to delete this question? This action cannot be undone.",
+    "question.save": "Save Changes",
     "question.type": "Type",
     "question.theory": "Theory",
     "question.error": "Error",
@@ -178,35 +192,35 @@ export const translations = {
     "questions.total": "total questions",
     "questions.found": "questions found",
     "questions.noResults": "No questions found",
-    
+
     // Subjects
     "subject.title": "Subject",
     "subject.search": "Search subject...",
     "subject.searchOrAdd": "Search or add subject...",
-    
+
     // Topics
     "topic.title": "Topic",
     "topic.search": "Search topic...",
     "topic.searchOrAdd": "Search or add topic...",
-    
+
     // Filters
     "filters.advanced": "Advanced Filters",
     "filters.keywords": "Keywords",
     "filters.keywordsPlaceholder": "Search in questions...",
     "filters.learningStatus": "Learning Status",
     "filters.apply": "Apply Filters",
-    
+
     // Stats
     "stats.completedExams": "Completed exams",
     "stats.learnedQuestions": "Learned questions",
     "stats.totalQuestions": "Total questions",
     "stats.overallProgress": "overall progress",
-    
+
     // Pagination
     "pagination.showing": "Showing",
     "pagination.of": "of",
     "pagination.questions": "questions",
-    
+
     // Common
     "search": "Search",
     "cancel": "Cancel",
@@ -218,11 +232,12 @@ export const translations = {
     "next": "Next",
     "previous": "Previous",
     "loading": "Loading...",
-    
+
     // Errors
     "error.title": "Error",
     "error.addQuestion": "Error adding question",
     "error.updateQuestion": "Error updating question",
+    "error.deleteQuestion": "Error deleting question. Please try again.",
     "error.createExam": "Error creating mock exam",
   },
 };
