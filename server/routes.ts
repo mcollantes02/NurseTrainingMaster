@@ -247,6 +247,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/questions/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { mockExamId, subjectId, topicId, type, theory, isLearned } = req.body;
+
+      const question = await storage.updateQuestion(id, {
+        mockExamId,
+        subjectId,
+        topicId,
+        type,
+        theory,
+        isLearned,
+      }, req.session.userId!);
+
+      if (!question) {
+        return res.status(404).json({ message: "Question not found" });
+      }
+
+      res.json(question);
+    } catch (error) {
+      console.error("Update question error:", error);
+      res.status(500).json({ message: "Failed to update question" });
+    }
+  });
+
   app.patch("/api/questions/:id/learned", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -261,6 +286,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Update question learned error:", error);
       res.status(500).json({ message: "Failed to update question" });
+    }
+  });
+
+  app.delete("/api/questions/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const success = await storage.deleteQuestion(id, req.session.userId!);
+      if (!success) {
+        return res.status(404).json({ message: "Question not found" });
+      }
+
+      res.json({ message: "Question deleted successfully" });
+    } catch (error) {
+      console.error("Delete question error:", error);
+      res.status(500).json({ message: "Failed to delete question" });
     }
   });
 
