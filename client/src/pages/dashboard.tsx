@@ -355,6 +355,7 @@ export default function Dashboard() {
                     <QuestionGrid 
                       filters={appliedFilters}
                       groupByExam={true}
+                      sortBy={sortBy}
                     />
                   </TabsContent>
 
