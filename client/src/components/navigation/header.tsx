@@ -28,8 +28,7 @@ interface HeaderProps {
 export function Header({ onUserProfileClick }: HeaderProps) {
   const { user, logout } = useAuth();
   const { language, changeLanguage, t } = useLanguage();
-  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false); // Added state for trash modal
-  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false); // Added state for trash modal
+  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
 
   const handleLogout = async () => {
