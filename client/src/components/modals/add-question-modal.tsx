@@ -56,8 +56,7 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [subjectSearch, setSubjectSearch] = useState("");
-  const [topicSearch, setTopicSearch] = useState("");
+  
 
   const { data: mockExams = [] } = useQuery<MockExam[]>({
     queryKey: ["/api/mock-exams"],
@@ -89,8 +88,6 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
         theory: "",
         isLearned: false,
       });
-      setSubjectSearch("");
-      setTopicSearch("");
     }
   }, [isOpen, form]);
 
@@ -116,24 +113,12 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
 
   const createQuestionMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      // Ensure subject exists
-      let subjectId: number;
-      const existingSubject = subjects.find(s => s.name === data.subjectName);
-      if (existingSubject) {
-        subjectId = existingSubject.id;
-      } else {
-        const newSubject = await createSubjectMutation.mutateAsync(data.subjectName);
-        subjectId = newSubject.id;
-      }
+      // Find subject and topic IDs
+      const subjectId = subjects.find(s => s.name === data.subjectName)?.id;
+      const topicId = topics.find(t => t.name === data.topicName)?.id;
 
-      // Ensure topic exists
-      let topicId: number;
-      const existingTopic = topics.find(t => t.name === data.topicName);
-      if (existingTopic) {
-        topicId = existingTopic.id;
-      } else {
-        const newTopic = await createTopicMutation.mutateAsync(data.topicName);
-        topicId = newTopic.id;
+      if (!subjectId || !topicId) {
+        throw new Error("Subject or topic not found");
       }
 
       const response = await apiRequest("POST", "/api/questions", {
@@ -208,13 +193,7 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
     createQuestionMutation.mutate(data);
   };
 
-  const filteredSubjects = subjects.filter(subject =>
-    subject.name.toLowerCase().includes(subjectSearch.toLowerCase())
-  );
-
-  const filteredTopics = topics.filter(topic =>
-    topic.name.toLowerCase().includes(topicSearch.toLowerCase())
-  );
+  
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -263,33 +242,23 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("subject.title")} *</FormLabel>
-                  <div className="relative">
-                    <Input
-                      {...field}
-                      placeholder={t("subject.searchOrAdd")}
-                      value={subjectSearch || field.value || ""}
-                      onChange={(e) => {
-                        setSubjectSearch(e.target.value);
-                        field.onChange(e.target.value);
-                      }}
-                    />
-                    {subjectSearch && filteredSubjects.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-auto">
-                        {filteredSubjects.map((subject) => (
-                          <div
-                            key={subject.id}
-                            className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                            onClick={() => {
-                              field.onChange(subject.name);
-                              setSubjectSearch("");
-                            }}
-                          >
-                            {subject.name}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("subject.select")} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {subjects.map((subject) => (
+                        <SelectItem key={subject.id} value={subject.name}>
+                          {subject.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -302,33 +271,23 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("topic.title")} *</FormLabel>
-                  <div className="relative">
-                    <Input
-                      {...field}
-                      placeholder={t("topic.searchOrAdd")}
-                      value={topicSearch || field.value || ""}
-                      onChange={(e) => {
-                        setTopicSearch(e.target.value);
-                        field.onChange(e.target.value);
-                      }}
-                    />
-                    {topicSearch && filteredTopics.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-auto">
-                        {filteredTopics.map((topic) => (
-                          <div
-                            key={topic.id}
-                            className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                            onClick={() => {
-                              field.onChange(topic.name);
-                              setTopicSearch("");
-                            }}
-                          >
-                            {topic.name}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("topic.select")} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {topics.map((topic) => (
+                        <SelectItem key={topic.id} value={topic.name}>
+                          {topic.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
