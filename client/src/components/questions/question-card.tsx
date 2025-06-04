@@ -153,10 +153,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
           </div>
 
           {/* Theory Text */}
-          <div className="mb-3">
+          <div className="mb-3 overflow-hidden">
             <p className={cn(
-              "text-sm text-gray-700 break-words overflow-hidden",
-              isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"
+              "text-sm text-gray-700 break-words",
+              isExpanded ? "whitespace-pre-wrap" : "line-clamp-2 overflow-hidden"
             )}>
               {question.theory}
             </p>
@@ -248,10 +248,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             </div>
 
             {/* Center Section - Theory Text */}
-            <div className="flex-1 min-w-0 max-w-[calc(100%-400px)]">
+            <div className="flex-1 min-w-0 max-w-[calc(100%-400px)] overflow-hidden">
               <p className={cn(
-                "text-sm text-gray-700 overflow-hidden",
-                isExpanded ? "whitespace-pre-wrap break-words" : "line-clamp-2 break-words"
+                "text-sm text-gray-700 break-words",
+                isExpanded ? "whitespace-pre-wrap" : "line-clamp-2 overflow-hidden"
               )}>
                 {question.theory}
               </p>
