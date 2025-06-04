@@ -77,9 +77,9 @@ export default function Dashboard() {
     },
   });
 
-  // Set active tab to first exam when exams load
+  // Set active tab to "all" when exams load
   if (!isLoadingExams && mockExams.length > 0 && !activeTab) {
-    setActiveTab(mockExams[0].id.toString());
+    setActiveTab("all");
   }
 
   const handleApplyFilters = () => {
@@ -148,21 +148,33 @@ export default function Dashboard() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <div className="border-b border-gray-200">
-                    <div className="flex flex-wrap items-center">
-                      <TabsList className="h-auto p-0 bg-transparent">
-                        {mockExams.map((exam) => (
+                    <div className="flex items-center">
+                      <div className="flex-1 overflow-x-auto">
+                        <TabsList className="h-auto p-0 bg-transparent flex w-max min-w-full">
+                          {/* All Mock Exams Tab */}
                           <TabsTrigger
-                            key={exam.id}
-                            value={exam.id.toString()}
-                            className="px-6 py-3 text-sm font-medium data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-50 rounded-none border-b-2 border-transparent"
+                            value="all"
+                            className="px-6 py-3 text-sm font-medium data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-50 rounded-none border-b-2 border-transparent whitespace-nowrap"
                           >
-                            {exam.title}
+                            {t("mockExam.all")}
                             <Badge className="ml-2 bg-blue-600 text-white text-xs">
-                              {exam.questionCount}
+                              {mockExams.reduce((total, exam) => total + exam.questionCount, 0)}
                             </Badge>
                           </TabsTrigger>
-                        ))}
-                      </TabsList>
+                          {mockExams.map((exam) => (
+                            <TabsTrigger
+                              key={exam.id}
+                              value={exam.id.toString()}
+                              className="px-6 py-3 text-sm font-medium data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-50 rounded-none border-b-2 border-transparent whitespace-nowrap"
+                            >
+                              {exam.title}
+                              <Badge className="ml-2 bg-blue-600 text-white text-xs">
+                                {exam.questionCount}
+                              </Badge>
+                            </TabsTrigger>
+                          ))}
+                        </TabsList>
+                      </div>
                       
                       {/* Add New Mock Exam */}
                       <Dialog
@@ -172,7 +184,7 @@ export default function Dashboard() {
                         <DialogTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="px-6 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                            className="px-6 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 flex-shrink-0"
                           >
                             <Plus className="w-4 h-4 mr-1" />
                             {t("mockExam.new")}
@@ -226,7 +238,12 @@ export default function Dashboard() {
                         <Plus className="w-4 h-4 mr-2" />
                         {t("question.add")}
                       </Button>
-                      {activeExam && (
+                      {activeTab === "all" ? (
+                        <span className="text-sm text-gray-600">
+                          <span className="font-medium">{mockExams.reduce((total, exam) => total + exam.questionCount, 0)}</span>{" "}
+                          {t("questions.total")}
+                        </span>
+                      ) : activeExam && (
                         <span className="text-sm text-gray-600">
                           <span className="font-medium">{activeExam.questionCount}</span>{" "}
                           {t("questions.total")}
@@ -235,7 +252,15 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Tab Content */}
+                  {/* All Mock Exams Tab Content */}
+                  <TabsContent value="all" className="p-6">
+                    <QuestionGrid 
+                      filters={appliedFilters}
+                      groupByExam={true}
+                    />
+                  </TabsContent>
+
+                  {/* Individual Mock Exam Tab Content */}
                   {mockExams.map((exam) => (
                     <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
                       <QuestionGrid 
