@@ -119,6 +119,9 @@ export const translations = {
     "pagination.of": "de",
     "pagination.questions": "preguntas",
 
+    // Multi Select
+    "multiSelect.selectAll": "Seleccionar todos",
+
     // Common
     "search": "Buscar",
     "cancel": "Cancelar",
@@ -275,6 +278,9 @@ export const translations = {
     "trash.permanentDeleteWarning": "This action cannot be undone. The question will be permanently deleted from the system.",
     "trash.emptyTrashConfirm": "Empty Trash?",
     "trash.emptyTrashWarning": "This will permanently delete all questions in the trash. This action cannot be undone.",
+
+    // Multi Select
+    "multiSelect.selectAll": "Select All",
 
     // Admin
     "admin.title": "Admin",

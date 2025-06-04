@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -28,6 +29,7 @@ export function MultiSelect({
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const { t } = useLanguage();
 
   const filteredOptions = options.filter((option) =>
     option.label.toLowerCase().includes(search.toLowerCase())
@@ -116,7 +118,7 @@ export function MultiSelect({
                     value.length === options.length ? "opacity-100" : "opacity-0"
                   )}
                 />
-                <span className="font-medium">Seleccionar todos</span>
+                <span className="font-medium">{t("multiSelect.selectAll")}</span>
               </div>
               {filteredOptions.map((option) => (
                 <div
