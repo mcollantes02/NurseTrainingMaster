@@ -53,20 +53,6 @@ export default function Dashboard() {
     queryKey: ["/api/mock-exams"],
   });
 
-  const promoteToAdminMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/admin/promote");
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      toast({
-        title: "Promoción exitosa",
-        description: "Ahora eres administrador",
-      });
-    },
-  });
-
   const createExamMutation = useMutation({
     mutationFn: async (title: string) => {
       const response = await apiRequest("POST", "/api/mock-exams", { title });
@@ -239,14 +225,6 @@ export default function Dashboard() {
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         {t("question.add")}
-                      </Button>
-                      <Button
-                        onClick={() => promoteToAdminMutation.mutate()}
-                        variant="outline"
-                        size="sm"
-                        disabled={promoteToAdminMutation.isPending}
-                      >
-                        Ser Admin
                       </Button>
                       {activeExam && (
                         <span className="text-sm text-gray-600">
