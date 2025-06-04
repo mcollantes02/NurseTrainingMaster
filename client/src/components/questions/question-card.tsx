@@ -247,14 +247,13 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
               </Badge>
             </div>
 
-            {/* Center Section - Theory Text */}
-            <div className="flex-1 min-w-0 max-w-[calc(100%-400px)] overflow-hidden">
-              <p className={cn(
-                "text-sm text-gray-700 break-words",
-                isExpanded ? "whitespace-pre-wrap" : "line-clamp-2 overflow-hidden"
-              )}>
-                {question.theory}
-              </p>
+            {/* Center Section - Theory Text (collapsed) */}
+            <div className="flex-1 min-w-0 overflow-hidden">
+              {!isExpanded && (
+                <p className="text-sm text-gray-700 break-words line-clamp-2 overflow-hidden">
+                  {question.theory}
+                </p>
+              )}
             </div>
 
             {/* Right Section - Actions and Date */}
@@ -311,6 +310,15 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
               </Button>
             </div>
           </div>
+
+          {/* Expanded Text Section (full width, below main content) */}
+          {isExpanded && (
+            <div className="mt-3 w-full">
+              <p className="text-sm text-gray-700 break-words whitespace-pre-wrap">
+                {question.theory}
+              </p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
