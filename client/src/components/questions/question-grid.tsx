@@ -10,15 +10,16 @@ import type { QuestionWithRelations } from "@shared/schema";
 
 interface QuestionGridProps {
   filters: {
-    mockExamIds?: number[];
-    subjectIds?: number[];
-    topicIds?: number[];
-    keywords?: string;
-    learningStatus?: boolean[];
+    mockExamIds: number[];
+    subjectIds: number[];
+    topicIds: number[];
+    keywords: string;
+    learningStatus: boolean[];
   };
+  groupByExam?: boolean;
 }
 
-export function QuestionGrid({ filters }: QuestionGridProps) {
+export function QuestionGrid({ filters, groupByExam }: QuestionGridProps) {
   const { t } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
   const [editingQuestion, setEditingQuestion] = useState<QuestionWithRelations | null>(null);
@@ -92,6 +93,35 @@ export function QuestionGrid({ filters }: QuestionGridProps) {
     );
   }
 
+  if (groupByExam) {
+    // Group questions by mock exam
+    const questionsByExam = questions.reduce((acc, question) => {
+      const examTitle = question.mockExam.title;
+      if (!acc[examTitle]) {
+        acc[examTitle] = [];
+      }
+      acc[examTitle].push(question);
+      return acc;
+    }, {} as Record<string, typeof questions>);
+
+    return (
+      <div className="space-y-8">
+        {Object.entries(questionsByExam).map(([examTitle, examQuestions]) => (
+          <div key={examTitle}>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+              {examTitle} ({examQuestions.length} {examQuestions.length === 1 ? t("question.single") : t("questions.label")})
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {examQuestions.map((question) => (
+                <QuestionCard key={question.id} question={question} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Total Questions Counter */}
@@ -142,7 +172,7 @@ export function QuestionGrid({ filters }: QuestionGridProps) {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            
+
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
               return (
@@ -157,7 +187,7 @@ export function QuestionGrid({ filters }: QuestionGridProps) {
                 </Button>
               );
             })}
-            
+
             <Button
               variant="outline"
               size="sm"
