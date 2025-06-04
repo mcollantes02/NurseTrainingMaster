@@ -17,8 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Trash2 } from "lucide-react"; // Added Trash2 icon
+import { Trash2, Settings } from "lucide-react"; // Added Trash2 icon
 import { TrashModal } from "@/components/modals/trash-modal"; // Added TrashModal component
+import { AdminModal } from "@/components/modals/admin-modal";
 
 interface HeaderProps {
   onUserProfileClick: () => void;
@@ -28,6 +29,8 @@ export function Header({ onUserProfileClick }: HeaderProps) {
   const { user, logout } = useAuth();
   const { language, changeLanguage, t } = useLanguage();
   const [isTrashModalOpen, setIsTrashModalOpen] = useState(false); // Added state for trash modal
+  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false); // Added state for trash modal
+  const [showAdmin, setShowAdmin] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -101,6 +104,10 @@ export function Header({ onUserProfileClick }: HeaderProps) {
                 <DropdownMenuItem onClick={handleLogout}>
                   {t("user.logout")}
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShowAdmin(true)}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Administrar
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -109,6 +116,10 @@ export function Header({ onUserProfileClick }: HeaderProps) {
       <TrashModal
           isOpen={isTrashModalOpen}
           onClose={() => setIsTrashModalOpen(false)}
+        />
+        <AdminModal
+          isOpen={showAdmin}
+          onClose={() => setShowAdmin(false)}
         />
     </nav>
   );
