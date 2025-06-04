@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -117,7 +116,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
   const updateQuestionMutation = useMutation({
     mutationFn: async (data: FormData) => {
       if (!question) return;
-      
+
       // Ensure subject exists
       let subjectId: number;
       const existingSubject = subjects.find(s => s.name === data.subjectName);
@@ -151,10 +150,10 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
     onMutate: async (data) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
-      
+
       // Snapshot the previous value
       const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
-      
+
       // Optimistically update to the new value
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old || !question) return old;
@@ -169,15 +168,17 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
             : q
         );
       });
-      
+
       return { previousQuestions };
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      onClose();
       toast({
         title: t("question.updated"),
         description: t("question.updatedDescription"),
       });
-      onClose();
     },
     onError: (error, variables, context) => {
       // Rollback on error
