@@ -128,10 +128,10 @@ export function QuestionGrid({ filters, groupByExam }: QuestionGridProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Total Questions Counter */}
       {(filters.mockExamIds?.length || filters.subjectIds?.length || filters.topicIds?.length || filters.keywords || filters.learningStatus?.length) ? (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between -mt-2">
           <span className="text-sm text-gray-600">
             <span className="font-medium">{questions.length}</span>{" "}
             {questions.length === 1 ? t("question.single") : t("questions.found")}
