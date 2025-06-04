@@ -9,17 +9,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { QuestionWithRelations } from "@shared/schema";
 
 interface QuestionGridProps {
-  filters: {
-    mockExamIds: number[];
-    subjectIds: number[];
-    topicIds: number[];
-    keywords: string;
-    learningStatus: boolean[];
-  };
+  filters: FiltersState;
   groupByExam?: boolean;
+  sortBy?: "newest" | "oldest" | "nameAsc";
 }
 
-export function QuestionGrid({ filters, groupByExam }: QuestionGridProps) {
+export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }: QuestionGridProps) {
   const { t } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
   const [editingQuestion, setEditingQuestion] = useState<QuestionWithRelations | null>(null);
@@ -103,6 +98,20 @@ export function QuestionGrid({ filters, groupByExam }: QuestionGridProps) {
       acc[examTitle].push(question);
       return acc;
     }, {} as Record<string, typeof questions>);
+
+      // Apply sorting to each group of questions
+      Object.keys(questionsByExam).forEach(examTitle => {
+        questionsByExam[examTitle].sort((a, b) => {
+          if (sortBy === "newest") {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          } else if (sortBy === "oldest") {
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          } else if (sortBy === "nameAsc") {
+            return a.title.localeCompare(b.title);
+          }
+          return 0;
+        });
+      });
 
     return (
       <div className="space-y-8">
