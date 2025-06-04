@@ -46,10 +46,12 @@ export const translations = {
     "mockExam.create": "Crear Simulacro",
     "mockExam.select": "Seleccionar simulacro",
     "mockExam.selectMultiple": "Seleccionar simulacros",
-    "mockExam.titlePlaceholder": "Ej: Abril 2025",
-    "mockExam.all": "Todos los simulacros",
-    "mockExam.created": "Simulacro creado",
-    "mockExam.createdDescription": "El simulacro se ha creado exitosamente",
+    "mockExam.selected": "Simulacros Seleccionados",
+    "mockExam.mockExamIds": "IDs de Simulacros",
+    "mockExam.sortBy": "Ordenar por",
+    "mockExam.sortNewest": "Fecha más nueva",
+    "mockExam.sortOldest": "Fecha más antigua",
+    "mockExam.sortNameAsc": "Nombre A-Z",
 
     // Questions
     "question.add": "Agregar Pregunta",
@@ -203,10 +205,11 @@ export const translations = {
     "mockExam.select": "Select mock exam",
     "mockExam.selectMultiple": "Select mock exams",
     "mockExam.selected": "Selected Mock Exams",
-    "mockExam.titlePlaceholder": "e.g. April 2025",
-    "mockExam.all": "All Mock Exams", 
-    "mockExam.created": "Mock exam created",
-    "mockExam.createdDescription": "The mock exam has been created successfully",
+    "mockExam.mockExamIds": "Mock Exam IDs",
+    "mockExam.sortBy": "Sort by",
+    "mockExam.sortNewest": "Newest first",
+    "mockExam.sortOldest": "Oldest first",
+    "mockExam.sortNameAsc": "Name A-Z",
 
     // Questions
     "question.add": "Add Question",
