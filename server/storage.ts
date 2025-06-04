@@ -39,11 +39,15 @@ export interface IStorage {
   getSubjects(): Promise<Subject[]>;
   createSubject(subject: InsertSubject): Promise<Subject>;
   getSubjectByName(name: string): Promise<Subject | undefined>;
+  updateSubject(id: number, data: { name: string }): Promise<Subject | undefined>;
+  deleteSubject(id: number): Promise<boolean>;
 
   // Topic operations
   getTopics(): Promise<Topic[]>;
   createTopic(topic: InsertTopic): Promise<Topic>;
   getTopicByName(name: string): Promise<Topic | undefined>;
+  updateTopic(id: number, data: { name: string }): Promise<Topic | undefined>;
+  deleteTopic(id: number): Promise<boolean>;
 
   // Question operations
   getQuestions(filters: {
@@ -135,6 +139,30 @@ export class DatabaseStorage implements IStorage {
     return subject;
   }
 
+  async updateSubject(id: number, data: { name: string }): Promise<Subject | undefined> {
+    const [subject] = await db
+      .update(subjects)
+      .set(data)
+      .where(eq(subjects.id, id))
+      .returning();
+    return subject;
+  }
+
+  async deleteSubject(id: number): Promise<boolean> {
+    // Check if there are questions using this subject
+    const [questionsCount] = await db
+      .select({ count: count() })
+      .from(questions)
+      .where(eq(questions.subjectId, id));
+
+    if (questionsCount.count > 0) {
+      return false; // Cannot delete subject with associated questions
+    }
+
+    const result = await db.delete(subjects).where(eq(subjects.id, id));
+    return result.rowCount > 0;
+  }
+
   async getTopics(): Promise<Topic[]> {
     return await db.select().from(topics).orderBy(topics.name);
   }
@@ -147,6 +175,30 @@ export class DatabaseStorage implements IStorage {
   async getTopicByName(name: string): Promise<Topic | undefined> {
     const [topic] = await db.select().from(topics).where(eq(topics.name, name));
     return topic;
+  }
+
+  async updateTopic(id: number, data: { name: string }): Promise<Topic | undefined> {
+    const [topic] = await db
+      .update(topics)
+      .set(data)
+      .where(eq(topics.id, id))
+      .returning();
+    return topic;
+  }
+
+  async deleteTopic(id: number): Promise<boolean> {
+    // Check if there are questions using this topic
+    const [questionsCount] = await db
+      .select({ count: count() })
+      .from(questions)
+      .where(eq(questions.topicId, id));
+
+    if (questionsCount.count > 0) {
+      return false; // Cannot delete topic with associated questions
+    }
+
+    const result = await db.delete(topics).where(eq(topics.id, id));
+    return result.rowCount > 0;
   }
 
   async getQuestions(filters: {

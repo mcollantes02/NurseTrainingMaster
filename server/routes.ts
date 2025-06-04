@@ -175,6 +175,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/subjects/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name } = req.body;
+
+      const subject = await storage.updateSubject(id, { name });
+      if (!subject) {
+        return res.status(404).json({ message: "Subject not found" });
+      }
+
+      res.json(subject);
+    } catch (error) {
+      console.error("Update subject error:", error);
+      res.status(500).json({ message: "Failed to update subject" });
+    }
+  });
+
+  app.delete("/api/subjects/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const success = await storage.deleteSubject(id);
+      if (!success) {
+        return res.status(404).json({ message: "Subject not found or has associated questions" });
+      }
+
+      res.json({ message: "Subject deleted successfully" });
+    } catch (error) {
+      console.error("Delete subject error:", error);
+      res.status(500).json({ message: "Failed to delete subject" });
+    }
+  });
+
   // Topic routes
   app.get("/api/topics", requireAuth, async (req, res) => {
     try {
@@ -201,6 +234,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Create topic error:", error);
       res.status(400).json({ message: "Failed to create topic" });
+    }
+  });
+
+  app.put("/api/topics/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { name } = req.body;
+
+      const topic = await storage.updateTopic(id, { name });
+      if (!topic) {
+        return res.status(404).json({ message: "Topic not found" });
+      }
+
+      res.json(topic);
+    } catch (error) {
+      console.error("Update topic error:", error);
+      res.status(500).json({ message: "Failed to update topic" });
+    }
+  });
+
+  app.delete("/api/topics/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const success = await storage.deleteTopic(id);
+      if (!success) {
+        return res.status(404).json({ message: "Topic not found or has associated questions" });
+      }
+
+      res.json({ message: "Topic deleted successfully" });
+    } catch (error) {
+      console.error("Delete topic error:", error);
+      res.status(500).json({ message: "Failed to delete topic" });
     }
   });
 
