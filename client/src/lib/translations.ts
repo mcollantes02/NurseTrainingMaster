@@ -91,12 +91,6 @@ export const translations = {
     "trash.emptyTrashConfirm": "¿Vaciar Papelera?",
     "trash.emptyTrashWarning": "Esto eliminará permanentemente todas las preguntas en la papelera. Esta acción no se puede deshacer.",
 
-    // Error messages
-    "error.deleteQuestion": "Error al eliminar la pregunta",
-    "error.restoreQuestion": "Error al restaurar la pregunta",
-    "error.permanentDelete": "Error al eliminar permanentemente",
-    "error.emptyTrash": "Error al vaciar la papelera",
-
     // Subjects
     "subject.title": "Asignatura",
     "subject.search": "Buscar asignatura...",
