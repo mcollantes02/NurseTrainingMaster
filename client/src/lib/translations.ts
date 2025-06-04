@@ -276,7 +276,10 @@ export const translations = {
     "trash.emptyTrashConfirm": "Empty Trash?",
     "trash.emptyTrashWarning": "This will permanently delete all questions in the trash. This action cannot be undone.",
 
-    // Errors
+    // Admin
+    "admin.title": "Admin",
+
+    // Questions
     "error.title": "Error",
     "error.addQuestion": "Error adding question",
     "error.updateQuestion": "Error updating question",

@@ -382,6 +382,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin route to promote user to admin (temporary for setup)
+  app.post("/api/admin/promote", requireAuth, async (req, res) => {
+    try {
+      const user = await storage.updateUserRole(req.session.userId!, 'admin');
+      res.json({ ...user, password: undefined });
+    } catch (error) {
+      console.error("Promote user error:", error);
+      res.status(500).json({ message: "Failed to promote user" });
+    }
+  });
+
   // Trash routes
   app.get("/api/trash", requireAuth, async (req, res) => {
     try {
