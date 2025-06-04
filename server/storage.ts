@@ -84,6 +84,8 @@ export interface IStorage {
     totalQuestions: number;
     progressPercentage: number;
   }>;
+
+  updateUserRole(userId: number, role: string): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -503,6 +505,16 @@ export class DatabaseStorage implements IStorage {
   async emptyTrash(userId: number): Promise<boolean> {
     await db.delete(trashedQuestions).where(eq(trashedQuestions.createdBy, userId));
     return true;
+  }
+
+    async updateUserRole(userId: number, role: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ role })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return user;
   }
 }
 
