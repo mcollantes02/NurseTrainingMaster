@@ -71,6 +71,7 @@ export const translations = {
     "question.theoryPlaceholder": "Escribe la explicación teórica de la pregunta...",
     "questions.total": "preguntas totales",
     "questions.found": "preguntas encontradas",
+    "questions.label": "preguntas",
     "questions.noResults": "No se encontraron preguntas",
 
     // Trash
@@ -227,6 +228,7 @@ export const translations = {
     "question.theoryPlaceholder": "Write the theoretical explanation of the question...",
     "questions.total": "total questions",
     "questions.found": "questions found",
+    "questions.label": "questions",
     "questions.noResults": "No questions found",
 
     // Subjects
