@@ -214,23 +214,17 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("mockExam.title")} *</FormLabel>
-                  <Select
-                    onValueChange={(value) => field.onChange(Number(value))}
-                    value={field.value?.toString()}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("mockExam.select")} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {mockExams.map((exam) => (
-                        <SelectItem key={exam.id} value={exam.id.toString()}>
-                          {exam.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      options={mockExams.map(exam => ({ label: exam.title, value: exam.id.toString() }))}
+                      value={field.value?.toString() || ""}
+                      onSelect={(value) => field.onChange(Number(value))}
+                      placeholder={t("mockExam.select")}
+                      searchPlaceholder="Buscar simulacro..."
+                      emptyText="No se encontró el simulacro"
+                      allowCustom={false}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
