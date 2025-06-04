@@ -117,7 +117,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(questions, eq(questions.mockExamId, mockExams.id))
       .where(eq(mockExams.createdBy, userId))
       .groupBy(mockExams.id, mockExams.title, mockExams.createdBy, mockExams.createdAt)
-      .orderBy(mockExams.createdAt);
+      .orderBy(desc(mockExams.createdAt));
 
     return result;
   }
