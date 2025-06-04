@@ -1,0 +1,159 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+5:51:20 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+5:51:26 PM [vite] warning: Duplicate key "error.restoreQuestion" in object literal
+145|      "error.createSubject": "Error al crear la materia",
+146|      "error.createTopic": "Error al crear el tema",
+147|      "error.restoreQuestion": "Error al restaurar la pregunta",
+   |      ^
+148|      "error.permanentDelete": "Error al eliminar permanentemente la pregunta",
+149|      "error.emptyTrash": "Error al vaciar la papelera",
+
+  Plugin: vite:esbuild
+  File: /home/runner/workspace/client/src/lib/translations.ts
+5:51:26 PM [vite] warning: Duplicate key "error.permanentDelete" in object literal
+146|      "error.createTopic": "Error al crear el tema",
+147|      "error.restoreQuestion": "Error al restaurar la pregunta",
+148|      "error.permanentDelete": "Error al eliminar permanentemente la pregunta",
+   |      ^
+149|      "error.emptyTrash": "Error al vaciar la papelera",
+150|    },
+
+  Plugin: vite:esbuild
+  File: /home/runner/workspace/client/src/lib/translations.ts
+5:51:26 PM [vite] warning: Duplicate key "error.emptyTrash" in object literal
+147|      "error.restoreQuestion": "Error al restaurar la pregunta",
+148|      "error.permanentDelete": "Error al eliminar permanentemente la pregunta",
+149|      "error.emptyTrash": "Error al vaciar la papelera",
+   |      ^
+150|    },
+151|    en: {
+
+  Plugin: vite:esbuild
+  File: /home/runner/workspace/client/src/lib/translations.ts
+5:51:34 PM [express] GET /api/auth/user 304 in 644ms :: {"id":1,"email":"ruizsanchezroberto12@gmail.…
+5:51:34 PM [express] GET /api/mock-exams 304 in 336ms :: [{"id":1,"title":"Abril","createdBy":1,"cre…
+5:51:35 PM [express] GET /api/topics 304 in 633ms :: [{"id":1,"name":"Euthanasia","createdAt":"2025-…
+5:51:35 PM [express] GET /api/subjects 304 in 632ms :: [{"id":1,"name":"Hematology","createdAt":"202…
+5:51:35 PM [express] GET /api/questions 304 in 318ms :: [{"id":1,"mockExamId":1,"subjectId":2,"topic…
+Delete question error: error: relation "trashed_questions" does not exist
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async DatabaseStorage.deleteQuestion (/home/runner/workspace/server/storage.ts:310:5)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:296:23) {
+  length: 116,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '13',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+5:51:37 PM [express] DELETE /api/questions/1 500 in 432ms :: {"message":"Failed to delete question"}
+5:51:38 PM [express] GET /api/questions 304 in 318ms :: [{"id":1,"mockExamId":1,"subjectId":2,"topic…
+5:52:32 PM [express] GET /api/auth/user 304 in 691ms :: {"id":1,"email":"ruizsanchezroberto12@gmail.…
+5:52:32 PM [express] GET /api/mock-exams 304 in 324ms :: [{"id":1,"title":"Abril","createdBy":1,"cre…
+5:52:33 PM [express] GET /api/subjects 304 in 639ms :: [{"id":1,"name":"Hematology","createdAt":"202…
+5:52:33 PM [express] GET /api/topics 304 in 641ms :: [{"id":1,"name":"Euthanasia","createdAt":"2025-…
+5:52:33 PM [express] GET /api/questions 304 in 319ms :: [{"id":1,"mockExamId":1,"subjectId":2,"topic…
+5:53:52 PM [express] GET /api/auth/user 304 in 706ms :: {"id":1,"email":"ruizsanchezroberto12@gmail.…
+5:53:53 PM [express] GET /api/mock-exams 304 in 317ms :: [{"id":1,"title":"Abril","createdBy":1,"cre…
+5:53:53 PM [express] GET /api/topics 304 in 648ms :: [{"id":1,"name":"Euthanasia","createdAt":"2025-…
+5:53:53 PM [express] GET /api/subjects 304 in 650ms :: [{"id":1,"name":"Hematology","createdAt":"202…
+5:53:53 PM [express] GET /api/questions 304 in 318ms :: [{"id":1,"mockExamId":1,"subjectId":2,"topic…
+5:53:55 PM [express] DELETE /api/questions/1 200 in 538ms :: {"message":"Question deleted successful…
+5:53:56 PM [express] GET /api/questions 200 in 316ms :: []
+5:53:57 PM [express] GET /api/trash 200 in 318ms :: [{"id":1,"originalId":1,"mockExamId":1,"mockExam…
+5:54:01 PM [express] POST /api/trash/1/restore 200 in 635ms :: {"message":"Question restored success…
+5:54:02 PM [express] GET /api/questions 200 in 316ms :: [{"id":7,"mockExamId":1,"subjectId":2,"topic…
+5:54:02 PM [express] GET /api/trash 200 in 320ms :: []
+5:54:24 PM [express] GET /api/questions 200 in 1262ms :: [{"id":5,"mockExamId":2,"subjectId":1,"topi…
+5:55:20 PM [express] GET /api/questions 200 in 1371ms :: [{"id":5,"mockExamId":2,"subjectId":1,"topi…
+5:55:22 PM [express] GET /api/questions 200 in 317ms :: []
+5:55:24 PM [express] GET /api/questions 200 in 319ms :: []
+5:55:34 PM [express] GET /api/questions 200 in 319ms :: [{"id":7,"mockExamId":1,"subjectId":2,"topic…
+5:56:02 PM [express] GET /api/questions 200 in 1259ms :: []
+5:58:53 PM [vite] hmr update /src/components/navigation/header.tsx, /src/index.css?v=jMECOACo-wq2eWtpFQcAe
+5:58:53 PM [vite] page reload src/components/ui/table.tsx
+5:58:54 PM [vite] Internal server error: /home/runner/workspace/client/src/components/navigation/header.tsx: Identifier 'isTrashModalOpen' has already been declared. (32:9)
+
+  30 |   const { language, changeLanguage, t } = useLanguage();
+  31 |   const [isTrashModalOpen, setIsTrashModalOpen] = useState(false); // Added state for trash modal
+> 32 |   const [isTrashModalOpen, setIsTrashModalOpen] = useState(false); // Added state for trash modal
+     |          ^
+  33 |   const [showAdmin, setShowAdmin] = useState(false);
+  34 |
+  35 |   const handleLogout = async () => {
+  Plugin: vite:react-babel
+  File: /home/runner/workspace/client/src/components/navigation/header.tsx:32:9
+  30 |    const { language, changeLanguage, t } = useLanguage();
+  31 |    const [isTrashModalOpen, setIsTrashModalOpen] = useState(false); // Added state for trash modal
+  32 |    const [isTrashModalOpen, setIsTrashModalOpen] = useState(false); // Added state for trash modal
+     |           ^
+  33 |    const [showAdmin, setShowAdmin] = useState(false);
+  34 |  
+      at toParseError (/home/runner/workspace/node_modules/@babel/parser/src/parse-error.ts:95:45)
+      at raise (/home/runner/workspace/node_modules/@babel/parser/src/tokenizer/index.ts:1497:19)
+      at checkRedeclarationInScope (/home/runner/workspace/node_modules/@babel/parser/src/util/scope.ts:155:19)
+      at declareName (/home/runner/workspace/node_modules/@babel/parser/src/util/scope.ts:109:12)
+      at declareName (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/scope.ts:89:11)
+      at declareNameFromIdentifier (/home/runner/workspace/node_modules/@babel/parser/src/parser/lval.ts:739:16)
+      at checkIdentifier (/home/runner/workspace/node_modules/@babel/parser/src/parser/lval.ts:734:12)
+      at checkLVal (/home/runner/workspace/node_modules/@babel/parser/src/parser/lval.ts:636:12)
+      at checkLVal (/home/runner/workspace/node_modules/@babel/parser/src/parser/lval.ts:687:16)
+      at parseVarId (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1605:10)
+      at parseVarId (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3543:13)
+      at parseVar (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1558:12)
+      at parseVarStatement (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1227:10)
+      at parseVarStatement (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3007:33)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:566:21)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3056:20)
+      at parseStatementLike (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:437:17)
+      at parseStatementListItem (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:386:17)
+      at parseBlockOrModuleBlockBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1420:16)
+      at parseBlockBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1393:10)
+      at parseBlock (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1361:10)
+      at parseFunctionBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:2557:24)
+      at parseFunctionBodyAndFinish (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:2526:10)
+      at parseFunctionBodyAndFinish (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:2538:20)
+      at callback (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1667:12)
+      at withSmartMixTopicForbiddingContext (/home/runner/workspace/node_modules/@babel/parser/src/parser/expression.ts:3091:14)
+      at parseFunction (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1665:10)
+      at parseFunctionStatement (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1053:17)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:480:21)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3056:20)
+      at parseStatementLike (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:437:17)
+      at parseStatementListItem (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:386:17)
+      at parseExportDeclaration (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:2595:17)
+      at parseExportDeclaration (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3306:15)
+      at maybeParseExportDeclaration (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:2517:31)
+      at parseExport (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:2401:29)
+      at parseExport (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:2968:22)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:610:25)
+      at parseStatementContent (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:3056:20)
+      at parseStatementLike (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:437:17)
+      at parseModuleItem (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:374:17)
+      at parseBlockOrModuleBlockBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1419:16)
+      at parseBlockBody (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:1393:10)
+      at parseProgram (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:225:10)
+      at parseTopLevel (/home/runner/workspace/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+      at parse (/home/runner/workspace/node_modules/@babel/parser/src/parser/index.ts:90:10)
+      at parse (/home/runner/workspace/node_modules/@babel/parser/src/plugins/typescript/index.ts:4192:20)
+      at parse (/home/runner/workspace/node_modules/@babel/parser/src/index.ts:92:38)
+      at parser (/home/runner/workspace/node_modules/@babel/core/src/parser/index.ts:28:19)
+      at parser.next (<anonymous>)
