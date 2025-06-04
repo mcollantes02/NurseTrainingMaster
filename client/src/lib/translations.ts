@@ -95,11 +95,13 @@ export const translations = {
     "subject.title": "Asignatura",
     "subject.search": "Buscar asignatura...",
     "subject.searchOrAdd": "Buscar o agregar asignatura...",
+    "subject.selectMultiple": "Seleccionar asignaturas",
 
     // Topics
     "topic.title": "Tema",
     "topic.search": "Buscar tema...",
     "topic.searchOrAdd": "Buscar o agregar tema...",
+    "topic.selectMultiple": "Seleccionar temas",
 
     // Filters
     "filters.advanced": "Filtros Avanzados",
@@ -224,11 +226,13 @@ export const translations = {
     "subject.title": "Subject",
     "subject.search": "Search subject...",
     "subject.searchOrAdd": "Search or add subject...",
+    "subject.selectMultiple": "Select subjects",
 
     // Topics
     "topic.title": "Topic",
     "topic.search": "Search topic...",
     "topic.searchOrAdd": "Search or add topic...",
+    "topic.selectMultiple": "Select topics",
 
     // Filters
     "filters.advanced": "Advanced Filters",
