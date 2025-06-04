@@ -42,6 +42,7 @@ export const translations = {
     // Mock Exams
     "mockExam.title": "Examen Simulacro",
     "mockExam.label": "Examen Simulacro",
+    "mockExam.all": "Todos los simulacros",
     "mockExam.new": "Nuevo Simulacro",
     "mockExam.create": "Crear Simulacro",
     "mockExam.select": "Seleccionar simulacro",
@@ -200,6 +201,7 @@ export const translations = {
     // Mock Exams
     "mockExam.title": "Mock Exam",
     "mockExam.label": "Mock Exam",
+    "mockExam.all": "All mock exams",
     "mockExam.new": "New Mock Exam",
     "mockExam.create": "Create Mock Exam",
     "mockExam.select": "Select mock exam",
