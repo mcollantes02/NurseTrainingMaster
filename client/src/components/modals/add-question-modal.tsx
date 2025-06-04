@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Combobox } from "@/components/ui/combobox";
 import type { MockExam, Subject, Topic } from "@shared/schema";
 
 const formSchema = z.object({
@@ -242,23 +243,17 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("subject.title")} *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("subject.select")} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {subjects.map((subject) => (
-                        <SelectItem key={subject.id} value={subject.name}>
-                          {subject.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      options={subjects.map(s => ({ label: s.name, value: s.name }))}
+                      value={field.value}
+                      onSelect={field.onChange}
+                      placeholder={t("subject.select")}
+                      searchPlaceholder={t("subject.search")}
+                      emptyText={t("subject.notFound")}
+                      allowCustom={true}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -271,23 +266,17 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t("topic.title")} *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("topic.select")} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {topics.map((topic) => (
-                        <SelectItem key={topic.id} value={topic.name}>
-                          {topic.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox
+                      options={topics.map(t => ({ label: t.name, value: t.name }))}
+                      value={field.value}
+                      onSelect={field.onChange}
+                      placeholder={t("topic.select")}
+                      searchPlaceholder={t("topic.search")}
+                      emptyText={t("topic.notFound")}
+                      allowCustom={true}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

@@ -12,8 +12,8 @@ import type { QuestionWithRelations } from "@shared/schema";
 
 interface QuestionCardProps {
   question: QuestionWithRelations;
-  onClick: () => void;
-  onEdit: () => void;
+  onClick?: () => void;
+  onEdit?: () => void;
 }
 
 export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {

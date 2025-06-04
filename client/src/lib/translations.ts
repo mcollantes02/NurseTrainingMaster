@@ -76,6 +76,10 @@ export const translations = {
     "questions.found": "preguntas encontradas",
     "questions.label": "preguntas",
     "questions.noResults": "No se encontraron preguntas",
+    "question.added": "Pregunta Agregada",
+    "question.addedDescription": "La pregunta ha sido agregada exitosamente.",
+    "question.updated": "Pregunta Actualizada",
+    "question.updatedDescription": "La pregunta ha sido actualizada exitosamente.",
 
     // Trash
     "trash.title": "Papelera",
@@ -235,6 +239,10 @@ export const translations = {
     "questions.found": "questions found",
     "questions.label": "questions",
     "questions.noResults": "No questions found",
+    "question.added": "Question Added",
+    "question.addedDescription": "The question has been successfully added.",
+    "question.updated": "Question Updated",
+    "question.updatedDescription": "The question has been successfully updated.",
 
     // Subjects
     "subject.title": "Subject",
