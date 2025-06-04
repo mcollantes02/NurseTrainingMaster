@@ -50,9 +50,9 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate both questions and mock exams to update counters
       queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
       toast({
         title: t("question.deleted"),
         description: t("question.deletedDescription"),
