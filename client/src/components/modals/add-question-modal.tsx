@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Plus } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -77,6 +77,22 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
       isLearned: false,
     },
   });
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        mockExamId: undefined,
+        subjectName: "",
+        topicName: "",
+        type: undefined,
+        theory: "",
+        isLearned: false,
+      });
+      setSubjectSearch("");
+      setTopicSearch("");
+    }
+  }, [isOpen, form]);
 
   const createSubjectMutation = useMutation({
     mutationFn: async (name: string) => {
