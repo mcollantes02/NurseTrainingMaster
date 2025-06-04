@@ -72,13 +72,13 @@ export const translations = {
     "questions.total": "preguntas totales",
     "questions.noResults": "No se encontraron preguntas",
 
-    // Papelera
+    // Trash
     "trash.title": "Papelera",
     "trash.empty": "La papelera está vacía",
     "trash.itemsCount": "elementos en la papelera",
     "trash.deletedOn": "Eliminado el",
     "trash.restore": "Restaurar",
-    "trash.permanentDelete": "Eliminar Para Siempre",
+    "trash.permanentDelete": "Eliminar Permanentemente",
     "trash.emptyTrash": "Vaciar Papelera",
     "trash.restored": "Pregunta Restaurada",
     "trash.restoredDescription": "La pregunta ha sido restaurada exitosamente.",
@@ -90,6 +90,12 @@ export const translations = {
     "trash.permanentDeleteWarning": "Esta acción no se puede deshacer. La pregunta será eliminada permanentemente del sistema.",
     "trash.emptyTrashConfirm": "¿Vaciar Papelera?",
     "trash.emptyTrashWarning": "Esto eliminará permanentemente todas las preguntas en la papelera. Esta acción no se puede deshacer.",
+
+    // Error messages
+    "error.deleteQuestion": "Error al eliminar la pregunta",
+    "error.restoreQuestion": "Error al restaurar la pregunta",
+    "error.permanentDelete": "Error al eliminar permanentemente",
+    "error.emptyTrash": "Error al vaciar la papelera",
 
     // Subjects
     "subject.title": "Asignatura",
