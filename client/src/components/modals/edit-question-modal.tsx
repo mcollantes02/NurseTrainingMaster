@@ -174,6 +174,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
       onClose();
       toast({
         title: t("question.updated"),
