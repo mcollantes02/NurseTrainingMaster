@@ -99,23 +99,32 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
       return acc;
     }, {} as Record<string, typeof questions>);
 
-      // Apply sorting to each group of questions
-      Object.keys(questionsByExam).forEach(examTitle => {
-        questionsByExam[examTitle].sort((a, b) => {
-          if (sortBy === "newest") {
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          } else if (sortBy === "oldest") {
-            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-          } else if (sortBy === "nameAsc") {
-            return a.title.localeCompare(b.title);
-          }
-          return 0;
-        });
-      });
+      // Get exam order based on sorting criteria
+    const examOrder = Object.keys(questionsByExam).sort((examTitleA, examTitleB) => {
+      const questionsA = questionsByExam[examTitleA];
+      const questionsB = questionsByExam[examTitleB];
+      
+      if (questionsA.length === 0 || questionsB.length === 0) return 0;
+      
+      // Use the first question's mockExam data to compare
+      const examA = questionsA[0].mockExam;
+      const examB = questionsB[0].mockExam;
+      
+      if (sortBy === "newest") {
+        return new Date(examB.createdAt).getTime() - new Date(examA.createdAt).getTime();
+      } else if (sortBy === "oldest") {
+        return new Date(examA.createdAt).getTime() - new Date(examB.createdAt).getTime();
+      } else if (sortBy === "nameAsc") {
+        return examA.title.localeCompare(examB.title);
+      }
+      return 0;
+    });
 
     return (
       <div className="space-y-8">
-        {Object.entries(questionsByExam).map(([examTitle, examQuestions]) => (
+        {examOrder.map((examTitle) => {
+          const examQuestions = questionsByExam[examTitle];
+          return (
           <div key={examTitle}>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
               {examTitle} ({examQuestions.length} {examQuestions.length === 1 ? t("question.single") : t("questions.label")})
@@ -131,7 +140,8 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     );
   }
