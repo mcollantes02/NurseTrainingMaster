@@ -222,9 +222,9 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         {/* Desktop Layout */}
         <div className="hidden sm:block">
           {/* Main Content Row */}
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4 w-full overflow-hidden">
             {/* Left Section - Status and Metadata */}
-            <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
+            <div className="flex items-center gap-3 flex-shrink-0 max-w-[300px]">
               <Badge
                 className={cn(
                   "text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap",
@@ -236,10 +236,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
                 {question.isLearned ? t("question.learned") : t("question.unlearned")}
               </Badge>
 
-              <div className="flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap">
-                <span className="font-medium">{question.subject.name}</span>
+              <div className="flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap overflow-hidden">
+                <span className="font-medium truncate max-w-[80px]">{question.subject.name}</span>
                 <span className="text-gray-400">•</span>
-                <span>{question.topic.name}</span>
+                <span className="truncate max-w-[80px]">{question.topic.name}</span>
               </div>
 
               <Badge className={cn("text-xs px-2 py-1 whitespace-nowrap", getTypeColor(question.type))}>
@@ -248,10 +248,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             </div>
 
             {/* Center Section - Theory Text */}
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 max-w-[calc(100%-400px)]">
               <p className={cn(
-                "text-sm text-gray-700 break-words overflow-hidden",
-                isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"
+                "text-sm text-gray-700 overflow-hidden",
+                isExpanded ? "whitespace-pre-wrap break-words" : "line-clamp-2 break-words"
               )}>
                 {question.theory}
               </p>
