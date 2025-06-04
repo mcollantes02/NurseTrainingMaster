@@ -61,6 +61,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
   };
 
   const handleQuestionEdit = (question: QuestionWithRelations) => {
+    console.log("Edit button clicked for question:", question.id);
     setEditingQuestion(question);
     setIsEditModalOpen(true);
   };
@@ -121,28 +122,37 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
     });
 
     return (
-      <div className="space-y-8">
-        {examOrder.map((examTitle) => {
-          const examQuestions = questionsByExam[examTitle];
-          return (
-          <div key={examTitle}>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-              {examTitle} ({examQuestions.length} {examQuestions.length === 1 ? t("question.single") : t("questions.label")})
-            </h3>
-            <div className="space-y-3">
-              {examQuestions.map((question) => (
-                <QuestionCard 
-                  key={question.id} 
-                  question={question}
-                  onClick={() => handleQuestionClick(question)}
-                  onEdit={() => handleQuestionEdit(question)}
-                />
-              ))}
+      <>
+        <div className="space-y-8">
+          {examOrder.map((examTitle) => {
+            const examQuestions = questionsByExam[examTitle];
+            return (
+            <div key={examTitle}>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+                {examTitle} ({examQuestions.length} {examQuestions.length === 1 ? t("question.single") : t("questions.label")})
+              </h3>
+              <div className="space-y-3">
+                {examQuestions.map((question) => (
+                  <QuestionCard 
+                    key={question.id} 
+                    question={question}
+                    onClick={() => handleQuestionClick(question)}
+                    onEdit={() => handleQuestionEdit(question)}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+
+        {/* Edit Question Modal for grouped view */}
+        <EditQuestionModal
+          isOpen={isEditModalOpen}
+          onClose={handleEditModalClose}
+          question={editingQuestion}
+        />
+      </>
     );
   }
 
