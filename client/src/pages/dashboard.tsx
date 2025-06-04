@@ -68,11 +68,11 @@ export default function Dashboard() {
   });
 
   // Sort mock exams based on selected criteria
-  const sortedMockExams = useMemo(() => {
+  const sortedMockExamsForGrouping = useMemo(() => {
     if (!mockExams.length) return mockExams;
-    
+
     const sorted = [...mockExams];
-    
+
     switch (sortBy) {
       case "newest":
         return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -84,6 +84,10 @@ export default function Dashboard() {
         return sorted;
     }
   }, [mockExams, sortBy]);
+
+  const tabMockExams = useMemo(() => {
+    return [...mockExams].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  }, [mockExams])
 
   const createExamMutation = useMutation({
     mutationFn: async (title: string) => {
@@ -110,7 +114,7 @@ export default function Dashboard() {
   });
 
   // Set active tab to "all" when exams load
-  if (!isLoadingExams && sortedMockExams.length > 0 && !activeTab) {
+  if (!isLoadingExams && tabMockExams.length > 0 && !activeTab) {
     setActiveTab("all");
   }
 
@@ -124,12 +128,12 @@ export default function Dashboard() {
     }
   };
 
-  const activeExam = sortedMockExams.find(exam => exam.id.toString() === activeTab);
+  const activeExam = tabMockExams.find(exam => exam.id.toString() === activeTab);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onUserProfileClick={() => setIsUserProfileModalOpen(true)} />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar Filters */}
@@ -151,13 +155,13 @@ export default function Dashboard() {
                   </h2>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {appliedFilters.mockExamIds.map(examId => {
-                      const exam = sortedMockExams.find(e => e.id === examId);
-                      return exam ? (
-                        <Badge key={examId} className="bg-blue-100 text-blue-800 px-3 py-1">
-                          {exam.title}
-                        </Badge>
-                      ) : null;
-                    })}
+                          const exam = tabMockExams.find(e => e.id === examId);
+                          return exam ? (
+                            <Badge key={examId} className="bg-blue-100 text-blue-800 px-3 py-1">
+                              {exam.title}
+                            </Badge>
+                          ) : null;
+                        })}
                   </div>
                   <div className="flex items-center space-x-4">
                     <Button
@@ -194,12 +198,12 @@ export default function Dashboard() {
                         >
                           {t("mockExam.all")}
                           <Badge className="ml-2 bg-blue-600 text-white text-xs">
-                            {sortedMockExams.reduce((total, exam) => total + exam.questionCount, 0)}
+                            {tabMockExams.reduce((total, exam) => total + exam.questionCount, 0)}
                           </Badge>
                         </button>
 
                         {/* First 3 mock exams as visible tabs */}
-                        {sortedMockExams.slice(0, 3).map((exam) => (
+                        {tabMockExams.slice(0, 3).map((exam) => (
                           <button
                             key={exam.id}
                             onClick={() => setActiveTab(exam.id.toString())}
@@ -217,31 +221,31 @@ export default function Dashboard() {
                         ))}
 
                         {/* Dropdown for remaining mock exams */}
-                        {sortedMockExams.length > 3 && (
+                        {tabMockExams.length > 3 && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button
                                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center ${
-                                  sortedMockExams.slice(3).some(exam => exam.id.toString() === activeTab)
+                                  tabMockExams.slice(3).some(exam => exam.id.toString() === activeTab)
                                     ? "text-blue-600 border-blue-600 bg-blue-50"
                                     : "text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300"
                                 }`}
                               >
-                                {sortedMockExams.slice(3).some(exam => exam.id.toString() === activeTab) ? (
+                                {tabMockExams.slice(3).some(exam => exam.id.toString() === activeTab) ? (
                                   <>
-                                    {sortedMockExams.find(exam => exam.id.toString() === activeTab)?.title}
+                                    {tabMockExams.find(exam => exam.id.toString() === activeTab)?.title}
                                     <Badge className="ml-2 bg-blue-600 text-white text-xs">
-                                      {sortedMockExams.find(exam => exam.id.toString() === activeTab)?.questionCount}
+                                      {tabMockExams.find(exam => exam.id.toString() === activeTab)?.questionCount}
                                     </Badge>
                                   </>
                                 ) : (
-                                  `+${sortedMockExams.length - 3} más`
+                                  `+${tabMockExams.length - 3} más`
                                 )}
                                 <ChevronDown className="w-4 h-4 ml-1" />
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="min-w-[200px]">
-                              {sortedMockExams.slice(3).map((exam) => (
+                              {tabMockExams.slice(3).map((exam) => (
                                 <DropdownMenuItem
                                   key={exam.id}
                                   onClick={() => setActiveTab(exam.id.toString())}
@@ -257,7 +261,7 @@ export default function Dashboard() {
                           </DropdownMenu>
                         )}
                       </div>
-                      
+
                       {/* Add New Mock Exam */}
                       <Dialog
                         open={isCreateExamModalOpen}
@@ -323,7 +327,7 @@ export default function Dashboard() {
                       </Button>
                       {activeTab === "all" ? (
                         <span className="text-sm text-gray-600">
-                          <span className="font-medium">{sortedMockExams.reduce((total, exam) => total + exam.questionCount, 0)}</span>{" "}
+                          <span className="font-medium">{tabMockExams.reduce((total, exam) => total + exam.questionCount, 0)}</span>{" "}
                           {t("questions.total")}
                         </span>
                       ) : activeExam && (
@@ -333,7 +337,7 @@ export default function Dashboard() {
                         </span>
                       )}
                     </div>
-                    
+
                     {/* Sort Dropdown */}
                     <div className="flex items-center space-x-2">
                       <ArrowUpDown className="w-4 h-4 text-gray-500" />
@@ -360,7 +364,7 @@ export default function Dashboard() {
                   </TabsContent>
 
                   {/* Individual Mock Exam Tab Content */}
-                  {sortedMockExams.map((exam) => (
+                  {tabMockExams.map((exam) => (
                     <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
                       <QuestionGrid 
                         filters={{
@@ -382,7 +386,7 @@ export default function Dashboard() {
         isOpen={isAddQuestionModalOpen}
         onClose={() => setIsAddQuestionModalOpen(false)}
       />
-      
+
       <UserProfileModal
         isOpen={isUserProfileModalOpen}
         onClose={() => setIsUserProfileModalOpen(false)}
