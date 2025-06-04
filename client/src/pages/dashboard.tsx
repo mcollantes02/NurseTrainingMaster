@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -19,6 +19,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { MockExamWithQuestionCount } from "@shared/schema";
@@ -148,32 +154,82 @@ export default function Dashboard() {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <div className="border-b border-gray-200">
-                    <div className="flex items-center">
-                      <div className="flex-1 overflow-x-auto">
-                        <TabsList className="h-auto p-0 bg-transparent flex w-max min-w-full">
-                          {/* All Mock Exams Tab */}
-                          <TabsTrigger
-                            value="all"
-                            className="px-6 py-3 text-sm font-medium data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-50 rounded-none border-b-2 border-transparent whitespace-nowrap"
+                    <div className="flex items-center justify-between">
+                      {/* Tab Navigation */}
+                      <div className="flex items-center space-x-1">
+                        {/* All Mock Exams Tab - Always visible */}
+                        <button
+                          onClick={() => setActiveTab("all")}
+                          className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                            activeTab === "all"
+                              ? "text-blue-600 border-blue-600 bg-blue-50"
+                              : "text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300"
+                          }`}
+                        >
+                          {t("mockExam.all")}
+                          <Badge className="ml-2 bg-blue-600 text-white text-xs">
+                            {mockExams.reduce((total, exam) => total + exam.questionCount, 0)}
+                          </Badge>
+                        </button>
+
+                        {/* First 3 mock exams as visible tabs */}
+                        {mockExams.slice(0, 3).map((exam) => (
+                          <button
+                            key={exam.id}
+                            onClick={() => setActiveTab(exam.id.toString())}
+                            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                              activeTab === exam.id.toString()
+                                ? "text-blue-600 border-blue-600 bg-blue-50"
+                                : "text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300"
+                            }`}
                           >
-                            {t("mockExam.all")}
+                            {exam.title}
                             <Badge className="ml-2 bg-blue-600 text-white text-xs">
-                              {mockExams.reduce((total, exam) => total + exam.questionCount, 0)}
+                              {exam.questionCount}
                             </Badge>
-                          </TabsTrigger>
-                          {mockExams.map((exam) => (
-                            <TabsTrigger
-                              key={exam.id}
-                              value={exam.id.toString()}
-                              className="px-6 py-3 text-sm font-medium data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-blue-50 rounded-none border-b-2 border-transparent whitespace-nowrap"
-                            >
-                              {exam.title}
-                              <Badge className="ml-2 bg-blue-600 text-white text-xs">
-                                {exam.questionCount}
-                              </Badge>
-                            </TabsTrigger>
-                          ))}
-                        </TabsList>
+                          </button>
+                        ))}
+
+                        {/* Dropdown for remaining mock exams */}
+                        {mockExams.length > 3 && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center ${
+                                  mockExams.slice(3).some(exam => exam.id.toString() === activeTab)
+                                    ? "text-blue-600 border-blue-600 bg-blue-50"
+                                    : "text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300"
+                                }`}
+                              >
+                                {mockExams.slice(3).some(exam => exam.id.toString() === activeTab) ? (
+                                  <>
+                                    {mockExams.find(exam => exam.id.toString() === activeTab)?.title}
+                                    <Badge className="ml-2 bg-blue-600 text-white text-xs">
+                                      {mockExams.find(exam => exam.id.toString() === activeTab)?.questionCount}
+                                    </Badge>
+                                  </>
+                                ) : (
+                                  `+${mockExams.length - 3} más`
+                                )}
+                                <ChevronDown className="w-4 h-4 ml-1" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="min-w-[200px]">
+                              {mockExams.slice(3).map((exam) => (
+                                <DropdownMenuItem
+                                  key={exam.id}
+                                  onClick={() => setActiveTab(exam.id.toString())}
+                                  className="flex items-center justify-between cursor-pointer"
+                                >
+                                  <span>{exam.title}</span>
+                                  <Badge className="bg-blue-600 text-white text-xs">
+                                    {exam.questionCount}
+                                  </Badge>
+                                </DropdownMenuItem>
+                              ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
                       </div>
                       
                       {/* Add New Mock Exam */}
@@ -184,7 +240,8 @@ export default function Dashboard() {
                         <DialogTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="px-6 py-3 text-sm font-medium text-blue-600 hover:bg-blue-50 flex-shrink-0"
+                            size="sm"
+                            className="text-blue-600 hover:bg-blue-50 flex-shrink-0"
                           >
                             <Plus className="w-4 h-4 mr-1" />
                             {t("mockExam.new")}

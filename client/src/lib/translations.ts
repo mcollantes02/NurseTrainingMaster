@@ -47,6 +47,7 @@ export const translations = {
     "mockExam.select": "Seleccionar simulacro",
     "mockExam.selectMultiple": "Seleccionar simulacros",
     "mockExam.titlePlaceholder": "Ej: Abril 2025",
+    "mockExam.all": "Todos los simulacros",
     "mockExam.created": "Simulacro creado",
     "mockExam.createdDescription": "El simulacro se ha creado exitosamente",
 
@@ -205,6 +206,7 @@ export const translations = {
     "mockExam.selectMultiple": "Select mock exams",
     "mockExam.selected": "Selected Mock Exams",
     "mockExam.titlePlaceholder": "e.g. April 2025",
+    "mockExam.all": "All Mock Exams", 
     "mockExam.created": "Mock exam created",
     "mockExam.createdDescription": "The mock exam has been created successfully",
 
