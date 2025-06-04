@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { CheckCircle, Circle, Calendar, Edit, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -89,9 +88,6 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
 
   const handleCardClick = () => {
     setIsExpanded(!isExpanded);
-    if (onClick) {
-      onClick();
-    }
   };
 
   const handleExpandToggle = (e: React.MouseEvent) => {
@@ -124,14 +120,14 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       )}
       onClick={handleCardClick}
     >
-      <CardContent className="p-3 sm:p-4">
-        {/* Mobile Layout */}
-        <div className="block sm:hidden">
-          {/* Top Row - Status and Type */}
-          <div className="flex items-center justify-between mb-2">
+      <CardContent className="p-4">
+        {/* Main Content Row */}
+        <div className="flex items-start justify-between gap-4">
+          {/* Left Section - Status and Metadata */}
+          <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
             <Badge
               className={cn(
-                "text-xs font-medium px-2 py-1 rounded-full",
+                "text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap",
                 question.isLearned
                   ? "bg-green-500 text-white"
                   : "bg-gray-300 text-gray-700"
@@ -140,185 +136,80 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
               {question.isLearned ? t("question.learned") : t("question.unlearned")}
             </Badge>
 
-            <Badge className={cn("text-xs px-2 py-1", getTypeColor(question.type))}>
+            <div className="flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap">
+              <span className="font-medium">{question.subject.name}</span>
+              <span className="text-gray-400">•</span>
+              <span>{question.topic.name}</span>
+            </div>
+
+            <Badge className={cn("text-xs px-2 py-1 whitespace-nowrap", getTypeColor(question.type))}>
               {getTypeLabel(question.type)}
             </Badge>
           </div>
 
-          {/* Subject and Topic */}
-          <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
-            <span className="font-medium">{question.subject.name}</span>
-            <span className="text-gray-400">•</span>
-            <span className="truncate">{question.topic.name}</span>
-          </div>
-
-          {/* Theory Text */}
-          <div className="mb-3 overflow-hidden">
+          {/* Center Section - Theory Text */}
+          <div className="flex-1 min-w-0">
             <p className={cn(
-              "text-sm text-gray-700 break-words",
-              isExpanded ? "whitespace-pre-wrap" : "line-clamp-2 overflow-hidden"
+              "text-sm text-gray-700",
+              isExpanded ? "" : "line-clamp-2"
             )}>
               {question.theory}
             </p>
           </div>
 
-          {/* Bottom Row - Date and Actions */}
-          <div className="flex items-center justify-between">
-            <div className="text-xs text-gray-500 flex items-center">
+          {/* Right Section - Actions and Date */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="text-xs text-gray-500 flex items-center whitespace-nowrap">
               <Calendar className="h-3 w-3 mr-1" />
               {question.createdAt ? formatDate(question.createdAt) : ''}
             </div>
 
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-1 h-auto text-gray-400 hover:text-blue-600"
-                onClick={handleEdit}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 h-auto text-gray-400 hover:text-blue-600"
+              onClick={handleEdit}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-1 h-auto text-gray-400 hover:text-red-600"
-                onClick={handleDelete}
-                disabled={deleteQuestionMutation.isPending}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 h-auto text-gray-400 hover:text-red-600"
+              onClick={handleDelete}
+              disabled={deleteQuestionMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-1 h-auto text-gray-400 hover:text-gray-600"
-                onClick={handleToggleLearned}
-                disabled={toggleLearnedMutation.isPending}
-              >
-                {question.isLearned ? (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Circle className="h-4 w-4" />
-                )}
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-1 h-auto text-gray-400 hover:text-gray-600"
-                onClick={handleExpandToggle}
-              >
-                {isExpanded ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop Layout */}
-        <div className="hidden sm:block">
-          {/* Main Content Row */}
-          <div className="flex items-start gap-4 w-full overflow-hidden">
-            {/* Left Section - Status and Metadata */}
-            <div className="flex items-center gap-3 flex-shrink-0 max-w-[300px]">
-              <Badge
-                className={cn(
-                  "text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap",
-                  question.isLearned
-                    ? "bg-green-500 text-white"
-                    : "bg-gray-300 text-gray-700"
-                )}
-              >
-                {question.isLearned ? t("question.learned") : t("question.unlearned")}
-              </Badge>
-
-              <div className="flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap overflow-hidden">
-                <span className="font-medium truncate max-w-[80px]">{question.subject.name}</span>
-                <span className="text-gray-400">•</span>
-                <span className="truncate max-w-[80px]">{question.topic.name}</span>
-              </div>
-
-              <Badge className={cn("text-xs px-2 py-1 whitespace-nowrap", getTypeColor(question.type))}>
-                {getTypeLabel(question.type)}
-              </Badge>
-            </div>
-
-            {/* Center Section - Theory Text (collapsed) */}
-            <div className="flex-1 min-w-0 overflow-hidden">
-              {!isExpanded && (
-                <p className="text-sm text-gray-700 break-words line-clamp-2 overflow-hidden">
-                  {question.theory}
-                </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 h-auto text-gray-400 hover:text-gray-600"
+              onClick={handleToggleLearned}
+              disabled={toggleLearnedMutation.isPending}
+            >
+              {question.isLearned ? (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              ) : (
+                <Circle className="h-4 w-4" />
               )}
-            </div>
+            </Button>
 
-            {/* Right Section - Actions and Date */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="text-xs text-gray-500 flex items-center whitespace-nowrap">
-                <Calendar className="h-3 w-3 mr-1" />
-                {question.createdAt ? formatDate(question.createdAt) : ''}
-              </div>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-1 h-auto text-gray-400 hover:text-blue-600"
-                onClick={handleEdit}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-1 h-auto text-gray-400 hover:text-red-600"
-                onClick={handleDelete}
-                disabled={deleteQuestionMutation.isPending}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-1 h-auto text-gray-400 hover:text-gray-600"
-                onClick={handleToggleLearned}
-                disabled={toggleLearnedMutation.isPending}
-              >
-                {question.isLearned ? (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Circle className="h-4 w-4" />
-                )}
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                className="p-1 h-auto text-gray-400 hover:text-gray-600"
-                onClick={handleExpandToggle}
-              >
-                {isExpanded ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 h-auto text-gray-400 hover:text-gray-600"
+              onClick={handleExpandToggle}
+            >
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-
-          {/* Expanded Text Section (full width, below main content) */}
-          {isExpanded && (
-            <div className="mt-3 w-full">
-              <p className="text-sm text-gray-700 break-words whitespace-pre-wrap">
-                {question.theory}
-              </p>
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>
