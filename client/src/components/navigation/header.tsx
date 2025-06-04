@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Trash2 } from "lucide-react"; // Added Trash2 icon
+import { TrashModal } from "@/components/modals/trash-modal"; // Added TrashModal component
 
 interface HeaderProps {
   onUserProfileClick: () => void;
@@ -25,6 +27,7 @@ interface HeaderProps {
 export function Header({ onUserProfileClick }: HeaderProps) {
   const { user, logout } = useAuth();
   const { language, changeLanguage, t } = useLanguage();
+  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false); // Added state for trash modal
 
   const handleLogout = async () => {
     try {
@@ -51,6 +54,16 @@ export function Header({ onUserProfileClick }: HeaderProps) {
           </div>
 
           <div className="flex items-center space-x-4">
+               {/* Trash button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsTrashModalOpen(true)}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">{t("trash.title")}</span>
+            </Button>
             {/* Language Switcher */}
             <Select value={language} onValueChange={changeLanguage}>
               <SelectTrigger className="w-auto border-gray-300">
@@ -93,6 +106,10 @@ export function Header({ onUserProfileClick }: HeaderProps) {
           </div>
         </div>
       </div>
+      <TrashModal
+          isOpen={isTrashModalOpen}
+          onClose={() => setIsTrashModalOpen(false)}
+        />
     </nav>
   );
 }
