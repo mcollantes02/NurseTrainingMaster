@@ -155,8 +155,8 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
           {/* Theory Text */}
           <div className="mb-3">
             <p className={cn(
-              "text-sm text-gray-700 break-words",
-              isExpanded ? "" : "line-clamp-2"
+              "text-sm text-gray-700 break-words overflow-hidden",
+              isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"
             )}>
               {question.theory}
             </p>
@@ -250,8 +250,8 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             {/* Center Section - Theory Text */}
             <div className="flex-1 min-w-0">
               <p className={cn(
-                "text-sm text-gray-700 break-words",
-                isExpanded ? "" : "line-clamp-2"
+                "text-sm text-gray-700 break-words overflow-hidden",
+                isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"
               )}>
                 {question.theory}
               </p>
