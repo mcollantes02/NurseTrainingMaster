@@ -41,6 +41,7 @@ export const translations = {
 
     // Mock Exams
     "mockExam.title": "Examen Simulacro",
+    "mockExam.label": "Examen Simulacro",
     "mockExam.new": "Nuevo Simulacro",
     "mockExam.create": "Crear Simulacro",
     "mockExam.select": "Seleccionar simulacro",
@@ -62,12 +63,14 @@ export const translations = {
     "question.deleteConfirm": "¿Estás seguro de que quieres eliminar esta pregunta? Podrás restaurarla desde la papelera más tarde.",
     "question.save": "Guardar Cambios",
     "question.type": "Tipo",
+    "question.selectType": "Seleccionar tipo",
     "question.theory": "Teoría",
     "question.error": "Error",
     "question.doubt": "Duda",
     "question.learned": "Aprendida",
     "question.unlearned": "Sin aprender",
     "question.markAsLearned": "Marcar como aprendida",
+    "question.markAsLearnedDescription": "Marca esta pregunta como aprendida",
     "question.theoryPlaceholder": "Escribe la explicación teórica de la pregunta...",
     "questions.total": "preguntas totales",
     "questions.noResults": "No se encontraron preguntas",
@@ -93,15 +96,21 @@ export const translations = {
 
     // Subjects
     "subject.title": "Asignatura",
+    "subject.label": "Asignatura",
+    "subject.select": "Seleccionar asignatura",
     "subject.search": "Buscar asignatura...",
     "subject.searchOrAdd": "Buscar o agregar asignatura...",
     "subject.selectMultiple": "Seleccionar asignaturas",
+    "subject.notFound": "No se encontró la asignatura",
 
     // Topics
     "topic.title": "Tema",
+    "topic.label": "Tema",
+    "topic.select": "Seleccionar tema",
     "topic.search": "Buscar tema...",
     "topic.searchOrAdd": "Buscar o agregar tema...",
     "topic.selectMultiple": "Seleccionar temas",
+    "topic.notFound": "No se encontró el tema",
 
     // Filters
     "filters.advanced": "Filtros Avanzados",
@@ -189,6 +198,7 @@ export const translations = {
 
     // Mock Exams
     "mockExam.title": "Mock Exam",
+    "mockExam.label": "Mock Exam",
     "mockExam.new": "New Mock Exam",
     "mockExam.create": "Create Mock Exam",
     "mockExam.select": "Select mock exam",
@@ -211,12 +221,14 @@ export const translations = {
     "question.deleteConfirm": "Are you sure you want to delete this question? This action cannot be undone.",
     "question.save": "Save Changes",
     "question.type": "Type",
+    "question.selectType": "Select type",
     "question.theory": "Theory",
     "question.error": "Error",
     "question.doubt": "Doubt",
     "question.learned": "Learned",
     "question.unlearned": "Not learned",
     "question.markAsLearned": "Mark as learned",
+    "question.markAsLearnedDescription": "Mark this question as learned",
     "question.theoryPlaceholder": "Write the theoretical explanation of the question...",
     "questions.total": "total questions",
     "questions.found": "questions found",
@@ -224,15 +236,21 @@ export const translations = {
 
     // Subjects
     "subject.title": "Subject",
+    "subject.label": "Subject",
+    "subject.select": "Select subject",
     "subject.search": "Search subject...",
     "subject.searchOrAdd": "Search or add subject...",
     "subject.selectMultiple": "Select subjects",
+    "subject.notFound": "Subject not found",
 
     // Topics
     "topic.title": "Topic",
+    "topic.label": "Topic",
+    "topic.select": "Select topic",
     "topic.search": "Search topic...",
     "topic.searchOrAdd": "Search or add topic...",
     "topic.selectMultiple": "Select topics",
+    "topic.notFound": "Topic not found",
 
     // Filters
     "filters.advanced": "Advanced Filters",
