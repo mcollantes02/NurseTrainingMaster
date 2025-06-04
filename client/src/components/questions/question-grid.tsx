@@ -103,13 +103,13 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
     const examOrder = Object.keys(questionsByExam).sort((examTitleA, examTitleB) => {
       const questionsA = questionsByExam[examTitleA];
       const questionsB = questionsByExam[examTitleB];
-      
+
       if (questionsA.length === 0 || questionsB.length === 0) return 0;
-      
+
       // Use the first question's mockExam data to compare
       const examA = questionsA[0].mockExam;
       const examB = questionsB[0].mockExam;
-      
+
       if (sortBy === "newest") {
         return new Date(examB.createdAt).getTime() - new Date(examA.createdAt).getTime();
       } else if (sortBy === "oldest") {

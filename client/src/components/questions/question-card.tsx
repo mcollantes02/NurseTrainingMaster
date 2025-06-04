@@ -74,7 +74,9 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onEdit();
+    if (onEdit) {
+      onEdit();
+    }
   };
 
   const handleDelete = (e: React.MouseEvent) => {
