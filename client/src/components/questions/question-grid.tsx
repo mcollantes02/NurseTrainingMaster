@@ -111,9 +111,14 @@ export function QuestionGrid({ filters, groupByExam }: QuestionGridProps) {
             <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
               {examTitle} ({examQuestions.length} {examQuestions.length === 1 ? t("question.single") : t("questions.label")})
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-3">
               {examQuestions.map((question) => (
-                <QuestionCard key={question.id} question={question} />
+                <QuestionCard 
+                  key={question.id} 
+                  question={question}
+                  onClick={() => handleQuestionClick(question)}
+                  onEdit={() => handleQuestionEdit(question)}
+                />
               ))}
             </div>
           </div>
