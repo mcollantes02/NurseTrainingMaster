@@ -99,7 +99,7 @@ export const translations = {
     // Topics
     "topic.title": "Tema",
     "topic.search": "Buscar tema...",
-    "subject.searchOrAdd": "Buscar o agregar tema...",
+    "topic.searchOrAdd": "Buscar o agregar tema...",
 
     // Filters
     "filters.advanced": "Filtros Avanzados",
@@ -257,16 +257,32 @@ export const translations = {
     "previous": "Previous",
     "loading": "Loading...",
 
+    // Trash
+    "trash.title": "Trash",
+    "trash.empty": "The trash is empty",
+    "trash.itemsCount": "items in the trash",
+    "trash.deletedOn": "Deleted on",
+    "trash.restore": "Restore",
+    "trash.permanentDelete": "Permanently Delete",
+    "trash.emptyTrash": "Empty Trash",
+    "trash.restored": "Question Restored",
+    "trash.restoredDescription": "The question has been successfully restored.",
+    "trash.permanentlyDeleted": "Question Permanently Deleted",
+    "trash.permanentlyDeletedDescription": "The question has been permanently deleted.",
+    "trash.emptied": "Trash Emptied",
+    "trash.emptiedDescription": "All questions in the trash have been permanently deleted.",
+    "trash.permanentDeleteConfirm": "Permanently Delete Question?",
+    "trash.permanentDeleteWarning": "This action cannot be undone. The question will be permanently deleted from the system.",
+    "trash.emptyTrashConfirm": "Empty Trash?",
+    "trash.emptyTrashWarning": "This will permanently delete all questions in the trash. This action cannot be undone.",
+
     // Errors
     "error.title": "Error",
     "error.addQuestion": "Error adding question",
     "error.updateQuestion": "Error updating question",
-    "error.deleteQuestion": "Error deleting question. Please try again.",
     "error.createExam": "Error creating mock exam",
     "error.createSubject": "Failed to create subject",
     "error.createTopic": "Failed to create topic",
-    "error.updateQuestion": "Failed to update question",
-    "error.deleteQuestion": "Failed to delete question",
     "error.restoreQuestion": "Failed to restore question",
     "error.permanentDelete": "Failed to permanently delete question",
     "error.emptyTrash": "Failed to empty trash",
