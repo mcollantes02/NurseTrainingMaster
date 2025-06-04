@@ -56,6 +56,7 @@ export const translations = {
 
     // Questions
     "question.add": "Agregar Pregunta",
+    "question.addNew": "Agregar Nueva Pregunta",
     "question.edit": "Editar Pregunta",
     "question.delete": "Eliminar Pregunta",
     "question.single": "pregunta",
@@ -219,6 +220,7 @@ export const translations = {
 
     // Questions
     "question.add": "Add Question",
+    "question.addNew": "Add New Question",
     "question.edit": "Edit Question",
     "question.delete": "Delete Question",
     "question.single": "question",
