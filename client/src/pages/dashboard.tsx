@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Plus, ChevronDown } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, ChevronDown, ArrowUpDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -25,6 +25,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { MockExamWithQuestionCount } from "@shared/schema";
@@ -46,6 +53,7 @@ export default function Dashboard() {
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
   const [isCreateExamModalOpen, setIsCreateExamModalOpen] = useState(false);
   const [newExamTitle, setNewExamTitle] = useState("");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "nameAsc">("newest");
   const [filters, setFilters] = useState<FiltersState>({
     mockExamIds: [],
     subjectIds: [],
@@ -58,6 +66,24 @@ export default function Dashboard() {
   const { data: mockExams = [], isLoading: isLoadingExams } = useQuery<MockExamWithQuestionCount[]>({
     queryKey: ["/api/mock-exams"],
   });
+
+  // Sort mock exams based on selected criteria
+  const sortedMockExams = useMemo(() => {
+    if (!mockExams.length) return mockExams;
+    
+    const sorted = [...mockExams];
+    
+    switch (sortBy) {
+      case "newest":
+        return sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      case "oldest":
+        return sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      case "nameAsc":
+        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+      default:
+        return sorted;
+    }
+  }, [mockExams, sortBy]);
 
   const createExamMutation = useMutation({
     mutationFn: async (title: string) => {
@@ -84,7 +110,7 @@ export default function Dashboard() {
   });
 
   // Set active tab to "all" when exams load
-  if (!isLoadingExams && mockExams.length > 0 && !activeTab) {
+  if (!isLoadingExams && sortedMockExams.length > 0 && !activeTab) {
     setActiveTab("all");
   }
 
@@ -98,7 +124,7 @@ export default function Dashboard() {
     }
   };
 
-  const activeExam = mockExams.find(exam => exam.id.toString() === activeTab);
+  const activeExam = sortedMockExams.find(exam => exam.id.toString() === activeTab);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -125,7 +151,7 @@ export default function Dashboard() {
                   </h2>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {appliedFilters.mockExamIds.map(examId => {
-                      const exam = mockExams.find(e => e.id === examId);
+                      const exam = sortedMockExams.find(e => e.id === examId);
                       return exam ? (
                         <Badge key={examId} className="bg-blue-100 text-blue-800 px-3 py-1">
                           {exam.title}
@@ -168,12 +194,12 @@ export default function Dashboard() {
                         >
                           {t("mockExam.all")}
                           <Badge className="ml-2 bg-blue-600 text-white text-xs">
-                            {mockExams.reduce((total, exam) => total + exam.questionCount, 0)}
+                            {sortedMockExams.reduce((total, exam) => total + exam.questionCount, 0)}
                           </Badge>
                         </button>
 
                         {/* First 3 mock exams as visible tabs */}
-                        {mockExams.slice(0, 3).map((exam) => (
+                        {sortedMockExams.slice(0, 3).map((exam) => (
                           <button
                             key={exam.id}
                             onClick={() => setActiveTab(exam.id.toString())}
@@ -191,31 +217,31 @@ export default function Dashboard() {
                         ))}
 
                         {/* Dropdown for remaining mock exams */}
-                        {mockExams.length > 3 && (
+                        {sortedMockExams.length > 3 && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <button
                                 className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center ${
-                                  mockExams.slice(3).some(exam => exam.id.toString() === activeTab)
+                                  sortedMockExams.slice(3).some(exam => exam.id.toString() === activeTab)
                                     ? "text-blue-600 border-blue-600 bg-blue-50"
                                     : "text-gray-600 border-transparent hover:text-gray-900 hover:border-gray-300"
                                 }`}
                               >
-                                {mockExams.slice(3).some(exam => exam.id.toString() === activeTab) ? (
+                                {sortedMockExams.slice(3).some(exam => exam.id.toString() === activeTab) ? (
                                   <>
-                                    {mockExams.find(exam => exam.id.toString() === activeTab)?.title}
+                                    {sortedMockExams.find(exam => exam.id.toString() === activeTab)?.title}
                                     <Badge className="ml-2 bg-blue-600 text-white text-xs">
-                                      {mockExams.find(exam => exam.id.toString() === activeTab)?.questionCount}
+                                      {sortedMockExams.find(exam => exam.id.toString() === activeTab)?.questionCount}
                                     </Badge>
                                   </>
                                 ) : (
-                                  `+${mockExams.length - 3} más`
+                                  `+${sortedMockExams.length - 3} más`
                                 )}
                                 <ChevronDown className="w-4 h-4 ml-1" />
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="min-w-[200px]">
-                              {mockExams.slice(3).map((exam) => (
+                              {sortedMockExams.slice(3).map((exam) => (
                                 <DropdownMenuItem
                                   key={exam.id}
                                   onClick={() => setActiveTab(exam.id.toString())}
@@ -297,7 +323,7 @@ export default function Dashboard() {
                       </Button>
                       {activeTab === "all" ? (
                         <span className="text-sm text-gray-600">
-                          <span className="font-medium">{mockExams.reduce((total, exam) => total + exam.questionCount, 0)}</span>{" "}
+                          <span className="font-medium">{sortedMockExams.reduce((total, exam) => total + exam.questionCount, 0)}</span>{" "}
                           {t("questions.total")}
                         </span>
                       ) : activeExam && (
@@ -306,6 +332,21 @@ export default function Dashboard() {
                           {t("questions.total")}
                         </span>
                       )}
+                    </div>
+                    
+                    {/* Sort Dropdown */}
+                    <div className="flex items-center space-x-2">
+                      <ArrowUpDown className="w-4 h-4 text-gray-500" />
+                      <Select value={sortBy} onValueChange={(value: "newest" | "oldest" | "nameAsc") => setSortBy(value)}>
+                        <SelectTrigger className="w-40">
+                          <SelectValue placeholder={t("mockExam.sortBy")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="newest">{t("mockExam.sortNewest")}</SelectItem>
+                          <SelectItem value="oldest">{t("mockExam.sortOldest")}</SelectItem>
+                          <SelectItem value="nameAsc">{t("mockExam.sortNameAsc")}</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
 
@@ -318,7 +359,7 @@ export default function Dashboard() {
                   </TabsContent>
 
                   {/* Individual Mock Exam Tab Content */}
-                  {mockExams.map((exam) => (
+                  {sortedMockExams.map((exam) => (
                     <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
                       <QuestionGrid 
                         filters={{
