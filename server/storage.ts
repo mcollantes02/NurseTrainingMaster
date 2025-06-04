@@ -23,6 +23,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, like, inArray, count, sql } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 
 export interface IStorage {
   // User operations
@@ -294,26 +295,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteQuestion(id: number, userId: number): Promise<boolean> {
-    // First get the full question details
-    const questionWithRelations = await db
-      .select({
-        question: questions,
-        mockExam: mockExams,
-        subject: subjects,
-        topic: topics,
-      })
-      .from(questions)
-      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
-      .innerJoin(subjects, eq(questions.subjectId, subjects.id))
-      .innerJoin(topics, eq(questions.topicId, topics.id))
-      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
-      .limit(1);
-
-    if (questionWithRelations.length === 0) {
+    // First get the question with its relations to store in trash
+    const questionWithRelations = await this.getQuestionById(id);
+    if (!questionWithRelations || questionWithRelations.createdBy.id !== userId) {
       return false;
     }
 
-    const { question, mockExam, subject, topic } = questionWithRelations[0];
+    const question = questionWithRelations;
+    const mockExam = questionWithRelations.mockExam;
+    const subject = questionWithRelations.subject;
+    const topic = questionWithRelations.topic;
 
     // Move to trash
     await db.insert(trashedQuestions).values({
@@ -327,8 +318,9 @@ export class DatabaseStorage implements IStorage {
       type: question.type,
       theory: question.theory,
       isLearned: question.isLearned,
-      createdBy: question.createdBy,
+      createdBy: question.createdBy.id,
       createdAt: question.createdAt!,
+      deletedAt: new Date(),
     });
 
     // Delete from questions table
@@ -400,9 +392,9 @@ export class DatabaseStorage implements IStorage {
         createdBy: users,
       })
       .from(trashedQuestions)
-      .innerJoin(users, eq(trashedQuestions.createdBy, users.id))
+      .leftJoin(users, eq(trashedQuestions.createdBy, users.id))
       .where(eq(trashedQuestions.createdBy, userId))
-      .orderBy(trashedQuestions.deletedAt);
+      .orderBy(desc(trashedQuestions.deletedAt));
 
     return result.map(row => ({
       ...row.trashedQuestion,
