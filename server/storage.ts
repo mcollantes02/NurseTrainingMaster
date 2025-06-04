@@ -451,8 +451,20 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(trashedQuestions.deletedAt));
 
     return result.map(row => ({
-      ...row.trashedQuestion,
-      createdBy: row.createdBy,
+      id: row.trashedQuestion.id,
+      originalId: row.trashedQuestion.originalId,
+      mockExamId: row.trashedQuestion.mockExamId,
+      mockExamTitle: row.trashedQuestion.mockExamTitle,
+      subjectId: row.trashedQuestion.subjectId,
+      subjectName: row.trashedQuestion.subjectName,
+      topicId: row.trashedQuestion.topicId,
+      topicName: row.trashedQuestion.topicName,
+      type: row.trashedQuestion.type,
+      theory: row.trashedQuestion.theory,
+      isLearned: row.trashedQuestion.isLearned,
+      createdBy: row.trashedQuestion.createdBy,
+      createdAt: row.trashedQuestion.createdAt,
+      deletedAt: row.trashedQuestion.deletedAt,
     }));
   }
 
