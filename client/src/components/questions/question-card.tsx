@@ -49,43 +49,21 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       const response = await apiRequest("DELETE", `/api/questions/${id}`);
       return response.json();
     },
-    onMutate: async (questionId) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
-
-      // Snapshot the previous value
-      const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
-
-      // Optimistically remove the question
-      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
-        if (!old) return old;
-        return old.filter((q: any) => q.id !== questionId);
-      });
-
-      return { previousQuestions };
-    },
     onSuccess: () => {
+      // Invalidate both questions and mock exams to update counters
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
       toast({
         title: t("question.deleted"),
         description: t("question.deletedDescription"),
       });
     },
-    onError: (error, questionId, context) => {
-      // Rollback on error
-      if (context?.previousQuestions) {
-        context.previousQuestions.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
-      }
+    onError: () => {
       toast({
         title: t("error.title"),
         description: t("error.deleteQuestion"),
         variant: "destructive",
       });
-    },
-    onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
     },
   });
 

@@ -51,6 +51,7 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
       queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
       toast({
         title: t("trash.restored"),
         description: t("trash.restoredDescription"),
@@ -72,6 +73,7 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
       setDeletingId(null);
       toast({
         title: t("trash.permanentlyDeleted"),
@@ -95,6 +97,7 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
       setShowEmptyConfirm(false);
       toast({
         title: t("trash.emptied"),

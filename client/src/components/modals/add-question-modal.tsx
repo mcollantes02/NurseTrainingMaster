@@ -133,10 +133,10 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
     onMutate: async (data) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
-      
+
       // Snapshot the previous value
       const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
-      
+
       // Create optimistic question
       const optimisticQuestion = {
         id: Date.now(), // temporary ID
@@ -151,22 +151,23 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
         topic: topics.find(t => t.name === data.topicName) || { name: data.topicName },
         mockExam: mockExams.find(m => m.id === data.mockExamId)
       };
-      
+
       // Optimistically update
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return [optimisticQuestion];
         return [optimisticQuestion, ...old];
       });
-      
+
       return { previousQuestions };
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      onClose();
       toast({
         title: t("question.added"),
         description: t("question.addedDescription"),
       });
-      form.reset();
-      onClose();
     },
     onError: (error, variables, context) => {
       // Rollback on error
