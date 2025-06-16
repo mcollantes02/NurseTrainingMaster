@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Subject, Topic } from "@shared/schema";
+import type { Subject, Topic, MockExam } from "@shared/schema";
 
 const formSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -66,7 +66,8 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   const queryClient = useQueryClient();
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
-  const [deleteItem, setDeleteItem] = useState<{ type: 'subject' | 'topic'; item: Subject | Topic } | null>(null);
+  const [editingMockExam, setEditingMockExam] = useState<MockExam | null>(null);
+  const [deleteItem, setDeleteItem] = useState<{ type: 'subject' | 'topic' | 'mockExam'; item: Subject | Topic | MockExam } | null>(null);
 
   const { data: subjects = [] } = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
@@ -76,11 +77,19 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
     queryKey: ["/api/topics"],
   });
 
+  const { data: mockExams = [] } = useQuery<MockExam[]>({
+    queryKey: ["/api/mock-exams"],
+  });
+
   const subjectForm = useForm<FormData>({
     resolver: zodResolver(formSchema),
   });
 
   const topicForm = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+  });
+
+  const mockExamForm = useForm<FormData>({
     resolver: zodResolver(formSchema),
   });
 
@@ -220,12 +229,62 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
     },
   });
 
+  // Mock Exam mutations
+  const updateMockExamMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: FormData }) => {
+      const response = await apiRequest("PUT", `/api/mock-exams/${id}`, { title: data.name });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      setEditingMockExam(null);
+      toast({
+        title: "Examen simulacro actualizado",
+        description: "El examen simulacro se ha actualizado correctamente",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Error al actualizar el examen simulacro",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMockExamMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/mock-exams/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      setDeleteItem(null);
+      toast({
+        title: "Examen simulacro eliminado",
+        description: "El examen simulacro se ha eliminado correctamente",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se puede eliminar el examen simulacro porque tiene preguntas asociadas",
+        variant: "destructive",
+      });
+      setDeleteItem(null);
+    },
+  });
+
   const handleEditSubject = (subject: Subject) => {
     setEditingSubject(subject);
   };
 
   const handleEditTopic = (topic: Topic) => {
     setEditingTopic(topic);
+  };
+
+  const handleEditMockExam = (mockExam: MockExam) => {
+    setEditingMockExam(mockExam);
   };
 
   const handleSaveSubject = (data: FormData) => {
@@ -240,12 +299,20 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
     }
   };
 
+  const handleSaveMockExam = (data: FormData) => {
+    if (editingMockExam) {
+      updateMockExamMutation.mutate({ id: editingMockExam.id, data });
+    }
+  };
+
   const handleDeleteConfirm = () => {
     if (deleteItem) {
       if (deleteItem.type === 'subject') {
         deleteSubjectMutation.mutate(deleteItem.item.id);
-      } else {
+      } else if (deleteItem.type === 'topic') {
         deleteTopicMutation.mutate(deleteItem.item.id);
+      } else if (deleteItem.type === 'mockExam') {
+        deleteMockExamMutation.mutate(deleteItem.item.id);
       }
     }
   };
@@ -256,14 +323,15 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
         <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-gray-900">
-              Administrar Asignaturas y Temas
+              Administrar Asignaturas, Temas y Exámenes Simulacro
             </DialogTitle>
           </DialogHeader>
 
           <Tabs defaultValue="subjects" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="subjects">Asignaturas</TabsTrigger>
               <TabsTrigger value="topics">Temas</TabsTrigger>
+              <TabsTrigger value="mockExams">Exámenes Simulacro</TabsTrigger>
             </TabsList>
 
             {/* Subjects Tab */}
@@ -455,6 +523,77 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
                 </Table>
               </div>
             </TabsContent>
+
+            {/* Mock Exams Tab */}
+            <TabsContent value="mockExams" className="space-y-4">
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nombre</TableHead>
+                      <TableHead>Fecha de Creación</TableHead>
+                      <TableHead className="text-right">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {mockExams.map((mockExam) => (
+                      <TableRow key={mockExam.id}>
+                        <TableCell>
+                          {editingMockExam?.id === mockExam.id ? (
+                            <Form {...mockExamForm}>
+                              <form onSubmit={mockExamForm.handleSubmit(handleSaveMockExam)} className="flex gap-2">
+                                <FormField
+                                  control={mockExamForm.control}
+                                  name="name"
+                                  render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                      <FormControl>
+                                        <Input {...field} defaultValue={mockExam.title} />
+                                      </FormControl>
+                                    </FormItem>
+                                  )}
+                                />
+                                <Button type="submit" size="sm" disabled={updateMockExamMutation.isPending}>
+                                  <Save className="w-4 h-4" />
+                                </Button>
+                                <Button type="button" variant="outline" size="sm" onClick={() => setEditingMockExam(null)}>
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </form>
+                            </Form>
+                          ) : (
+                            mockExam.title
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {mockExam.createdAt ? new Date(mockExam.createdAt).toLocaleDateString() : 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {editingMockExam?.id !== mockExam.id && (
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditMockExam(mockExam)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDeleteItem({ type: 'mockExam', item: mockExam })}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </TabsContent>
           </Tabs>
 
           <div className="flex justify-end pt-6 border-t border-gray-200">
@@ -471,7 +610,9 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
             <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta acción no se puede deshacer. Esto eliminará permanentemente{" "}
-              {deleteItem?.type === 'subject' ? 'la asignatura' : 'el tema'} "{deleteItem?.item.name}".
+              {deleteItem?.type === 'subject' ? 'la asignatura' : 
+               deleteItem?.type === 'topic' ? 'el tema' : 'el examen simulacro'}{" "}
+              "{deleteItem?.type === 'mockExam' ? (deleteItem.item as MockExam).title : deleteItem?.item.name}".
               {deleteItem && (
                 <span className="block mt-2 text-sm text-gray-600">
                   Nota: No se puede eliminar si tiene preguntas asociadas.
