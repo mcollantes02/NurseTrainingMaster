@@ -34,6 +34,8 @@ export interface IStorage {
   // Mock exam operations
   getMockExams(userId: number): Promise<MockExamWithQuestionCount[]>;
   createMockExam(mockExam: InsertMockExam): Promise<MockExam>;
+  updateMockExam(id: number, data: { title: string }, userId: number): Promise<MockExam | null>;
+  deleteMockExam(id: number, userId: number): Promise<boolean>;
 
   // Subject operations
   getSubjects(): Promise<Subject[]>;
@@ -125,6 +127,79 @@ export class DatabaseStorage implements IStorage {
   async createMockExam(mockExam: InsertMockExam): Promise<MockExam> {
     const [exam] = await db.insert(mockExams).values(mockExam).returning();
     return exam;
+  }
+
+  async updateMockExam(id: number, data: { title: string }, userId: number): Promise<MockExam | null> {
+    const [updated] = await db
+      .update(mockExams)
+      .set({ title: data.title })
+      .where(and(eq(mockExams.id, id), eq(mockExams.createdBy, userId)))
+      .returning();
+
+    return updated || null;
+  }
+
+  async deleteMockExam(id: number, userId: number): Promise<boolean> {
+    // First get the mock exam to verify ownership
+    const mockExam = await db
+      .select()
+      .from(mockExams)
+      .where(and(eq(mockExams.id, id), eq(mockExams.createdBy, userId)))
+      .limit(1);
+
+    if (mockExam.length === 0) {
+      return false; // Mock exam not found or not owned by user
+    }
+
+    // Get all questions for this mock exam to move them to trash
+    const examQuestions = await db
+      .select({
+        id: questions.id,
+        mockExamId: questions.mockExamId,
+        subjectId: questions.subjectId,
+        topicId: questions.topicId,
+        type: questions.type,
+        theory: questions.theory,
+        isLearned: questions.isLearned,
+        createdBy: questions.createdBy,
+        createdAt: questions.createdAt,
+        mockExamTitle: mockExams.title,
+        subjectName: subjects.name,
+        topicName: topics.name,
+      })
+      .from(questions)
+      .leftJoin(mockExams, eq(questions.mockExamId, mockExams.id))
+      .leftJoin(subjects, eq(questions.subjectId, subjects.id))
+      .leftJoin(topics, eq(questions.topicId, topics.id))
+      .where(eq(questions.mockExamId, id));
+
+    // Move questions to trash if any exist
+    if (examQuestions.length > 0) {
+      const trashedData = examQuestions.map(q => ({
+        originalId: q.id,
+        mockExamId: q.mockExamId,
+        mockExamTitle: q.mockExamTitle || 'Unknown',
+        subjectId: q.subjectId,
+        subjectName: q.subjectName || 'Unknown',
+        topicId: q.topicId,
+        topicName: q.topicName || 'Unknown',
+        type: q.type,
+        theory: q.theory,
+        isLearned: q.isLearned,
+        createdBy: q.createdBy,
+        createdAt: q.createdAt,
+      }));
+
+      await db.insert(trashedQuestions).values(trashedData);
+      await db.delete(questions).where(eq(questions.mockExamId, id));
+    }
+
+    // Delete the mock exam
+    const result = await db
+      .delete(mockExams)
+      .where(and(eq(mockExams.id, id), eq(mockExams.createdBy, userId)));
+
+    return result.rowCount > 0;
   }
 
   async getSubjects(): Promise<Subject[]> {
