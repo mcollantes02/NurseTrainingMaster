@@ -349,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/questions/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { mockExamId, subjectId, topicId, type, theory, isLearned } = req.body;
+      const { mockExamId, subjectId, topicId, type, theory, failureCount, isLearned } = req.body;
 
       const question = await storage.updateQuestion(id, {
         mockExamId,
@@ -357,6 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         topicId,
         type,
         theory,
+        failureCount,
         isLearned,
       }, req.session.userId!);
 
