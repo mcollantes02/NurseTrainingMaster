@@ -146,6 +146,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/mock-exams/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { title } = req.body;
+
+      const mockExam = await storage.updateMockExam(id, { title }, req.session.userId!);
+      if (!mockExam) {
+        return res.status(404).json({ message: "Mock exam not found" });
+      }
+
+      res.json(mockExam);
+    } catch (error) {
+      console.error("Update mock exam error:", error);
+      res.status(500).json({ message: "Failed to update mock exam" });
+    }
+  });
+
+  app.delete("/api/mock-exams/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+
+      const success = await storage.deleteMockExam(id, req.session.userId!);
+      if (!success) {
+        return res.status(404).json({ message: "Mock exam not found or has associated questions" });
+      }
+
+      res.json({ message: "Mock exam deleted successfully" });
+    } catch (error) {
+      console.error("Delete mock exam error:", error);
+      res.status(500).json({ message: "Failed to delete mock exam" });
+    }
+  });
+
   // Subject routes
   app.get("/api/subjects", requireAuth, async (req, res) => {
     try {
