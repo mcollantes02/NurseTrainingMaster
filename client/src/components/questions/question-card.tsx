@@ -31,16 +31,42 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       );
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+    onMutate: async (isLearned: boolean) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
+
+      // Snapshot the previous value
+      const previousQuestions = queryClient.getQueryData(["/api/questions"]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData(["/api/questions"], (old: any) => {
+        if (!old) return old;
+        return old.map((q: any) => 
+          q.id === question.id 
+            ? { ...q, isLearned } 
+            : q
+        );
+      });
+
+      // Return a context object with the snapshotted value
+      return { previousQuestions };
     },
-    onError: () => {
+    onError: (err, isLearned, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousQuestions) {
+        queryClient.setQueryData(["/api/questions"], context.previousQuestions);
+      }
+      
       toast({
         title: t("error.title"),
         description: t("error.updateQuestion"),
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we have the correct data
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
     },
   });
 
