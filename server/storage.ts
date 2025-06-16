@@ -322,6 +322,7 @@ export class DatabaseStorage implements IStorage {
         type: questions.type,
         theory: questions.theory,
         isLearned: questions.isLearned,
+        failureCount: questions.failureCount,
         createdBy: questions.createdBy,
         createdAt: questions.createdAt,
         mockExam: {
@@ -366,6 +367,7 @@ export class DatabaseStorage implements IStorage {
       type: row.type,
       theory: row.theory,
       isLearned: row.isLearned,
+      failureCount: row.failureCount,
       createdBy: row.createdByUser,
       createdAt: row.createdAt,
       mockExam: row.mockExam,
