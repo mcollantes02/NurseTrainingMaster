@@ -112,6 +112,12 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   // Subject mutations
   const createSubjectMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      // Check if subject already exists
+      const existing = subjects.find(s => s.name.toLowerCase() === data.name.toLowerCase());
+      if (existing) {
+        throw new Error("Ya existe una asignatura con este nombre");
+      }
+      
       const response = await apiRequest("POST", "/api/subjects", data);
       return response.json();
     },
@@ -123,10 +129,10 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
         description: "La asignatura se ha creado correctamente",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Error al crear la asignatura",
+        description: error.message || "Error al crear la asignatura",
         variant: "destructive",
       });
     },
@@ -180,6 +186,12 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   // Topic mutations
   const createTopicMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      // Check if topic already exists
+      const existing = topics.find(t => t.name.toLowerCase() === data.name.toLowerCase());
+      if (existing) {
+        throw new Error("Ya existe un tema con este nombre");
+      }
+      
       const response = await apiRequest("POST", "/api/topics", data);
       return response.json();
     },
@@ -191,10 +203,10 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
         description: "El tema se ha creado correctamente",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Error al crear el tema",
+        description: error.message || "Error al crear el tema",
         variant: "destructive",
       });
     },
@@ -248,6 +260,12 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   // Mock Exam mutations
   const createMockExamMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      // Check if mock exam already exists
+      const existing = mockExams.find(e => e.title.toLowerCase() === data.name.toLowerCase());
+      if (existing) {
+        throw new Error("Ya existe un examen simulacro con este nombre");
+      }
+      
       const response = await apiRequest("POST", "/api/mock-exams", { title: data.name });
       return response.json();
     },
@@ -259,10 +277,10 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
         description: "El examen simulacro se ha creado correctamente",
       });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Error al crear el examen simulacro",
+        description: error.message || "Error al crear el examen simulacro",
         variant: "destructive",
       });
     },
