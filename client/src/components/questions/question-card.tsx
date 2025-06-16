@@ -83,11 +83,24 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       // Cancel any outgoing refetches for instant UI updates
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
       
-      // Snapshot the previous value
+      // Snapshot the previous value  
       const previousQuestions = queryClient.getQueryData(["/api/questions"]);
 
-      // Optimistically update to the new count immediately
+      // Build the correct query key that matches what's being used
+      const currentFilters = new URLSearchParams(window.location.search);
+      const queryKey = ["/api/questions", currentFilters.toString()];
+
+      // Optimistically update both possible query keys
       queryClient.setQueryData(["/api/questions"], (old: any) => {
+        if (!old) return old;
+        return old.map((q: any) => 
+          q.id === question.id 
+            ? { ...q, failureCount: newCount } 
+            : q
+        );
+      });
+
+      queryClient.setQueryData(queryKey, (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
           q.id === question.id 
@@ -99,9 +112,13 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       return { previousQuestions, newCount };
     },
     onError: (err, newCount, context) => {
-      // Only rollback if the mutation actually failed
+      // Rollback optimistic updates on error
       if (context?.previousQuestions) {
         queryClient.setQueryData(["/api/questions"], context.previousQuestions);
+        
+        const currentFilters = new URLSearchParams(window.location.search);
+        const queryKey = ["/api/questions", currentFilters.toString()];
+        queryClient.setQueryData(queryKey, context.previousQuestions);
       }
       toast({
         title: t("error.title"),
@@ -109,18 +126,23 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         variant: "destructive",
       });
     },
-    onSuccess: (data, newCount, context) => {
-      // Silently update with server response, but don't refetch
-      queryClient.setQueryData(["/api/questions"], (old: any) => {
+    onSuccess: (data) => {
+      // Ensure the UI reflects the server response
+      const updateQueries = (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
           q.id === question.id 
             ? { ...q, failureCount: data.failureCount } 
             : q
         );
-      });
+      };
+
+      queryClient.setQueryData(["/api/questions"], updateQueries);
+      
+      const currentFilters = new URLSearchParams(window.location.search);
+      const queryKey = ["/api/questions", currentFilters.toString()];
+      queryClient.setQueryData(queryKey, updateQueries);
     },
-    // Remove onSettled to prevent unnecessary refetches that cause delays
   });
 
   const deleteQuestionMutation = useMutation({
