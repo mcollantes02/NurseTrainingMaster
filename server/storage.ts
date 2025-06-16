@@ -22,7 +22,7 @@ import {
   type TrashedQuestionWithUser,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, like, inArray, count, sql } from "drizzle-orm";
+import { eq, and, like, inArray, count, sql, gte, lte } from "drizzle-orm";
 import { desc } from "drizzle-orm";
 
 export interface IStorage {
@@ -58,6 +58,9 @@ export interface IStorage {
     topicIds?: number[];
     keywords?: string;
     learningStatus?: boolean[];
+    failureCountExact?: number;
+    failureCountMin?: number;
+    failureCountMax?: number;
     userId: number;
   }): Promise<QuestionWithRelations[]>;
   createQuestion(question: InsertQuestion): Promise<Question>;
@@ -294,6 +297,9 @@ export class DatabaseStorage implements IStorage {
     topicIds?: number[];
     keywords?: string;
     learningStatus?: boolean[];
+    failureCountExact?: number;
+    failureCountMin?: number;
+    failureCountMax?: number;
     userId: number;
   }): Promise<QuestionWithRelations[]> {
     const conditions = [eq(mockExams.createdBy, filters.userId)];
@@ -316,6 +322,17 @@ export class DatabaseStorage implements IStorage {
 
     if (filters.learningStatus && filters.learningStatus.length > 0) {
       conditions.push(inArray(questions.isLearned, filters.learningStatus));
+    }
+
+    if (filters.failureCountExact !== undefined) {
+      conditions.push(eq(questions.failureCount, filters.failureCountExact));
+    } else {
+      if (filters.failureCountMin !== undefined) {
+        conditions.push(gte(questions.failureCount, filters.failureCountMin));
+      }
+      if (filters.failureCountMax !== undefined) {
+        conditions.push(lte(questions.failureCount, filters.failureCountMax));
+      }
     }
 
     const result = await db

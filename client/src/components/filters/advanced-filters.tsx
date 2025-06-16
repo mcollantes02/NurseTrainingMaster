@@ -16,6 +16,11 @@ interface FiltersState {
   topicIds: number[];
   keywords: string;
   learningStatus: boolean[];
+  failureCount: {
+    min?: number;
+    max?: number;
+    exact?: number;
+  };
 }
 
 interface AdvancedFiltersProps {
@@ -193,6 +198,75 @@ export function AdvancedFilters({
                 </Label>
               </div>
               <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Failure Count Filter */}
+        <div>
+          <Label className="text-sm font-medium text-gray-700 mb-2 block">
+            {t("question.failureCount")}
+          </Label>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Input
+                type="number"
+                min="0"
+                placeholder={t("filters.exactCount")}
+                value={filters.failureCount.exact || ""}
+                onChange={(e) =>
+                  onFiltersChange({
+                    ...filters,
+                    failureCount: {
+                      ...filters.failureCount,
+                      exact: e.target.value ? parseInt(e.target.value) : undefined,
+                      min: undefined,
+                      max: undefined,
+                    },
+                  })
+                }
+                className="text-sm"
+              />
+            </div>
+            <div className="text-xs text-gray-500 text-center">
+              {t("filters.or")}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Input
+                type="number"
+                min="0"
+                placeholder={t("filters.minCount")}
+                value={filters.failureCount.min || ""}
+                onChange={(e) =>
+                  onFiltersChange({
+                    ...filters,
+                    failureCount: {
+                      ...filters.failureCount,
+                      min: e.target.value ? parseInt(e.target.value) : undefined,
+                      exact: undefined,
+                    },
+                  })
+                }
+                className="text-sm"
+              />
+              <span className="text-xs text-gray-500">-</span>
+              <Input
+                type="number"
+                min="0"
+                placeholder={t("filters.maxCount")}
+                value={filters.failureCount.max || ""}
+                onChange={(e) =>
+                  onFiltersChange({
+                    ...filters,
+                    failureCount: {
+                      ...filters.failureCount,
+                      max: e.target.value ? parseInt(e.target.value) : undefined,
+                      exact: undefined,
+                    },
+                  })
+                }
+                className="text-sm"
+              />
             </div>
           </div>
         </div>
