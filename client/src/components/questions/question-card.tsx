@@ -121,10 +121,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       onClick={handleCardClick}
     >
       <CardContent className="p-4">
-        {/* Header Row - Always visible */}
-        <div className="flex items-center justify-between gap-4 mb-3">
+        {/* Main Row - Metadata and Theory side by side */}
+        <div className="flex items-start gap-4">
           {/* Left Section - Status and Metadata */}
-          <div className="flex items-center gap-2 min-w-0 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0 flex-shrink-0 flex-wrap">
             <Badge
               className={cn(
                 "text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap",
@@ -145,6 +145,16 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             <Badge className={cn("text-xs px-2 py-1 whitespace-nowrap", getTypeColor(question.type))}>
               {getTypeLabel(question.type)}
             </Badge>
+          </div>
+
+          {/* Center Section - Theory Text */}
+          <div className="flex-1 min-w-0">
+            <div className={cn(
+              "text-sm text-gray-700 leading-relaxed break-words overflow-hidden",
+              isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"
+            )}>
+              {question.theory}
+            </div>
           </div>
 
           {/* Right Section - Actions and Date */}
@@ -203,7 +213,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         </div>
 
         {/* Mobile-only metadata row */}
-        <div className="flex items-center gap-2 text-xs text-gray-600 mb-3 sm:hidden">
+        <div className="flex items-center gap-2 text-xs text-gray-600 mt-3 sm:hidden">
           <span>{question.topic.name}</span>
           <span className="text-gray-400">•</span>
           <div className="flex items-center">
@@ -212,15 +222,14 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
           </div>
         </div>
 
-        {/* Theory Text Section - Full width */}
-        <div className="w-full">
-          <div className={cn(
-            "text-sm text-gray-700 leading-relaxed break-words overflow-hidden",
-            isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"
-          )}>
-            {question.theory}
+        {/* Expanded Theory Section - Full width when expanded */}
+        {isExpanded && (
+          <div className="w-full mt-4 pt-3 border-t border-gray-200">
+            <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+              {question.theory}
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
