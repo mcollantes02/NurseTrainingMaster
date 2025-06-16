@@ -148,10 +148,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
           </div>
 
           {/* Center Section - Theory Text */}
-          <div className="flex-1 min-w-0 max-w-0">
+          <div className="flex-1 min-w-0">
             <div className={cn(
-              "text-sm text-gray-700 leading-relaxed break-words overflow-hidden",
-              isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"
+              "text-sm text-gray-700 leading-relaxed break-words",
+              isExpanded ? "whitespace-pre-wrap" : "line-clamp-2 overflow-hidden"
             )}>
               {question.theory}
             </div>
