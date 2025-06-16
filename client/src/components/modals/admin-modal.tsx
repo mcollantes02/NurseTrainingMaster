@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -47,8 +48,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Subject, Topic } from "@shared/schema";
-import type { MockExamWithQuestionCount } from "@shared/schema";
-import { Edit3 } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(1, "El nombre es requerido"),
@@ -67,7 +66,6 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   const queryClient = useQueryClient();
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
-  const [editingExam, setEditingExam] = useState<{ id: number; title: string } | null>(null);
   const [deleteItem, setDeleteItem] = useState<{ type: 'subject' | 'topic'; item: Subject | Topic } | null>(null);
 
   const { data: subjects = [] } = useQuery<Subject[]>({
@@ -76,10 +74,6 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
 
   const { data: topics = [] } = useQuery<Topic[]>({
     queryKey: ["/api/topics"],
-  });
-
-  const { data: mockExams = [] } = useQuery<MockExamWithQuestionCount[]>({
-    queryKey: ["/api/mock-exams"],
   });
 
   const subjectForm = useForm<FormData>({
@@ -226,49 +220,6 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
     },
   });
 
-  const updateExamMutation = useMutation({
-    mutationFn: async ({ id, title }: { id: number; title: string }) => {
-      const response = await apiRequest("PUT", `/api/mock-exams/${id}`, { title });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
-      setEditingExam(null);
-      toast({
-        title: "Examen actualizado",
-        description: "El examen se ha actualizado correctamente",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el examen",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteExamMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/mock-exams/${id}`);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
-      toast({
-        title: "Examen eliminado",
-        description: "El examen se ha eliminado correctamente",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "No se pudo eliminar el examen",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleEditSubject = (subject: Subject) => {
     setEditingSubject(subject);
   };
@@ -310,10 +261,9 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
           </DialogHeader>
 
           <Tabs defaultValue="subjects" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="subjects">Asignaturas</TabsTrigger>
               <TabsTrigger value="topics">Temas</TabsTrigger>
-              <TabsTrigger value="mockexams">Exámenes</TabsTrigger>
             </TabsList>
 
             {/* Subjects Tab */}
@@ -503,109 +453,6 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
                     ))}
                   </TableBody>
                 </Table>
-              </div>
-            </TabsContent>
-
-            {/* Mock Exams Tab */}
-            <TabsContent value="mockexams" className="space-y-4">
-              <div className="border rounded-lg p-4">
-                <h3 className="text-lg font-medium mb-4">Gestionar Exámenes</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                  Aquí puedes renombrar o eliminar exámenes existentes.
-                </p>
-
-                {mockExams.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-8">
-                    No hay exámenes disponibles
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {mockExams.map((exam) => (
-                      <div
-                        key={exam.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                      >
-                        {editingExam?.id === exam.id ? (
-                          <div className="flex items-center gap-2 flex-1">
-                            <Input
-                              value={editingExam.title}
-                              onChange={(e) => setEditingExam({ ...editingExam, title: e.target.value })}
-                              className="flex-1"
-                              placeholder="Título del examen"
-                            />
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                if (editingExam.title.trim()) {
-                                  updateExamMutation.mutate({ id: editingExam.id, title: editingExam.title.trim() });
-                                }
-                              }}
-                              disabled={!editingExam.title.trim() || updateExamMutation.isPending}
-                            >
-                              Guardar
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setEditingExam(null)}
-                            >
-                              Cancelar
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex-1">
-                              <h4 className="font-medium">{exam.title}</h4>
-                              <p className="text-sm text-gray-500">
-                                {exam.questionCount} preguntas
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setEditingExam({ id: exam.id, title: exam.title })}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Edit3 className="w-4 h-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Confirmar eliminación</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      ¿Estás seguro de que quieres eliminar el examen "{exam.title}"?
-                                      Esta acción eliminará {exam.questionCount} preguntas y no se puede deshacer.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => deleteExamMutation.mutate(exam.id)}
-                                      className="bg-red-600 hover:bg-red-700"
-                                      disabled={deleteExamMutation.isPending}
-                                    >
-                                      Eliminar
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </TabsContent>
           </Tabs>
