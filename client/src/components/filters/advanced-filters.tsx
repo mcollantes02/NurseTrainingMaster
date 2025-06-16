@@ -213,13 +213,13 @@ export function AdvancedFilters({
                 type="number"
                 min="0"
                 placeholder={t("filters.exactCount")}
-                value={filters.failureCount.exact || ""}
+                value={filters.failureCount.exact !== undefined ? filters.failureCount.exact.toString() : ""}
                 onChange={(e) =>
                   onFiltersChange({
                     ...filters,
                     failureCount: {
                       ...filters.failureCount,
-                      exact: e.target.value ? parseInt(e.target.value) : undefined,
+                      exact: e.target.value !== "" ? parseInt(e.target.value) || 0 : undefined,
                       min: undefined,
                       max: undefined,
                     },
@@ -236,13 +236,13 @@ export function AdvancedFilters({
                 type="number"
                 min="0"
                 placeholder={t("filters.minCount")}
-                value={filters.failureCount.min || ""}
+                value={filters.failureCount.min !== undefined ? filters.failureCount.min.toString() : ""}
                 onChange={(e) =>
                   onFiltersChange({
                     ...filters,
                     failureCount: {
                       ...filters.failureCount,
-                      min: e.target.value ? parseInt(e.target.value) : undefined,
+                      min: e.target.value !== "" ? parseInt(e.target.value) || 0 : undefined,
                       exact: undefined,
                     },
                   })
@@ -254,13 +254,13 @@ export function AdvancedFilters({
                 type="number"
                 min="0"
                 placeholder={t("filters.maxCount")}
-                value={filters.failureCount.max || ""}
+                value={filters.failureCount.max !== undefined ? filters.failureCount.max.toString() : ""}
                 onChange={(e) =>
                   onFiltersChange({
                     ...filters,
                     failureCount: {
                       ...filters.failureCount,
-                      max: e.target.value ? parseInt(e.target.value) : undefined,
+                      max: e.target.value !== "" ? parseInt(e.target.value) || 0 : undefined,
                       exact: undefined,
                     },
                   })

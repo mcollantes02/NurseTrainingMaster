@@ -163,15 +163,15 @@ export default function Dashboard() {
       appliedFilters.learningStatus.forEach(status => params.append('learningStatus', status.toString()));
     }
 
-    if (appliedFilters.failureCount.exact !== undefined) {
+    if (appliedFilters.failureCount.exact !== undefined && appliedFilters.failureCount.exact !== null) {
       params.append('failureCountExact', appliedFilters.failureCount.exact.toString());
     }
 
-    if (appliedFilters.failureCount.min !== undefined) {
+    if (appliedFilters.failureCount.min !== undefined && appliedFilters.failureCount.min !== null) {
       params.append('failureCountMin', appliedFilters.failureCount.min.toString());
     }
 
-    if (appliedFilters.failureCount.max !== undefined) {
+    if (appliedFilters.failureCount.max !== undefined && appliedFilters.failureCount.max !== null) {
       params.append('failureCountMax', appliedFilters.failureCount.max.toString());
     }
 
