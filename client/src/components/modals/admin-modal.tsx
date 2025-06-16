@@ -112,13 +112,14 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   // Subject mutations
   const createSubjectMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      // Check if subject already exists
-      const existing = subjects.find(s => s.name.toLowerCase() === data.name.toLowerCase());
+      // Check if subject already exists (trim whitespace and case-insensitive)
+      const trimmedName = data.name.trim();
+      const existing = subjects.find(s => s.name.trim().toLowerCase() === trimmedName.toLowerCase());
       if (existing) {
         throw new Error("Ya existe una asignatura con este nombre");
       }
       
-      const response = await apiRequest("POST", "/api/subjects", data);
+      const response = await apiRequest("POST", "/api/subjects", { name: trimmedName });
       return response.json();
     },
     onSuccess: () => {
@@ -186,13 +187,14 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   // Topic mutations
   const createTopicMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      // Check if topic already exists
-      const existing = topics.find(t => t.name.toLowerCase() === data.name.toLowerCase());
+      // Check if topic already exists (trim whitespace and case-insensitive)
+      const trimmedName = data.name.trim();
+      const existing = topics.find(t => t.name.trim().toLowerCase() === trimmedName.toLowerCase());
       if (existing) {
         throw new Error("Ya existe un tema con este nombre");
       }
       
-      const response = await apiRequest("POST", "/api/topics", data);
+      const response = await apiRequest("POST", "/api/topics", { name: trimmedName });
       return response.json();
     },
     onSuccess: () => {
@@ -260,13 +262,14 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   // Mock Exam mutations
   const createMockExamMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      // Check if mock exam already exists
-      const existing = mockExams.find(e => e.title.toLowerCase() === data.name.toLowerCase());
+      // Check if mock exam already exists (trim whitespace and case-insensitive)
+      const trimmedName = data.name.trim();
+      const existing = mockExams.find(e => e.title.trim().toLowerCase() === trimmedName.toLowerCase());
       if (existing) {
         throw new Error("Ya existe un examen simulacro con este nombre");
       }
       
-      const response = await apiRequest("POST", "/api/mock-exams", { title: data.name });
+      const response = await apiRequest("POST", "/api/mock-exams", { title: trimmedName });
       return response.json();
     },
     onSuccess: () => {
