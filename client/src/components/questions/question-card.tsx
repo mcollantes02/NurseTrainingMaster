@@ -113,7 +113,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
   return (
     <Card
       className={cn(
-        "cursor-pointer hover:shadow-md transition-all duration-200 w-full",
+        "cursor-pointer hover:shadow-md transition-all duration-200 w-full overflow-hidden",
         question.isLearned
           ? "border-green-500 bg-green-50"
           : "border-gray-200 bg-white"
@@ -214,12 +214,12 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
 
         {/* Theory Text Section - Full width */}
         <div className="w-full">
-          <p className={cn(
-            "text-sm text-gray-700 leading-relaxed",
+          <div className={cn(
+            "text-sm text-gray-700 leading-relaxed break-words overflow-hidden",
             isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"
           )}>
             {question.theory}
-          </p>
+          </div>
         </div>
       </CardContent>
     </Card>
