@@ -66,6 +66,18 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               <Trash2 className="h-4 w-4" />
               <span className="ml-2 hidden sm:inline">{t("trash.title")}</span>
             </Button>
+            
+            {/* Manage button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowAdmin(true)}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">Administrar</span>
+            </Button>
+            
             {/* Language Switcher */}
             <Select value={language} onValueChange={changeLanguage}>
               <SelectTrigger className="w-auto border-gray-300">
@@ -102,10 +114,6 @@ export function Header({ onUserProfileClick }: HeaderProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout}>
                   {t("user.logout")}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowAdmin(true)}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Administrar
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
