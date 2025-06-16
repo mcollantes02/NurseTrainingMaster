@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Pencil, Trash2, Plus, Save, X } from "lucide-react";
+import { Pencil, Trash2, Plus, Save, X, Search } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useToast } from "@/hooks/use-toast";
@@ -68,6 +68,9 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
   const [editingMockExam, setEditingMockExam] = useState<MockExam | null>(null);
   const [deleteItem, setDeleteItem] = useState<{ type: 'subject' | 'topic' | 'mockExam'; item: Subject | Topic | MockExam } | null>(null);
+  const [subjectSearch, setSubjectSearch] = useState("");
+  const [topicSearch, setTopicSearch] = useState("");
+  const [mockExamSearch, setMockExamSearch] = useState("");
 
   const { data: subjects = [] } = useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
@@ -80,6 +83,19 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   const { data: mockExams = [] } = useQuery<MockExam[]>({
     queryKey: ["/api/mock-exams"],
   });
+
+  // Filter data based on search
+  const filteredSubjects = subjects.filter(subject =>
+    subject.name.toLowerCase().includes(subjectSearch.toLowerCase())
+  );
+
+  const filteredTopics = topics.filter(topic =>
+    topic.name.toLowerCase().includes(topicSearch.toLowerCase())
+  );
+
+  const filteredMockExams = mockExams.filter(exam =>
+    exam.title.toLowerCase().includes(mockExamSearch.toLowerCase())
+  );
 
   const subjectForm = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -336,6 +352,17 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
 
             {/* Subjects Tab */}
             <TabsContent value="subjects" className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Buscar asignaturas..."
+                  value={subjectSearch}
+                  onChange={(e) => setSubjectSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
               <div className="border rounded-lg p-4">
                 <h3 className="text-lg font-medium mb-4">Agregar Nueva Asignatura</h3>
                 <Form {...subjectForm}>
@@ -370,7 +397,7 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {subjects.map((subject) => (
+                    {filteredSubjects.map((subject) => (
                       <TableRow key={subject.id}>
                         <TableCell>
                           {editingSubject?.id === subject.id ? (
@@ -431,6 +458,17 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
 
             {/* Topics Tab */}
             <TabsContent value="topics" className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Buscar temas..."
+                  value={topicSearch}
+                  onChange={(e) => setTopicSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
               <div className="border rounded-lg p-4">
                 <h3 className="text-lg font-medium mb-4">Agregar Nuevo Tema</h3>
                 <Form {...topicForm}>
@@ -465,7 +503,7 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {topics.map((topic) => (
+                    {filteredTopics.map((topic) => (
                       <TableRow key={topic.id}>
                         <TableCell>
                           {editingTopic?.id === topic.id ? (
@@ -526,6 +564,17 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
 
             {/* Mock Exams Tab */}
             <TabsContent value="mockExams" className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Buscar exámenes simulacro..."
+                  value={mockExamSearch}
+                  onChange={(e) => setMockExamSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
               <div className="border rounded-lg">
                 <Table>
                   <TableHeader>
@@ -536,7 +585,7 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockExams.map((mockExam) => (
+                    {filteredMockExams.map((mockExam) => (
                       <TableRow key={mockExam.id}>
                         <TableCell>
                           {editingMockExam?.id === mockExam.id ? (
