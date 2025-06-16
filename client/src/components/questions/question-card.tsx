@@ -167,8 +167,14 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
 
   const handleFailureCountChange = (e: React.MouseEvent, delta: number) => {
     e.stopPropagation();
-    const newCount = Math.max(0, (question.failureCount || 0) + delta);
-    updateFailureCountMutation.mutate(newCount);
+    e.preventDefault();
+    const currentCount = question.failureCount || 0;
+    const newCount = Math.max(0, currentCount + delta);
+    
+    // Only proceed if the count actually changes
+    if (newCount !== currentCount) {
+      updateFailureCountMutation.mutate(newCount);
+    }
   };
 
   const getFailureCountColor = (count: number) => {
@@ -255,20 +261,24 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-0 h-auto w-5 text-gray-500 hover:text-gray-700 transition-colors duration-75"
+                className="p-0 h-5 w-5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors duration-75 flex items-center justify-center"
                 onClick={(e) => handleFailureCountChange(e, -1)}
                 disabled={(question.failureCount || 0) === 0}
+                type="button"
+                aria-label="Decrease failure count"
               >
-                -
+                −
               </Button>
-              <span className={cn("text-xs font-medium min-w-[12px] text-center transition-colors duration-75", getFailureCountColor(question.failureCount || 0))}>
+              <span className={cn("text-xs font-medium min-w-[16px] text-center transition-colors duration-75", getFailureCountColor(question.failureCount || 0))}>
                 {question.failureCount || 0}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-0 h-auto w-5 text-gray-500 hover:text-gray-700 transition-colors duration-75"
+                className="p-0 h-5 w-5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors duration-75 flex items-center justify-center"
                 onClick={(e) => handleFailureCountChange(e, 1)}
+                type="button"
+                aria-label="Increase failure count"
               >
                 +
               </Button>
