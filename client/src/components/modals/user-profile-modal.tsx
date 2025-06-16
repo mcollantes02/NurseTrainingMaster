@@ -28,8 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Crown, Trash2, Settings, BarChart3, Edit3, FileText } from "lucide-react";
-import type { MockExamWithQuestionCount } from "@shared/schema";
+import { User, Crown, Trash2, Settings, BarChart3 } from "lucide-react";
 import { X, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -54,87 +53,20 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
 
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
-  const [editingExamId, setEditingExamId] = useState<number | null>(null);
-  const [editingExamTitle, setEditingExamTitle] = useState("");
 
   const { data: stats } = useQuery({
     queryKey: ["/api/user/stats"],
     enabled: isOpen,
   });
 
-  const { data: mockExams = [] } = useQuery<MockExamWithQuestionCount[]>({
-    queryKey: ["/api/mock-exams"],
-    enabled: isOpen,
-  });
-
-  const updateExamMutation = useMutation({
-    mutationFn: async ({ id, title }: { id: number; title: string }) => {
-      const response = await apiRequest("PUT", `/api/mock-exams/${id}`, { title });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
-      setEditingExamId(null);
-      setEditingExamTitle("");
-      toast({
-        title: t("success.title"),
-        description: t("mockExam.updated"),
-      });
-    },
-    onError: () => {
-      toast({
-        title: t("error.title"),
-        description: t("error.updateExam"),
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteExamMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/mock-exams/${id}`);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
-      toast({
-        title: t("success.title"),
-        description: t("mockExam.deleted"),
-      });
-    },
-    onError: () => {
-      toast({
-        title: t("error.title"),
-        description: t("error.deleteExam"),
-        variant: "destructive",
-      });
-    },
-  });
+  
 
   const handleLogout = () => {
     logout();
     onClose();
   };
 
-  const handleEditExam = (exam: MockExamWithQuestionCount) => {
-    setEditingExamId(exam.id);
-    setEditingExamTitle(exam.title);
-  };
-
-  const handleSaveExam = () => {
-    if (editingExamId && editingExamTitle.trim()) {
-      updateExamMutation.mutate({ id: editingExamId, title: editingExamTitle.trim() });
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingExamId(null);
-    setEditingExamTitle("");
-  };
-
-  const handleDeleteExam = (id: number) => {
-    deleteExamMutation.mutate(id);
-  };
+  
 
   const getUserInitials = () => {
     if (!user) return "U";
@@ -156,7 +88,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
         </DialogHeader>
 
         <Tabs defaultValue="profile" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="w-4 h-4" />
               {t("user.profile")}
@@ -164,10 +96,6 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             <TabsTrigger value="stats" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               {t("stats.title")}
-            </TabsTrigger>
-            <TabsTrigger value="mockexams" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              {t("mockExam.manage")}
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
@@ -237,111 +165,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             )}
           </TabsContent>
 
-          <TabsContent value="mockexams" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="w-5 h-5" />
-                  {t("mockExam.manage")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  {t("mockExam.manageDescription")}
-                </p>
-
-                {mockExams.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-8">
-                    {t("mockExam.noExams")}
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    {mockExams.map((exam) => (
-                      <div
-                        key={exam.id}
-                        className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
-                      >
-                        <div className="flex items-center gap-3 flex-1">
-                          {editingExamId === exam.id ? (
-                            <div className="flex items-center gap-2 flex-1">
-                              <Input
-                                value={editingExamTitle}
-                                onChange={(e) => setEditingExamTitle(e.target.value)}
-                                className="flex-1"
-                                placeholder={t("mockExam.titlePlaceholder")}
-                              />
-                              <Button
-                                size="sm"
-                                onClick={handleSaveExam}
-                                disabled={!editingExamTitle.trim() || updateExamMutation.isPending}
-                              >
-                                {t("save")}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={handleCancelEdit}
-                              >
-                                {t("cancel")}
-                              </Button>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex-1">
-                                <h4 className="font-medium">{exam.title}</h4>
-                                <p className="text-sm text-gray-500">
-                                  {exam.questionCount} {t("questions.total")}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleEditExam(exam)}
-                                  className="h-8 w-8 p-0"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>{t("mockExam.confirmDelete")}</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        {t("mockExam.deleteWarning", { title: exam.title, count: exam.questionCount })}
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleDeleteExam(exam.id)}
-                                        className="bg-red-600 hover:bg-red-700"
-                                        disabled={deleteExamMutation.isPending}
-                                      >
-                                        {t("delete")}
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+          
 
           <TabsContent value="settings" className="space-y-6">
             <Card>
@@ -367,8 +191,11 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                     {t("admin.title")}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {/* <AdminModal /> */}
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    {t("admin.description")}
+                  </p>
+                  <AdminModal />
                 </CardContent>
               </Card>
             )}
