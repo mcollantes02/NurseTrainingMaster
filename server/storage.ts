@@ -613,7 +613,7 @@ export class DatabaseStorage implements IStorage {
     const [question] = await db
       .update(questions)
       .set({ failureCount: Math.max(0, failureCount) }) // Ensure count doesn't go below 0
-      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
+      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId), eq(questions.mockExamId, mockExams.id)))
       .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
       .returning();
 
