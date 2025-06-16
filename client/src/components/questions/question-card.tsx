@@ -80,9 +80,13 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       return response.json();
     },
     onMutate: async (newCount: number) => {
+      // Cancel any outgoing refetches for instant UI updates
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
+      
+      // Snapshot the previous value
       const previousQuestions = queryClient.getQueryData(["/api/questions"]);
 
+      // Optimistically update to the new count immediately
       queryClient.setQueryData(["/api/questions"], (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
@@ -92,9 +96,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         );
       });
 
-      return { previousQuestions };
+      return { previousQuestions, newCount };
     },
     onError: (err, newCount, context) => {
+      // Only rollback if the mutation actually failed
       if (context?.previousQuestions) {
         queryClient.setQueryData(["/api/questions"], context.previousQuestions);
       }
@@ -104,9 +109,18 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         variant: "destructive",
       });
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+    onSuccess: (data, newCount, context) => {
+      // Silently update with server response, but don't refetch
+      queryClient.setQueryData(["/api/questions"], (old: any) => {
+        if (!old) return old;
+        return old.map((q: any) => 
+          q.id === question.id 
+            ? { ...q, failureCount: data.failureCount } 
+            : q
+        );
+      });
     },
+    // Remove onSettled to prevent unnecessary refetches that cause delays
   });
 
   const deleteQuestionMutation = useMutation({
@@ -241,21 +255,20 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-0 h-auto w-5 text-gray-500 hover:text-gray-700"
+                className="p-0 h-auto w-5 text-gray-500 hover:text-gray-700 transition-colors duration-75"
                 onClick={(e) => handleFailureCountChange(e, -1)}
-                disabled={updateFailureCountMutation.isPending || (question.failureCount || 0) === 0}
+                disabled={(question.failureCount || 0) === 0}
               >
                 -
               </Button>
-              <span className={cn("text-xs font-medium min-w-[12px] text-center", getFailureCountColor(question.failureCount || 0))}>
+              <span className={cn("text-xs font-medium min-w-[12px] text-center transition-colors duration-75", getFailureCountColor(question.failureCount || 0))}>
                 {question.failureCount || 0}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-0 h-auto w-5 text-gray-500 hover:text-gray-700"
+                className="p-0 h-auto w-5 text-gray-500 hover:text-gray-700 transition-colors duration-75"
                 onClick={(e) => handleFailureCountChange(e, 1)}
-                disabled={updateFailureCountMutation.isPending}
               >
                 +
               </Button>
