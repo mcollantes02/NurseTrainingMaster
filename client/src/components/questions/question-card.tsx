@@ -121,10 +121,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       onClick={handleCardClick}
     >
       <CardContent className="p-4">
-        {/* Main Content Row */}
-        <div className="flex items-start justify-between gap-4">
+        {/* Header Row - Always visible */}
+        <div className="flex items-center justify-between gap-4 mb-3">
           {/* Left Section - Status and Metadata */}
-          <div className="flex items-center gap-3 min-w-0 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <Badge
               className={cn(
                 "text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap",
@@ -136,10 +136,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
               {question.isLearned ? t("question.learned") : t("question.unlearned")}
             </Badge>
 
-            <div className="flex items-center gap-2 text-xs text-gray-600 whitespace-nowrap">
+            <div className="flex items-center gap-2 text-xs text-gray-600">
               <span className="font-medium">{question.subject.name}</span>
-              <span className="text-gray-400">•</span>
-              <span>{question.topic.name}</span>
+              <span className="text-gray-400 hidden sm:inline">•</span>
+              <span className="hidden sm:inline">{question.topic.name}</span>
             </div>
 
             <Badge className={cn("text-xs px-2 py-1 whitespace-nowrap", getTypeColor(question.type))}>
@@ -147,19 +147,9 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             </Badge>
           </div>
 
-          {/* Center Section - Theory Text */}
-          <div className="flex-1 min-w-0">
-            <p className={cn(
-              "text-sm text-gray-700",
-              isExpanded ? "" : "line-clamp-2"
-            )}>
-              {question.theory}
-            </p>
-          </div>
-
           {/* Right Section - Actions and Date */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="text-xs text-gray-500 flex items-center whitespace-nowrap">
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="text-xs text-gray-500 flex items-center whitespace-nowrap hidden md:flex">
               <Calendar className="h-3 w-3 mr-1" />
               {question.createdAt ? formatDate(question.createdAt) : ''}
             </div>
@@ -210,6 +200,26 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
               )}
             </Button>
           </div>
+        </div>
+
+        {/* Mobile-only metadata row */}
+        <div className="flex items-center gap-2 text-xs text-gray-600 mb-3 sm:hidden">
+          <span>{question.topic.name}</span>
+          <span className="text-gray-400">•</span>
+          <div className="flex items-center">
+            <Calendar className="h-3 w-3 mr-1" />
+            {question.createdAt ? formatDate(question.createdAt) : ''}
+          </div>
+        </div>
+
+        {/* Theory Text Section - Full width */}
+        <div className="w-full">
+          <p className={cn(
+            "text-sm text-gray-700 leading-relaxed",
+            isExpanded ? "whitespace-pre-wrap" : "line-clamp-2"
+          )}>
+            {question.theory}
+          </p>
         </div>
       </CardContent>
     </Card>
