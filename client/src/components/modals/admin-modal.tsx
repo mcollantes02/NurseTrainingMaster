@@ -246,6 +246,28 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
   });
 
   // Mock Exam mutations
+  const createMockExamMutation = useMutation({
+    mutationFn: async (data: FormData) => {
+      const response = await apiRequest("POST", "/api/mock-exams", { title: data.name });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      mockExamForm.reset();
+      toast({
+        title: "Examen simulacro creado",
+        description: "El examen simulacro se ha creado correctamente",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Error al crear el examen simulacro",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateMockExamMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: FormData }) => {
       const response = await apiRequest("PUT", `/api/mock-exams/${id}`, { title: data.name });
@@ -573,6 +595,30 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
                   onChange={(e) => setMockExamSearch(e.target.value)}
                   className="pl-10"
                 />
+              </div>
+
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-medium mb-4">Agregar Nuevo Examen Simulacro</h3>
+                <Form {...mockExamForm}>
+                  <form onSubmit={mockExamForm.handleSubmit((data) => createMockExamMutation.mutate(data))} className="flex gap-2">
+                    <FormField
+                      control={mockExamForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormControl>
+                            <Input {...field} placeholder="Nombre del examen simulacro" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button type="submit" disabled={createMockExamMutation.isPending}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Agregar
+                    </Button>
+                  </form>
+                </Form>
               </div>
 
               <div className="border rounded-lg">
