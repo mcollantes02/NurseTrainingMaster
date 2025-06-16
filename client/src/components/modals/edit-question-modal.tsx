@@ -42,6 +42,7 @@ const formSchema = z.object({
   topicName: z.string().min(1, "Topic is required"),
   type: z.enum(["error", "doubt"]),
   theory: z.string().min(1, "Theory is required"),
+  failureCount: z.number().min(0).default(0),
   isLearned: z.boolean(),
 });
 
@@ -76,6 +77,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
     resolver: zodResolver(formSchema),
     defaultValues: {
       isLearned: false,
+      failureCount: 0,
     },
   });
 
@@ -88,6 +90,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
         topicName: question.topic.name,
         type: question.type as "error" | "doubt",
         theory: question.theory,
+        failureCount: question.failureCount || 0,
         isLearned: question.isLearned,
       });
     }
@@ -143,6 +146,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
         topicId,
         type: data.type,
         theory: data.theory,
+        failureCount: data.failureCount,
         isLearned: data.isLearned,
       });
       return response.json();
@@ -176,6 +180,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
                 mockExamId: data.mockExamId,
                 type: data.type,
                 theory: data.theory,
+                failureCount: data.failureCount,
                 isLearned: data.isLearned,
                 subject: optimisticSubject,
                 topic: optimisticTopic

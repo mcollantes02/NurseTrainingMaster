@@ -63,14 +63,19 @@ export interface IStorage {
   createQuestion(question: InsertQuestion): Promise<Question>;
   updateQuestionLearned(id: number, isLearned: boolean, userId: number): Promise<QuestionWithRelations | undefined>;
   deleteQuestion(id: number, userId: number): Promise<boolean>;
-  updateQuestion(id: number, data: {
-    mockExamId: number;
-    subjectId: number;
-    topicId: number;
-    type: string;
-    theory: string;
-    isLearned: boolean;
-  }, userId: number): Promise<QuestionWithRelations | undefined>;
+  updateQuestion(
+    id: number,
+    updates: {
+      mockExamId?: number;
+      subjectId?: number;
+      topicId?: number;
+      type?: string;
+      theory?: string;
+      failureCount?: number;
+      isLearned?: boolean;
+    },
+    userId: number
+  ): Promise<QuestionWithRelations | undefined>;
   getQuestionById(id: number): Promise<QuestionWithRelations | undefined>;
 
   // Trash operations
@@ -381,14 +386,19 @@ export class DatabaseStorage implements IStorage {
     return newQuestion;
   }
 
-  async updateQuestion(id: number, data: {
-    mockExamId: number;
-    subjectId: number;
-    topicId: number;
-    type: string;
-    theory: string;
-    isLearned: boolean;
-  }, userId: number): Promise<QuestionWithRelations | undefined> {
+  async updateQuestion(
+    id: number,
+    updates: {
+      mockExamId?: number;
+      subjectId?: number;
+      topicId?: number;
+      type?: string;
+      theory?: string;
+      failureCount?: number;
+      isLearned?: boolean;
+    },
+    userId: number
+  ): Promise<QuestionWithRelations | undefined> {
     // First check if the question belongs to the user
     const existingQuestion = await db
       .select()
@@ -401,9 +411,18 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
 
+    // Update the question
     await db
       .update(questions)
-      .set(data)
+      .set({
+        mockExamId: updates.mockExamId,
+        subjectId: updates.subjectId,
+        topicId: updates.topicId,
+        type: updates.type,
+        theory: updates.theory,
+        failureCount: updates.failureCount !== undefined ? Math.max(0, updates.failureCount) : undefined,
+        isLearned: updates.isLearned,
+      })
       .where(eq(questions.id, id));
 
     return this.getQuestionById(id);
