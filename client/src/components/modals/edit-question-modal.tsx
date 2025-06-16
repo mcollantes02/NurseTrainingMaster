@@ -117,25 +117,25 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
     mutationFn: async (data: FormData) => {
       if (!question) return;
 
-      // Ensure subject exists
-      let subjectId: number;
-      const existingSubject = subjects.find(s => s.name === data.subjectName);
-      if (existingSubject) {
-        subjectId = existingSubject.id;
-      } else {
-        const newSubject = await createSubjectMutation.mutateAsync(data.subjectName);
-        subjectId = newSubject.id;
-      }
-
-      // Ensure topic exists
-      let topicId: number;
-      const existingTopic = topics.find(t => t.name === data.topicName);
-      if (existingTopic) {
-        topicId = existingTopic.id;
-      } else {
-        const newTopic = await createTopicMutation.mutateAsync(data.topicName);
-        topicId = newTopic.id;
-      }
+      // Get or create subject and topic in parallel
+      const [subjectId, topicId] = await Promise.all([
+        (async () => {
+          const existingSubject = subjects.find(s => s.name === data.subjectName);
+          if (existingSubject) {
+            return existingSubject.id;
+          }
+          const newSubject = await createSubjectMutation.mutateAsync(data.subjectName);
+          return newSubject.id;
+        })(),
+        (async () => {
+          const existingTopic = topics.find(t => t.name === data.topicName);
+          if (existingTopic) {
+            return existingTopic.id;
+          }
+          const newTopic = await createTopicMutation.mutateAsync(data.topicName);
+          return newTopic.id;
+        })()
+      ]);
 
       const response = await apiRequest("PUT", `/api/questions/${question.id}`, {
         mockExamId: data.mockExamId,
@@ -154,6 +154,18 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
       // Snapshot the previous value
       const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
 
+      // Create optimistic subject and topic objects
+      const optimisticSubject = subjects.find(s => s.name === data.subjectName) || { 
+        id: 0, 
+        name: data.subjectName, 
+        createdAt: new Date().toISOString() 
+      };
+      const optimisticTopic = topics.find(t => t.name === data.topicName) || { 
+        id: 0, 
+        name: data.topicName, 
+        createdAt: new Date().toISOString() 
+      };
+
       // Optimistically update to the new value
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old || !question) return old;
@@ -161,9 +173,12 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
           q.id === question.id 
             ? { 
                 ...q, 
-                ...data,
-                subject: subjects.find(s => s.name === data.subjectName) || q.subject,
-                topic: topics.find(t => t.name === data.topicName) || q.topic
+                mockExamId: data.mockExamId,
+                type: data.type,
+                theory: data.theory,
+                isLearned: data.isLearned,
+                subject: optimisticSubject,
+                topic: optimisticTopic
               } 
             : q
         );
@@ -172,14 +187,14 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
       return { previousQuestions };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
+      // Close modal immediately for better UX
       onClose();
       toast({
         title: t("question.updated"),
         description: t("question.updatedDescription"),
       });
+      // Only invalidate questions query in background
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
     },
     onError: (error, variables, context) => {
       // Rollback on error
@@ -195,8 +210,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
       });
     },
     onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      // No need to refetch here since we handle it in onSuccess and onError
     },
   });
 
