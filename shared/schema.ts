@@ -45,6 +45,7 @@ export const questions = pgTable("questions", {
   type: text("type").notNull(), // error, doubt
   theory: text("theory").notNull(),
   isLearned: boolean("is_learned").default(false),
+  failureCount: integer("failure_count").default(0),
   createdBy: integer("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -62,6 +63,7 @@ export const trashedQuestions = pgTable("trashed_questions", {
   type: text("type").notNull(),
   theory: text("theory").notNull(),
   isLearned: boolean("is_learned").default(false),
+  failureCount: integer("failure_count").default(0),
   createdBy: integer("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull(),
   deletedAt: timestamp("deleted_at").defaultNow(),

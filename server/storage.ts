@@ -88,6 +88,8 @@ export interface IStorage {
   }>;
 
   updateUserRole(userId: number, role: string): Promise<User>;
+
+  updateQuestionFailureCount(id: number, failureCount: number, userId: number): Promise<QuestionWithRelations | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -188,6 +190,9 @@ export class DatabaseStorage implements IStorage {
         isLearned: q.isLearned,
         createdBy: q.createdBy,
         createdAt: q.createdAt,
+        mockExamTitle: q.mockExamTitle,
+        subjectName: q.subjectName,
+        topicName: q.topicName,
       }));
 
       await db.insert(trashedQuestions).values(trashedData);
@@ -435,7 +440,7 @@ export class DatabaseStorage implements IStorage {
     const subject = questionWithRelations.subject;
     const topic = questionWithRelations.topic;
 
-    // Move to trash
+    // Insert into trash
     await db.insert(trashedQuestions).values({
       originalId: question.id,
       mockExamId: question.mockExamId,
@@ -533,7 +538,7 @@ export class DatabaseStorage implements IStorage {
       subjectId: row.trashedQuestion.subjectId,
       subjectName: row.trashedQuestion.subjectName,
       topicId: row.trashedQuestion.topicId,
-      topicName: row.trashedQuestion.topicName,
+      topicName: row.topicName,
       type: row.trashedQuestion.type,
       theory: row.trashedQuestion.theory,
       isLearned: row.trashedQuestion.isLearned,
@@ -602,6 +607,19 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return user;
+  }
+
+  async updateQuestionFailureCount(id: number, failureCount: number, userId: number): Promise<QuestionWithRelations | undefined> {
+    const [question] = await db
+      .update(questions)
+      .set({ failureCount: Math.max(0, failureCount) }) // Ensure count doesn't go below 0
+      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
+      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
+      .returning();
+
+    if (!question) return undefined;
+
+    return this.getQuestionById(id);
   }
 }
 

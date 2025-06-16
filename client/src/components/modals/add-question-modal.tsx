@@ -44,6 +44,7 @@ const formSchema = z.object({
   type: z.enum(["error", "doubt"], { required_error: "Type is required" }),
   theory: z.string().min(1, "Theory is required"),
   isLearned: z.boolean().default(false),
+  failureCount: z.number().default(0),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -148,6 +149,7 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
         type: data.type,
         theory: data.theory,
         isLearned: data.isLearned,
+        failureCount: data.failureCount,
         createdAt: new Date().toISOString(),
         subject: subjects.find(s => s.name === data.subjectName) || { name: data.subjectName },
         topic: topics.find(t => t.name === data.topicName) || { name: data.topicName },
@@ -317,6 +319,27 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
                       rows={6}
                       placeholder={t("question.theoryPlaceholder")}
                       className="resize-none"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Failure Count */}
+            <FormField
+              control={form.control}
+              name="failureCount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("question.failureCount")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      placeholder="0"
                     />
                   </FormControl>
                   <FormMessage />
