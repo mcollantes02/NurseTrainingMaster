@@ -357,6 +357,26 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
               )}
             />
 
+            {/* Failure Count */}
+            <FormField
+              control={form.control}
+              name="failureCount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("question.failureCount")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* Learning Status */}
             <FormField
               control={form.control}

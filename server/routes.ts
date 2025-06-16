@@ -388,6 +388,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/questions/:id/failure-count", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { failureCount } = req.body;
+
+      const question = await storage.updateQuestionFailureCount(id, failureCount, req.session.userId!);
+      if (!question) {
+        return res.status(404).json({ message: "Question not found" });
+      }
+
+      res.json(question);
+    } catch (error) {
+      console.error("Update question failure count error:", error);
+      res.status(500).json({ message: "Failed to update question failure count" });
+    }
+  });
+
   app.delete("/api/questions/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

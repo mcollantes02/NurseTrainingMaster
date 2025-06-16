@@ -70,6 +70,45 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     },
   });
 
+  const updateFailureCountMutation = useMutation({
+    mutationFn: async (newCount: number) => {
+      const response = await apiRequest(
+        "PATCH",
+        `/api/questions/${question.id}/failure-count`,
+        { failureCount: newCount }
+      );
+      return response.json();
+    },
+    onMutate: async (newCount: number) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
+      const previousQuestions = queryClient.getQueryData(["/api/questions"]);
+
+      queryClient.setQueryData(["/api/questions"], (old: any) => {
+        if (!old) return old;
+        return old.map((q: any) => 
+          q.id === question.id 
+            ? { ...q, failureCount: newCount } 
+            : q
+        );
+      });
+
+      return { previousQuestions };
+    },
+    onError: (err, newCount, context) => {
+      if (context?.previousQuestions) {
+        queryClient.setQueryData(["/api/questions"], context.previousQuestions);
+      }
+      toast({
+        title: t("error.title"),
+        description: t("error.updateQuestion"),
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+    },
+  });
+
   const deleteQuestionMutation = useMutation({
     mutationFn: async (id: number) => {
       const response = await apiRequest("DELETE", `/api/questions/${id}`);
@@ -110,6 +149,18 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     if (window.confirm(t("question.deleteConfirm"))) {
       deleteQuestionMutation.mutate(question.id);
     }
+  };
+
+  const handleFailureCountChange = (e: React.MouseEvent, delta: number) => {
+    e.stopPropagation();
+    const newCount = Math.max(0, (question.failureCount || 0) + delta);
+    updateFailureCountMutation.mutate(newCount);
+  };
+
+  const getFailureCountColor = (count: number) => {
+    if (count === 0) return "text-gray-400";
+    if (count === 1) return "text-orange-500";
+    return "text-red-500";
   };
 
   const handleCardClick = () => {
@@ -185,6 +236,31 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
 
           {/* Right Section - Actions and Date */}
           <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Failure Counter */}
+            <div className="flex items-center gap-1 bg-gray-50 rounded-md px-2 py-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-0 h-auto w-5 text-gray-500 hover:text-gray-700"
+                onClick={(e) => handleFailureCountChange(e, -1)}
+                disabled={updateFailureCountMutation.isPending || (question.failureCount || 0) === 0}
+              >
+                -
+              </Button>
+              <span className={cn("text-xs font-medium min-w-[12px] text-center", getFailureCountColor(question.failureCount || 0))}>
+                {question.failureCount || 0}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-0 h-auto w-5 text-gray-500 hover:text-gray-700"
+                onClick={(e) => handleFailureCountChange(e, 1)}
+                disabled={updateFailureCountMutation.isPending}
+              >
+                +
+              </Button>
+            </div>
+
             <div className="text-xs text-gray-500 flex items-center whitespace-nowrap hidden md:flex">
               <Calendar className="h-3 w-3 mr-1" />
               {question.createdAt ? formatDate(question.createdAt) : ''}

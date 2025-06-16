@@ -83,6 +83,7 @@ export const translations = {
     "question.unlearned": "Sin aprender",
     "question.markAsLearnedDescription": "Marca esta pregunta como aprendida",
     "question.theoryPlaceholder": "Escribe la explicación teórica de la pregunta...",
+    "question.failureCount": "Veces falladas/dudas",
     "questions.total": "preguntas totales",
     "questions.found": "preguntas encontradas",
     "questions.label": "preguntas",
