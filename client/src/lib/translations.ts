@@ -136,6 +136,10 @@ export const translations = {
     "filters.keywordsPlaceholder": "Buscar en preguntas...",
     "filters.learningStatus": "Estado de Aprendizaje",
     "filters.apply": "Aplicar Filtros",
+    "filters.exactCount": "Número exacto",
+    "filters.minCount": "Mín",
+    "filters.maxCount": "Máx",
+    "filters.or": "o",
 
     // Stats
     "stats.completedExams": "Simulacros completados",
@@ -293,6 +297,10 @@ export const translations = {
     "filters.keywordsPlaceholder": "Search in questions...",
     "filters.learningStatus": "Learning Status",
     "filters.apply": "Apply Filters",
+    "filters.exactCount": "Exact count",
+    "filters.minCount": "Min",
+    "filters.maxCount": "Max",
+    "filters.or": "or",
 
     // Stats
     "stats.completedExams": "Completed exams",

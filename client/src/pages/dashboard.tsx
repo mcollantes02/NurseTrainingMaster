@@ -42,6 +42,11 @@ interface FiltersState {
   topicIds: number[];
   keywords: string;
   learningStatus: boolean[];
+  failureCount: {
+    min: number | undefined;
+    max: number | undefined;
+    exact: number | undefined;
+  };
 }
 
 export default function Dashboard() {
@@ -55,11 +60,16 @@ export default function Dashboard() {
   const [newExamTitle, setNewExamTitle] = useState("");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "nameAsc">("newest");
   const [filters, setFilters] = useState<FiltersState>({
-    mockExamIds: [],
-    subjectIds: [],
-    topicIds: [],
+    mockExamIds: [] as number[],
+    subjectIds: [] as number[],
+    topicIds: [] as number[],
     keywords: "",
-    learningStatus: [],
+    learningStatus: [] as boolean[],
+    failureCount: {
+      min: undefined as number | undefined,
+      max: undefined as number | undefined,
+      exact: undefined as number | undefined,
+    },
   });
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>(filters);
 
@@ -129,6 +139,44 @@ export default function Dashboard() {
   };
 
   const activeExam = tabMockExams.find(exam => exam.id.toString() === activeTab);
+
+  const queryParams = useMemo(() => {
+    const params = new URLSearchParams();
+
+    if (appliedFilters.mockExamIds.length > 0) {
+      appliedFilters.mockExamIds.forEach(id => params.append('mockExamIds', id.toString()));
+    }
+
+    if (appliedFilters.subjectIds.length > 0) {
+      appliedFilters.subjectIds.forEach(id => params.append('subjectIds', id.toString()));
+    }
+
+    if (appliedFilters.topicIds.length > 0) {
+      appliedFilters.topicIds.forEach(id => params.append('topicIds', id.toString()));
+    }
+
+    if (appliedFilters.keywords) {
+      params.append('keywords', appliedFilters.keywords);
+    }
+
+    if (appliedFilters.learningStatus.length > 0) {
+      appliedFilters.learningStatus.forEach(status => params.append('learningStatus', status.toString()));
+    }
+
+    if (appliedFilters.failureCount.exact !== undefined) {
+      params.append('failureCountExact', appliedFilters.failureCount.exact.toString());
+    }
+
+    if (appliedFilters.failureCount.min !== undefined) {
+      params.append('failureCountMin', appliedFilters.failureCount.min.toString());
+    }
+
+    if (appliedFilters.failureCount.max !== undefined) {
+      params.append('failureCountMax', appliedFilters.failureCount.max.toString());
+    }
+
+    return params;
+  }, [appliedFilters]);
 
   return (
     <div className="min-h-screen bg-gray-50">

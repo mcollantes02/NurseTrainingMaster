@@ -312,6 +312,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         topicIds,
         keywords,
         learningStatus,
+        failureCountExact,
+        failureCountMin,
+        failureCountMax,
       } = req.query;
 
       const filters = {
@@ -321,6 +324,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         topicIds: topicIds ? (Array.isArray(topicIds) ? topicIds.map(Number) : [Number(topicIds)]) : undefined,
         keywords: keywords as string,
         learningStatus: learningStatus ? (Array.isArray(learningStatus) ? learningStatus.map(s => s === 'true') : [learningStatus === 'true']) : undefined,
+        failureCountExact: failureCountExact ? Number(failureCountExact) : undefined,
+        failureCountMin: failureCountMin ? Number(failureCountMin) : undefined,
+        failureCountMax: failureCountMax ? Number(failureCountMax) : undefined,
       };
 
       const questions = await storage.getQuestions(filters);
