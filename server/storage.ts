@@ -610,14 +610,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateQuestionFailureCount(id: number, failureCount: number, userId: number): Promise<QuestionWithRelations | undefined> {
-    const [question] = await db
+    // First check if the question belongs to the user
+    const existingQuestion = await db
+      .select()
+      .from(questions)
+      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
+      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
+      .limit(1);
+
+    if (existingQuestion.length === 0) {
+      return undefined;
+    }
+
+    // Update the question
+    await db
       .update(questions)
       .set({ failureCount: Math.max(0, failureCount) }) // Ensure count doesn't go below 0
-      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId), eq(questions.mockExamId, mockExams.id)))
-      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
-      .returning();
-
-    if (!question) return undefined;
+      .where(eq(questions.id, id));
 
     return this.getQuestionById(id);
   }
