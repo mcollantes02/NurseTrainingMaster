@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { insertUserSchema, insertMockExamSchema, insertQuestionSchema } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
+import { Timestamp } from 'firebase-admin/firestore';
 
 declare module "express-session" {
   interface SessionData {
@@ -12,21 +12,35 @@ declare module "express-session" {
   }
 }
 
+// Helper function to convert Firestore timestamp to Date
+function convertFirestoreToDate(firestoreData: any): any {
+  if (!firestoreData) return firestoreData;
+
+  const converted = { ...firestoreData };
+
+  if (converted.createdAt && typeof converted.createdAt === 'object' && 'seconds' in converted.createdAt) {
+    converted.createdAt = new Date(converted.createdAt.seconds * 1000);
+  }
+
+  if (converted.deletedAt && typeof converted.deletedAt === 'object' && 'seconds' in converted.deletedAt) {
+    converted.deletedAt = new Date(converted.deletedAt.seconds * 1000);
+  }
+
+  return converted;
+}
+
+// Helper function to convert arrays of Firestore data
+function convertFirestoreArrayToDate(firestoreArray: any[]): any[] {
+  return firestoreArray.map(item => convertFirestoreToDate(item));
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Session setup
+  // Session setup - using memory store for simplicity
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-    ttl: sessionTtl,
-    tableName: "user_sessions",
-  });
 
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "your-session-secret-key",
-      store: sessionStore,
       resave: false,
       saveUninitialized: false,
       cookie: {
@@ -49,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
       if (existingUser) {
@@ -58,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Hash password
       const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
+
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
@@ -123,8 +137,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mock exam routes
   app.get("/api/mock-exams", requireAuth, async (req, res) => {
     try {
-      const mockExams = await storage.getMockExams(req.session.userId!);
-      res.json(mockExams);
+      const [mockExams, questions] = await Promise.all([
+        storage.getMockExams(req.session.userId!),
+        storage.getQuestions({ userId: req.session.userId! })
+      ]);
+
+      // Count questions for each mock exam
+      const questionCounts = questions.reduce((counts, question) => {
+        counts[question.mockExamId] = (counts[question.mockExamId] || 0) + 1;
+        return counts;
+      }, {} as Record<number, number>);
+
+      // Add question count to each mock exam
+      const mockExamsWithCounts = mockExams.map(exam => ({
+        ...convertFirestoreToDate(exam),
+        questionCount: questionCounts[exam.id] || 0
+      }));
+
+      res.json(mockExamsWithCounts);
     } catch (error) {
       console.error("Get mock exams error:", error);
       res.status(500).json({ message: "Failed to get mock exams" });
@@ -183,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/subjects", requireAuth, async (req, res) => {
     try {
       const subjects = await storage.getSubjects();
-      res.json(subjects);
+      res.json(convertFirestoreArrayToDate(subjects));
     } catch (error) {
       console.error("Get subjects error:", error);
       res.status(500).json({ message: "Failed to get subjects" });
@@ -193,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/subjects", requireAuth, async (req, res) => {
     try {
       const { name } = req.body;
-      
+
       // Check if subject already exists
       const existing = await storage.getSubjectByName(name);
       if (existing) {
@@ -245,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/topics", requireAuth, async (req, res) => {
     try {
       const topics = await storage.getTopics();
-      res.json(topics);
+      res.json(convertFirestoreArrayToDate(topics));
     } catch (error) {
       console.error("Get topics error:", error);
       res.status(500).json({ message: "Failed to get topics" });
@@ -255,7 +285,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/topics", requireAuth, async (req, res) => {
     try {
       const { name } = req.body;
-      
+
       // Check if topic already exists
       const existing = await storage.getTopicByName(name);
       if (existing) {
@@ -306,31 +336,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Question routes
   app.get("/api/questions", requireAuth, async (req, res) => {
     try {
-      const {
-        mockExamIds,
-        subjectIds,
-        topicIds,
-        keywords,
-        learningStatus,
-        failureCountExact,
-        failureCountMin,
-        failureCountMax,
-      } = req.query;
-
       const filters = {
         userId: req.session.userId!,
-        mockExamIds: mockExamIds ? (Array.isArray(mockExamIds) ? mockExamIds.map(Number) : [Number(mockExamIds)]) : undefined,
-        subjectIds: subjectIds ? (Array.isArray(subjectIds) ? subjectIds.map(Number) : [Number(subjectIds)]) : undefined,
-        topicIds: topicIds ? (Array.isArray(topicIds) ? topicIds.map(Number) : [Number(topicIds)]) : undefined,
-        keywords: keywords as string,
-        learningStatus: learningStatus ? (Array.isArray(learningStatus) ? learningStatus.map(s => s === 'true') : [learningStatus === 'true']) : undefined,
-        failureCountExact: failureCountExact ? Number(failureCountExact) : undefined,
-        failureCountMin: failureCountMin ? Number(failureCountMin) : undefined,
-        failureCountMax: failureCountMax ? Number(failureCountMax) : undefined,
+        mockExamIds: req.query.mockExamIds ? (Array.isArray(req.query.mockExamIds) ? req.query.mockExamIds.map(id => parseInt(id as string)) : [parseInt(req.query.mockExamIds as string)]) : undefined,
+        subjectIds: req.query.subjectIds ? (Array.isArray(req.query.subjectIds) ? req.query.subjectIds.map(id => parseInt(id as string)) : [parseInt(req.query.subjectIds as string)]) : undefined,
+        topicIds: req.query.topicIds ? (Array.isArray(req.query.topicIds) ? req.query.topicIds.map(id => parseInt(id as string)) : [parseInt(req.query.topicIds as string)]) : undefined,
+        keywords: req.query.keywords as string | undefined,
+        learningStatus: req.query.learningStatus ? (Array.isArray(req.query.learningStatus) ? req.query.learningStatus.map(status => status === 'true') : [req.query.learningStatus === 'true']) : undefined,
+        failureCountExact: req.query.failureCountExact ? parseInt(req.query.failureCountExact as string) : undefined,
+        failureCountMin: req.query.failureCountMin ? parseInt(req.query.failureCountMin as string) : undefined,
+        failureCountMax: req.query.failureCountMax ? parseInt(req.query.failureCountMax as string) : undefined,
       };
 
       const questions = await storage.getQuestions(filters);
-      res.json(questions);
+
+      // Get all related data
+      const [mockExams, subjects, topics, user] = await Promise.all([
+        storage.getMockExams(req.session.userId!),
+        storage.getSubjects(),
+        storage.getTopics(),
+        storage.getUser(req.session.userId!)
+      ]);
+
+      // Create lookup maps for better performance
+      const mockExamMap = new Map(mockExams.map(exam => [exam.id, exam]));
+      const subjectMap = new Map(subjects.map(subject => [subject.id, subject]));
+      const topicMap = new Map(topics.map(topic => [topic.id, topic]));
+
+      // Add relations to questions
+      const questionsWithRelations = questions.map(question => ({
+        ...convertFirestoreToDate(question),
+        mockExam: convertFirestoreToDate(mockExamMap.get(question.mockExamId)) || { id: question.mockExamId, title: 'Unknown', createdBy: req.session.userId!, createdAt: new Date() },
+        subject: convertFirestoreToDate(subjectMap.get(question.subjectId)) || { id: question.subjectId, name: 'Unknown', createdAt: new Date() },
+        topic: convertFirestoreToDate(topicMap.get(question.topicId)) || { id: question.topicId, name: 'Unknown', createdAt: new Date() },
+        createdBy: convertFirestoreToDate(user) || { id: req.session.userId!, email: 'unknown', name: 'Unknown', role: 'user', createdAt: new Date() }
+      }));
+
+      res.json(questionsWithRelations);
     } catch (error) {
       console.error("Get questions error:", error);
       res.status(500).json({ message: "Failed to get questions" });
@@ -345,7 +387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const question = await storage.createQuestion(questionData);
-      res.json(question);
+      res.json(convertFirestoreToDate(question));
     } catch (error) {
       console.error("Create question error:", error);
       res.status(400).json({ message: "Failed to create question" });
@@ -371,7 +413,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Question not found" });
       }
 
-      res.json(question);
+      res.json(convertFirestoreToDate(question));
     } catch (error) {
       console.error("Update question error:", error);
       res.status(500).json({ message: "Failed to update question" });
@@ -398,9 +440,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/questions/:id/failure-count", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { failureCount } = req.body;
+      const { failureCount, change } = req.body;
 
-      const question = await storage.updateQuestionFailureCount(id, failureCount, req.session.userId!);
+      let newFailureCount: number;
+      
+      if (change !== undefined) {
+        // Handle incremental change
+        const questions = await storage.getQuestions({ userId: req.session.userId! });
+        const currentQuestion = questions.find(q => q.id === id);
+        if (!currentQuestion) {
+          return res.status(404).json({ message: "Question not found" });
+        }
+        newFailureCount = Math.max(0, (currentQuestion.failureCount || 0) + change);
+      } else if (failureCount !== undefined) {
+        // Handle direct value setting
+        newFailureCount = Math.max(0, failureCount);
+      } else {
+        return res.status(400).json({ message: "Either failureCount or change must be provided" });
+      }
+
+      const question = await storage.updateQuestionFailureCount(id, newFailureCount, req.session.userId!);
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
       }
@@ -454,7 +513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/trash", requireAuth, async (req, res) => {
     try {
       const trashedQuestions = await storage.getTrashedQuestions(req.session.userId!);
-      res.json(trashedQuestions);
+      res.json(convertFirestoreArrayToDate(trashedQuestions));
     } catch (error) {
       console.error("Get trashed questions error:", error);
       res.status(500).json({ message: "Failed to get trashed questions" });
@@ -465,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.restoreQuestion(id, req.session.userId!);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Question not found or cannot be restored" });
       }
@@ -481,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.permanentlyDeleteQuestion(id, req.session.userId!);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Question not found" });
       }

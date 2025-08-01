@@ -416,8 +416,12 @@ export default function Dashboard() {
                     <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
                       <QuestionGrid 
                         filters={{
-                          ...appliedFilters,
-                          mockExamIds: [exam.id]
+                          mockExamIds: [exam.id],
+                          subjectIds: appliedFilters.subjectIds,
+                          topicIds: appliedFilters.topicIds,
+                          keywords: appliedFilters.keywords,
+                          learningStatus: appliedFilters.learningStatus,
+                          failureCount: appliedFilters.failureCount
                         }} 
                       />
                     </TabsContent>
