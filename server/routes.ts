@@ -320,31 +320,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Question routes
   app.get("/api/questions", requireAuth, async (req, res) => {
     try {
-      const {
-        mockExamIds,
-        subjectIds,
-        topicIds,
-        keywords,
-        learningStatus,
-        failureCountExact,
-        failureCountMin,
-        failureCountMax,
-      } = req.query;
-
       const filters = {
         userId: req.session.userId!,
-        mockExamIds: mockExamIds ? (Array.isArray(mockExamIds) ? mockExamIds.map(Number) : [Number(mockExamIds)]) : undefined,
-        subjectIds: subjectIds ? (Array.isArray(subjectIds) ? subjectIds.map(Number) : [Number(subjectIds)]) : undefined,
-        topicIds: topicIds ? (Array.isArray(topicIds) ? topicIds.map(Number) : [Number(topicIds)]) : undefined,
-        keywords: keywords as string,
-        learningStatus: learningStatus ? (Array.isArray(learningStatus) ? learningStatus.map(s => s === 'true') : [learningStatus === 'true']) : undefined,
-        failureCountExact: failureCountExact ? Number(failureCountExact) : undefined,
-        failureCountMin: failureCountMin ? Number(failureCountMin) : undefined,
-        failureCountMax: failureCountMax ? Number(failureCountMax) : undefined,
+        mockExamIds: req.query.mockExamIds ? (Array.isArray(req.query.mockExamIds) ? req.query.mockExamIds.map(id => parseInt(id as string)) : [parseInt(req.query.mockExamIds as string)]) : undefined,
+        subjectIds: req.query.subjectIds ? (Array.isArray(req.query.subjectIds) ? req.query.subjectIds.map(id => parseInt(id as string)) : [parseInt(req.query.subjectIds as string)]) : undefined,
+        topicIds: req.query.topicIds ? (Array.isArray(req.query.topicIds) ? req.query.topicIds.map(id => parseInt(id as string)) : [parseInt(req.query.topicIds as string)]) : undefined,
+        keywords: req.query.keywords as string | undefined,
+        learningStatus: req.query.learningStatus ? (Array.isArray(req.query.learningStatus) ? req.query.learningStatus.map(status => status === 'true') : [req.query.learningStatus === 'true']) : undefined,
+        failureCountExact: req.query.failureCountExact ? parseInt(req.query.failureCountExact as string) : undefined,
+        failureCountMin: req.query.failureCountMin ? parseInt(req.query.failureCountMin as string) : undefined,
+        failureCountMax: req.query.failureCountMax ? parseInt(req.query.failureCountMax as string) : undefined,
       };
 
       const questions = await storage.getQuestions(filters);
-      res.json(convertFirestoreArrayToDate(questions));
+
+      // Get all related data
+      const [mockExams, subjects, topics, user] = await Promise.all([
+        storage.getMockExams(req.session.userId!),
+        storage.getSubjects(),
+        storage.getTopics(),
+        storage.getUser(req.session.userId!)
+      ]);
+
+      // Create lookup maps for better performance
+      const mockExamMap = new Map(mockExams.map(exam => [exam.id, exam]));
+      const subjectMap = new Map(subjects.map(subject => [subject.id, subject]));
+      const topicMap = new Map(topics.map(topic => [topic.id, topic]));
+
+      // Add relations to questions
+      const questionsWithRelations = questions.map(question => ({
+        ...convertFirestoreToDate(question),
+        mockExam: convertFirestoreToDate(mockExamMap.get(question.mockExamId)) || { id: question.mockExamId, title: 'Unknown', createdBy: req.session.userId!, createdAt: new Date() },
+        subject: convertFirestoreToDate(subjectMap.get(question.subjectId)) || { id: question.subjectId, name: 'Unknown', createdAt: new Date() },
+        topic: convertFirestoreToDate(topicMap.get(question.topicId)) || { id: question.topicId, name: 'Unknown', createdAt: new Date() },
+        createdBy: convertFirestoreToDate(user) || { id: req.session.userId!, email: 'unknown', name: 'Unknown', role: 'user', createdAt: new Date() }
+      }));
+
+      res.json(questionsWithRelations);
     } catch (error) {
       console.error("Get questions error:", error);
       res.status(500).json({ message: "Failed to get questions" });
