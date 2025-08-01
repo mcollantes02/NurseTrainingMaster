@@ -29,7 +29,5 @@ async function main() {
   }
 }
 
-// Run if this file is executed directly
-if (require.main === module) {
-  main();
-}
+// Run the migration immediately when this file is executed
+main();
