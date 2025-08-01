@@ -65,9 +65,10 @@ export class Storage {
   // Subject methods
   async getSubjects(): Promise<FirestoreSubject[]> {
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
-      .orderBy('name')
       .get();
-    return snapshot.docs.map(doc => doc.data() as FirestoreSubject);
+    const subjects = snapshot.docs.map(doc => doc.data() as FirestoreSubject);
+    // Sort in memory to avoid Firestore index requirement
+    return subjects.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async getSubjectByName(name: string): Promise<FirestoreSubject | null> {
@@ -134,9 +135,10 @@ export class Storage {
   // Topic methods
   async getTopics(): Promise<FirestoreTopic[]> {
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
-      .orderBy('name')
       .get();
-    return snapshot.docs.map(doc => doc.data() as FirestoreTopic);
+    const topics = snapshot.docs.map(doc => doc.data() as FirestoreTopic);
+    // Sort in memory to avoid Firestore index requirement
+    return topics.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   async getTopicByName(name: string): Promise<FirestoreTopic | null> {
@@ -204,9 +206,10 @@ export class Storage {
   async getMockExams(userId: number): Promise<FirestoreMockExam[]> {
     const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
       .where('createdBy', '==', userId)
-      .orderBy('createdAt', 'desc')
       .get();
-    return snapshot.docs.map(doc => doc.data() as FirestoreMockExam);
+    const mockExams = snapshot.docs.map(doc => doc.data() as FirestoreMockExam);
+    // Sort in memory to avoid Firestore composite index requirement
+    return mockExams.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
   }
 
   async createMockExam(mockExamData: Omit<FirestoreMockExam, 'id' | 'createdAt'>): Promise<FirestoreMockExam> {
@@ -295,8 +298,11 @@ export class Storage {
       query = query.where('failureCount', '==', filters.failureCountExact);
     }
 
-    const snapshot = await query.orderBy('createdAt', 'desc').get();
+    const snapshot = await query.get();
     let questions = snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
+    
+    // Sort in memory to avoid Firestore composite index requirement
+    questions = questions.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
 
     // Apply additional filters that can't be done in Firestore query
     if (filters.keywords) {
@@ -424,9 +430,10 @@ export class Storage {
   async getTrashedQuestions(userId: number): Promise<FirestoreTrashedQuestion[]> {
     const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
       .where('createdBy', '==', userId)
-      .orderBy('deletedAt', 'desc')
       .get();
-    return snapshot.docs.map(doc => doc.data() as FirestoreTrashedQuestion);
+    const trashedQuestions = snapshot.docs.map(doc => doc.data() as FirestoreTrashedQuestion);
+    // Sort in memory to avoid Firestore composite index requirement
+    return trashedQuestions.sort((a, b) => b.deletedAt.seconds - a.deletedAt.seconds);
   }
 
   async restoreQuestion(trashedId: number, userId: number): Promise<boolean> {
