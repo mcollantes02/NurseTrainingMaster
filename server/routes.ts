@@ -440,9 +440,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/questions/:id/failure-count", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { failureCount } = req.body;
+      const { failureCount, change } = req.body;
 
-      const question = await storage.updateQuestionFailureCount(id, failureCount, req.session.userId!);
+      let newFailureCount: number;
+      
+      if (change !== undefined) {
+        // Handle incremental change
+        const questions = await storage.getQuestions({ userId: req.session.userId! });
+        const currentQuestion = questions.find(q => q.id === id);
+        if (!currentQuestion) {
+          return res.status(404).json({ message: "Question not found" });
+        }
+        newFailureCount = Math.max(0, (currentQuestion.failureCount || 0) + change);
+      } else if (failureCount !== undefined) {
+        // Handle direct value setting
+        newFailureCount = Math.max(0, failureCount);
+      } else {
+        return res.status(400).json({ message: "Either failureCount or change must be provided" });
+      }
+
+      const question = await storage.updateQuestionFailureCount(id, newFailureCount, req.session.userId!);
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
       }
