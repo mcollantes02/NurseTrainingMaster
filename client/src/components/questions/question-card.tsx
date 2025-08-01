@@ -56,7 +56,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       if (context?.previousQuestions) {
         queryClient.setQueryData(["/api/questions"], context.previousQuestions);
       }
-      
+
       toast({
         title: t("error.title"),
         description: t("error.updateQuestion"),
@@ -67,6 +67,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       // Always refetch after error or success to ensure we have the correct data
       queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
     },
   });
 
@@ -82,16 +83,12 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     onMutate: async (newCount: number) => {
       // Cancel any outgoing refetches for instant UI updates
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
-      
-      // Snapshot the previous value  
-      const previousQuestions = queryClient.getQueryData(["/api/questions"]);
 
-      // Build the correct query key that matches what's being used
-      const currentFilters = new URLSearchParams(window.location.search);
-      const queryKey = ["/api/questions", currentFilters.toString()];
+      // Snapshot all question queries
+      const previousData = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
 
-      // Optimistically update both possible query keys
-      queryClient.setQueryData(["/api/questions"], (old: any) => {
+      // Optimistically update all question queries
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
           q.id === question.id 
@@ -100,25 +97,14 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         );
       });
 
-      queryClient.setQueryData(queryKey, (old: any) => {
-        if (!old) return old;
-        return old.map((q: any) => 
-          q.id === question.id 
-            ? { ...q, failureCount: newCount } 
-            : q
-        );
-      });
-
-      return { previousQuestions, newCount };
+      return { previousData, newCount };
     },
     onError: (err, newCount, context) => {
       // Rollback optimistic updates on error
-      if (context?.previousQuestions) {
-        queryClient.setQueryData(["/api/questions"], context.previousQuestions);
-        
-        const currentFilters = new URLSearchParams(window.location.search);
-        const queryKey = ["/api/questions", currentFilters.toString()];
-        queryClient.setQueryData(queryKey, context.previousQuestions);
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
       toast({
         title: t("error.title"),
@@ -127,21 +113,8 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       });
     },
     onSuccess: (data) => {
-      // Ensure the UI reflects the server response
-      const updateQueries = (old: any) => {
-        if (!old) return old;
-        return old.map((q: any) => 
-          q.id === question.id 
-            ? { ...q, failureCount: data.failureCount } 
-            : q
-        );
-      };
-
-      queryClient.setQueryData(["/api/questions"], updateQueries);
-      
-      const currentFilters = new URLSearchParams(window.location.search);
-      const queryKey = ["/api/questions", currentFilters.toString()];
-      queryClient.setQueryData(queryKey, updateQueries);
+      // Invalidate all question queries to ensure all tabs are updated
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
     },
   });
 
@@ -187,16 +160,9 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     }
   };
 
-  const handleFailureCountChange = (e: React.MouseEvent, delta: number) => {
-    e.stopPropagation();
-    e.preventDefault();
-    const currentCount = question.failureCount || 0;
-    const newCount = Math.max(0, currentCount + delta);
-    
-    // Only proceed if the count actually changes
-    if (newCount !== currentCount) {
-      updateFailureCountMutation.mutate(newCount);
-    }
+  const handleFailureCountChange = (change: 1 | -1) => {
+    const newCount = Math.max(0, (question.failureCount || 0) + change);
+    updateFailureCountMutation.mutate(newCount);
   };
 
   const getFailureCountColor = (count: number) => {
@@ -284,7 +250,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
                 variant="ghost"
                 size="sm"
                 className="p-0 h-5 w-5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors duration-75 flex items-center justify-center"
-                onClick={(e) => handleFailureCountChange(e, -1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFailureCountChange(-1);
+                }}
                 disabled={(question.failureCount || 0) === 0}
                 type="button"
                 aria-label="Decrease failure count"
@@ -298,7 +267,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
                 variant="ghost"
                 size="sm"
                 className="p-0 h-5 w-5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors duration-75 flex items-center justify-center"
-                onClick={(e) => handleFailureCountChange(e, 1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFailureCountChange(1);
+                }}
                 type="button"
                 aria-label="Increase failure count"
               >

@@ -58,7 +58,7 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
 
   const { data: mockExams = [] } = useQuery<MockExam[]>({
     queryKey: ["/api/mock-exams"],
@@ -164,25 +164,41 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
 
       return { previousQuestions };
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
-      onClose();
-      toast({
-        title: t("question.added"),
-        description: t("question.addedDescription"),
+    onSuccess: async (serverQuestion) => {
+      // Get related data to create the complete question object
+      const subject = subjects.find(s => s.id === serverQuestion.subjectId) || subjects.find(s => s.name === data.subjectName);
+      const topic = topics.find(t => t.id === serverQuestion.topicId) || topics.find(t => t.name === data.topicName);
+      const mockExam = mockExams.find(m => m.id === serverQuestion.mockExamId);
+
+      const completeQuestion = {
+        ...serverQuestion,
+        subject: subject || { id: serverQuestion.subjectId, name: data.subjectName, createdAt: new Date() },
+        topic: topic || { id: serverQuestion.topicId, name: data.topicName, createdAt: new Date() },
+        mockExam: mockExam || { id: serverQuestion.mockExamId, title: 'Unknown', createdBy: serverQuestion.createdBy, createdAt: new Date() }
+      };
+
+      // Add the real question from server
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return [completeQuestion];
+        return [completeQuestion, ...old];
       });
+
+      // Invalidate to ensure we have the latest data
+      await queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+
+      toast({
+        title: t("success.title"),
+        description: t("success.questionAdded"),
+      });
+
+      onClose();
+      form.reset();
     },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousQuestions) {
-        context.previousQuestions.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
-      }
+    onError: (error) => {
       toast({
         title: t("error.title"),
-        description: t("error.addQuestion"),
+        description: t("error.createQuestion"),
         variant: "destructive",
       });
     },
@@ -196,7 +212,7 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
     createQuestionMutation.mutate(data);
   };
 
-  
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
