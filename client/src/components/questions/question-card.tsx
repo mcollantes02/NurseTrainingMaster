@@ -56,7 +56,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       if (context?.previousQuestions) {
         queryClient.setQueryData(["/api/questions"], context.previousQuestions);
       }
-      
+
       toast({
         title: t("error.title"),
         description: t("error.updateQuestion"),
@@ -82,7 +82,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     onMutate: async (newCount: number) => {
       // Cancel any outgoing refetches for instant UI updates
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
-      
+
       // Snapshot the previous value  
       const previousQuestions = queryClient.getQueryData(["/api/questions"]);
 
@@ -115,7 +115,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       // Rollback optimistic updates on error
       if (context?.previousQuestions) {
         queryClient.setQueryData(["/api/questions"], context.previousQuestions);
-        
+
         const currentFilters = new URLSearchParams(window.location.search);
         const queryKey = ["/api/questions", currentFilters.toString()];
         queryClient.setQueryData(queryKey, context.previousQuestions);
@@ -138,7 +138,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       };
 
       queryClient.setQueryData(["/api/questions"], updateQueries);
-      
+
       const currentFilters = new URLSearchParams(window.location.search);
       const queryKey = ["/api/questions", currentFilters.toString()];
       queryClient.setQueryData(queryKey, updateQueries);
@@ -187,16 +187,9 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     }
   };
 
-  const handleFailureCountChange = (e: React.MouseEvent, delta: number) => {
-    e.stopPropagation();
-    e.preventDefault();
-    const currentCount = question.failureCount || 0;
-    const newCount = Math.max(0, currentCount + delta);
-    
-    // Only proceed if the count actually changes
-    if (newCount !== currentCount) {
-      updateFailureCountMutation.mutate(newCount);
-    }
+  const handleFailureCountChange = (change: 1 | -1) => {
+    const newCount = Math.max(0, (question.failureCount || 0) + change);
+    updateFailureCountMutation.mutate(newCount);
   };
 
   const getFailureCountColor = (count: number) => {
@@ -284,7 +277,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
                 variant="ghost"
                 size="sm"
                 className="p-0 h-5 w-5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors duration-75 flex items-center justify-center"
-                onClick={(e) => handleFailureCountChange(e, -1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFailureCountChange(-1);
+                }}
                 disabled={(question.failureCount || 0) === 0}
                 type="button"
                 aria-label="Decrease failure count"
@@ -298,7 +294,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
                 variant="ghost"
                 size="sm"
                 className="p-0 h-5 w-5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors duration-75 flex items-center justify-center"
-                onClick={(e) => handleFailureCountChange(e, 1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFailureCountChange(1);
+                }}
                 type="button"
                 aria-label="Increase failure count"
               >
