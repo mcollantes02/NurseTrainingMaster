@@ -1,5 +1,6 @@
 
 import { firestore } from './firebase';
+import { Timestamp } from 'firebase-admin/firestore';
 import { 
   users, 
   mockExams, 
@@ -28,7 +29,7 @@ export interface FirestoreUser {
   firstName: string;
   lastName: string;
   role: string;
-  createdAt: FirebaseFirestore.Timestamp;
+  createdAt: Timestamp;
 }
 
 // MockExam document structure
@@ -36,21 +37,21 @@ export interface FirestoreMockExam {
   id: number;
   title: string;
   createdBy: number;
-  createdAt: FirebaseFirestore.Timestamp;
+  createdAt: Timestamp;
 }
 
 // Subject document structure
 export interface FirestoreSubject {
   id: number;
   name: string;
-  createdAt: FirebaseFirestore.Timestamp;
+  createdAt: Timestamp;
 }
 
 // Topic document structure
 export interface FirestoreTopic {
   id: number;
   name: string;
-  createdAt: FirebaseFirestore.Timestamp;
+  createdAt: Timestamp;
 }
 
 // Question document structure
@@ -64,7 +65,7 @@ export interface FirestoreQuestion {
   isLearned: boolean;
   failureCount: number;
   createdBy: number;
-  createdAt: FirebaseFirestore.Timestamp;
+  createdAt: Timestamp;
 }
 
 // TrashedQuestion document structure
@@ -82,8 +83,8 @@ export interface FirestoreTrashedQuestion {
   isLearned: boolean;
   failureCount: number;
   createdBy: number;
-  createdAt: FirebaseFirestore.Timestamp;
-  deletedAt: FirebaseFirestore.Timestamp;
+  createdAt: Timestamp;
+  deletedAt: Timestamp;
 }
 
 // Migration utilities
@@ -129,7 +130,7 @@ export class FirestoreMigration {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
-        createdAt: FirebaseFirestore.Timestamp.fromDate(user.createdAt || new Date()),
+        createdAt: Timestamp.fromDate(user.createdAt || new Date()),
       };
       batch.set(docRef, firestoreUser);
     }
@@ -148,7 +149,7 @@ export class FirestoreMigration {
       const firestoreSubject: FirestoreSubject = {
         id: subject.id,
         name: subject.name,
-        createdAt: FirebaseFirestore.Timestamp.fromDate(subject.createdAt || new Date()),
+        createdAt: Timestamp.fromDate(subject.createdAt || new Date()),
       };
       batch.set(docRef, firestoreSubject);
     }
@@ -167,7 +168,7 @@ export class FirestoreMigration {
       const firestoreTopic: FirestoreTopic = {
         id: topic.id,
         name: topic.name,
-        createdAt: FirebaseFirestore.Timestamp.fromDate(topic.createdAt || new Date()),
+        createdAt: Timestamp.fromDate(topic.createdAt || new Date()),
       };
       batch.set(docRef, firestoreTopic);
     }
@@ -187,7 +188,7 @@ export class FirestoreMigration {
         id: mockExam.id,
         title: mockExam.title,
         createdBy: mockExam.createdBy,
-        createdAt: FirebaseFirestore.Timestamp.fromDate(mockExam.createdAt || new Date()),
+        createdAt: Timestamp.fromDate(mockExam.createdAt || new Date()),
       };
       batch.set(docRef, firestoreMockExam);
     }
@@ -218,7 +219,7 @@ export class FirestoreMigration {
           isLearned: question.isLearned || false,
           failureCount: question.failureCount || 0,
           createdBy: question.createdBy,
-          createdAt: FirebaseFirestore.Timestamp.fromDate(question.createdAt || new Date()),
+          createdAt: Timestamp.fromDate(question.createdAt || new Date()),
         };
         batch.set(docRef, firestoreQuestion);
       }
@@ -251,8 +252,8 @@ export class FirestoreMigration {
         isLearned: trashedQuestion.isLearned || false,
         failureCount: trashedQuestion.failureCount || 0,
         createdBy: trashedQuestion.createdBy,
-        createdAt: FirebaseFirestore.Timestamp.fromDate(trashedQuestion.createdAt),
-        deletedAt: FirebaseFirestore.Timestamp.fromDate(trashedQuestion.deletedAt || new Date()),
+        createdAt: Timestamp.fromDate(trashedQuestion.createdAt),
+        deletedAt: Timestamp.fromDate(trashedQuestion.deletedAt || new Date()),
       };
       batch.set(docRef, firestoreTrashedQuestion);
     }
@@ -374,7 +375,7 @@ export class FirestoreStorage {
     const questionData: FirestoreQuestion = {
       ...question,
       id: parseInt(docRef.id.slice(0, 9), 36), // Generate numeric ID from Firestore ID
-      createdAt: FirebaseFirestore.Timestamp.now(),
+      createdAt: Timestamp.now(),
     };
     
     await docRef.set(questionData);
@@ -438,7 +439,7 @@ export class FirestoreStorage {
       failureCount: questionData.failureCount,
       createdBy: questionData.createdBy,
       createdAt: questionData.createdAt,
-      deletedAt: FirebaseFirestore.Timestamp.now(),
+      deletedAt: Timestamp.now(),
     };
     
     // Batch operation: create trashed question and delete original
