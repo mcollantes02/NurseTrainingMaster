@@ -1,15 +1,37 @@
-
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertMockExamSchema, insertQuestionSchema } from "@shared/schema";
 import bcrypt from "bcrypt";
 import session from "express-session";
+import { Timestamp } from 'firebase-admin/firestore';
 
 declare module "express-session" {
   interface SessionData {
     userId?: number;
   }
+}
+
+// Helper function to convert Firestore timestamp to Date
+function convertFirestoreToDate(firestoreData: any): any {
+  if (!firestoreData) return firestoreData;
+
+  const converted = { ...firestoreData };
+
+  if (converted.createdAt && typeof converted.createdAt === 'object' && 'seconds' in converted.createdAt) {
+    converted.createdAt = new Date(converted.createdAt.seconds * 1000);
+  }
+
+  if (converted.deletedAt && typeof converted.deletedAt === 'object' && 'seconds' in converted.deletedAt) {
+    converted.deletedAt = new Date(converted.deletedAt.seconds * 1000);
+  }
+
+  return converted;
+}
+
+// Helper function to convert arrays of Firestore data
+function convertFirestoreArrayToDate(firestoreArray: any[]): any[] {
+  return firestoreArray.map(item => convertFirestoreToDate(item));
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -41,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/register", async (req, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
-      
+
       // Check if user already exists
       const existingUser = await storage.getUserByEmail(userData.email);
       if (existingUser) {
@@ -50,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Hash password
       const hashedPassword = await bcrypt.hash(userData.password, 10);
-      
+
       const user = await storage.createUser({
         ...userData,
         password: hashedPassword,
@@ -116,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/mock-exams", requireAuth, async (req, res) => {
     try {
       const mockExams = await storage.getMockExams(req.session.userId!);
-      res.json(mockExams);
+      res.json(convertFirestoreArrayToDate(mockExams));
     } catch (error) {
       console.error("Get mock exams error:", error);
       res.status(500).json({ message: "Failed to get mock exams" });
@@ -175,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/subjects", requireAuth, async (req, res) => {
     try {
       const subjects = await storage.getSubjects();
-      res.json(subjects);
+      res.json(convertFirestoreArrayToDate(subjects));
     } catch (error) {
       console.error("Get subjects error:", error);
       res.status(500).json({ message: "Failed to get subjects" });
@@ -185,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/subjects", requireAuth, async (req, res) => {
     try {
       const { name } = req.body;
-      
+
       // Check if subject already exists
       const existing = await storage.getSubjectByName(name);
       if (existing) {
@@ -237,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/topics", requireAuth, async (req, res) => {
     try {
       const topics = await storage.getTopics();
-      res.json(topics);
+      res.json(convertFirestoreArrayToDate(topics));
     } catch (error) {
       console.error("Get topics error:", error);
       res.status(500).json({ message: "Failed to get topics" });
@@ -247,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/topics", requireAuth, async (req, res) => {
     try {
       const { name } = req.body;
-      
+
       // Check if topic already exists
       const existing = await storage.getTopicByName(name);
       if (existing) {
@@ -322,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const questions = await storage.getQuestions(filters);
-      res.json(questions);
+      res.json(convertFirestoreArrayToDate(questions));
     } catch (error) {
       console.error("Get questions error:", error);
       res.status(500).json({ message: "Failed to get questions" });
@@ -337,7 +359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       const question = await storage.createQuestion(questionData);
-      res.json(question);
+      res.json(convertFirestoreToDate(question));
     } catch (error) {
       console.error("Create question error:", error);
       res.status(400).json({ message: "Failed to create question" });
@@ -363,7 +385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Question not found" });
       }
 
-      res.json(question);
+      res.json(convertFirestoreToDate(question));
     } catch (error) {
       console.error("Update question error:", error);
       res.status(500).json({ message: "Failed to update question" });
@@ -446,7 +468,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/trash", requireAuth, async (req, res) => {
     try {
       const trashedQuestions = await storage.getTrashedQuestions(req.session.userId!);
-      res.json(trashedQuestions);
+      res.json(convertFirestoreArrayToDate(trashedQuestions));
     } catch (error) {
       console.error("Get trashed questions error:", error);
       res.status(500).json({ message: "Failed to get trashed questions" });
@@ -457,7 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.restoreQuestion(id, req.session.userId!);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Question not found or cannot be restored" });
       }
@@ -473,7 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.permanentlyDeleteQuestion(id, req.session.userId!);
-      
+
       if (!success) {
         return res.status(404).json({ message: "Question not found" });
       }
