@@ -8,6 +8,19 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { QuestionWithRelations } from "@shared/schema";
 
+interface FiltersState {
+  mockExamIds: number[];
+  subjectIds: number[];
+  topicIds: number[];
+  keywords: string;
+  learningStatus: boolean[];
+  failureCount: {
+    min: number | undefined;
+    max: number | undefined;
+    exact: number | undefined;
+  };
+}
+
 interface QuestionGridProps {
   filters: FiltersState;
   groupByExam?: boolean;
@@ -41,6 +54,15 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
   }
   if (filters.learningStatus?.length) {
     filters.learningStatus.forEach(status => queryParams.append('learningStatus', status.toString()));
+  }
+  if (filters.failureCount?.exact !== undefined && filters.failureCount.exact !== null) {
+    queryParams.append('failureCountExact', filters.failureCount.exact.toString());
+  }
+  if (filters.failureCount?.min !== undefined && filters.failureCount.min !== null) {
+    queryParams.append('failureCountMin', filters.failureCount.min.toString());
+  }
+  if (filters.failureCount?.max !== undefined && filters.failureCount.max !== null) {
+    queryParams.append('failureCountMax', filters.failureCount.max.toString());
   }
 
   const { data: questions = [], isLoading } = useQuery<QuestionWithRelations[]>({
