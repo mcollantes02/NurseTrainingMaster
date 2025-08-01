@@ -1,6 +1,4 @@
 
-#!/usr/bin/env tsx
-
 import { FirestoreMigration } from './firestore-schema';
 
 async function main() {
