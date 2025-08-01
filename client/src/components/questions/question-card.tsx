@@ -187,26 +187,9 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     }
   };
 
-  const handleFailureCountChange = async (change: 1 | -1) => {
-    try {
-      console.log(`Updating failure count for question ${question.id} with change: ${change}`);
-      const response = await apiRequest("PATCH", `/api/questions/${question.id}/failure-count`, {
-        change
-      });
-
-      if (response.ok) {
-        const updatedQuestion = await response.json();
-        console.log(`Updated question ${question.id} failure count to:`, updatedQuestion.failureCount);
-
-        // Invalidate all question queries to ensure fresh data
-        await queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-
-        // Force refetch with current filters
-        window.location.reload();
-      }
-    } catch (error) {
-      console.error("Failed to update failure count:", error);
-    }
+  const handleFailureCountChange = (change: 1 | -1) => {
+    const newCount = Math.max(0, (question.failureCount || 0) + change);
+    updateFailureCountMutation.mutate(newCount);
   };
 
   const getFailureCountColor = (count: number) => {
