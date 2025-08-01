@@ -177,3 +177,34 @@ export type TrashedQuestionWithUser = TrashedQuestion & {
 export type MockExamWithQuestionCount = MockExam & {
   questionCount: number;
 };
+
+// Firestore types
+export type FirestoreTimestamp = {
+  seconds: number;
+  nanoseconds: number;
+};
+
+export type FirestoreUser = Omit<User, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
+
+export type FirestoreMockExam = Omit<MockExam, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
+
+export type FirestoreSubject = Omit<Subject, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
+
+export type FirestoreTopic = Omit<Topic, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
+
+export type FirestoreQuestion = Omit<Question, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
+
+export type FirestoreTrashedQuestion = Omit<TrashedQuestion, 'createdAt' | 'deletedAt'> & {
+  createdAt: FirestoreTimestamp;
+  deletedAt: FirestoreTimestamp;
+};
