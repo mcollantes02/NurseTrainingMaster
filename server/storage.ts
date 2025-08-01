@@ -81,7 +81,10 @@ export class Storage {
 
   async createSubject(subjectData: { name: string }): Promise<FirestoreSubject> {
     const docRef = firestore.collection(COLLECTIONS.SUBJECTS).doc();
-    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
+    const numericId = Math.abs(docRef.id.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0)) % 1000000;
 
     const subject: FirestoreSubject = {
       ...subjectData,
@@ -147,7 +150,10 @@ export class Storage {
 
   async createTopic(topicData: { name: string }): Promise<FirestoreTopic> {
     const docRef = firestore.collection(COLLECTIONS.TOPICS).doc();
-    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
+    const numericId = Math.abs(docRef.id.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0)) % 1000000;
 
     const topic: FirestoreTopic = {
       ...topicData,
@@ -205,7 +211,10 @@ export class Storage {
 
   async createMockExam(mockExamData: Omit<FirestoreMockExam, 'id' | 'createdAt'>): Promise<FirestoreMockExam> {
     const docRef = firestore.collection(COLLECTIONS.MOCK_EXAMS).doc();
-    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
+    const numericId = Math.abs(docRef.id.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0)) % 1000000;
 
     const mockExam: FirestoreMockExam = {
       ...mockExamData,
@@ -310,7 +319,10 @@ export class Storage {
 
   async createQuestion(questionData: Omit<FirestoreQuestion, 'id' | 'createdAt'>): Promise<FirestoreQuestion> {
     const docRef = firestore.collection(COLLECTIONS.QUESTIONS).doc();
-    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
+    const numericId = Math.abs(docRef.id.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0)) % 1000000;
 
     const question: FirestoreQuestion = {
       ...questionData,
@@ -382,7 +394,10 @@ export class Storage {
     const topic = !topicSnapshot.empty ? topicSnapshot.docs[0].data() as FirestoreTopic : null;
 
     const docRef = firestore.collection(COLLECTIONS.TRASHED_QUESTIONS).doc();
-    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
+    const numericId = Math.abs(docRef.id.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0)) % 1000000;
 
     const trashedQuestion: FirestoreTrashedQuestion = {
       id: numericId,
@@ -427,7 +442,10 @@ export class Storage {
 
     // Restore to questions collection
     const questionDocRef = firestore.collection(COLLECTIONS.QUESTIONS).doc();
-    const numericId = parseInt(questionDocRef.id.slice(-9), 36) % 1000000;
+    const numericId = Math.abs(questionDocRef.id.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0)) % 1000000;
 
     const restoredQuestion: FirestoreQuestion = {
       id: numericId,
