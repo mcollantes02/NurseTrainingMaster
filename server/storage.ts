@@ -1,297 +1,262 @@
-import {
-  users,
-  mockExams,
-  subjects,
-  topics,
-  questions,
-  trashedQuestions,
-  type User,
-  type InsertUser,
-  type MockExam,
-  type InsertMockExam,
-  type MockExamWithQuestionCount,
-  type Subject,
-  type InsertSubject,
-  type Topic,
-  type InsertTopic,
-  type Question,
-  type InsertQuestion,
-  type QuestionWithRelations,
-  type TrashedQuestion,
-  type InsertTrashedQuestion,
-  type TrashedQuestionWithUser,
-} from "@shared/schema";
-import { db } from "./db";
-import { eq, and, like, inArray, count, sql, gte, lte } from "drizzle-orm";
-import { desc } from "drizzle-orm";
+import { firestore } from './firebase';
+import { Timestamp } from 'firebase-admin/firestore';
+import { 
+  COLLECTIONS,
+  FirestoreUser,
+  FirestoreMockExam,
+  FirestoreSubject,
+  FirestoreTopic,
+  FirestoreQuestion,
+  FirestoreTrashedQuestion
+} from './firestore-schema';
+import bcrypt from 'bcrypt';
 
-export interface IStorage {
-  // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+export class Storage {
+  // User methods
+  async getUserByEmail(email: string): Promise<FirestoreUser | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.USERS)
+      .where('email', '==', email)
+      .limit(1)
+      .get();
 
-  // Mock exam operations
-  getMockExams(userId: number): Promise<MockExamWithQuestionCount[]>;
-  createMockExam(mockExam: InsertMockExam): Promise<MockExam>;
-  updateMockExam(id: number, data: { title: string }, userId: number): Promise<MockExam | null>;
-  deleteMockExam(id: number, userId: number): Promise<boolean>;
+    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreUser;
+  }
 
-  // Subject operations
-  getSubjects(): Promise<Subject[]>;
-  createSubject(subject: InsertSubject): Promise<Subject>;
-  getSubjectByName(name: string): Promise<Subject | undefined>;
-  updateSubject(id: number, data: { name: string }): Promise<Subject | undefined>;
-  deleteSubject(id: number): Promise<boolean>;
+  async getUser(id: number): Promise<FirestoreUser | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.USERS)
+      .where('id', '==', id)
+      .limit(1)
+      .get();
 
-  // Topic operations
-  getTopics(): Promise<Topic[]>;
-  createTopic(topic: InsertTopic): Promise<Topic>;
-  getTopicByName(name: string): Promise<Topic | undefined>;
-  updateTopic(id: number, data: { name: string }): Promise<Topic | undefined>;
-  deleteTopic(id: number): Promise<boolean>;
+    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreUser;
+  }
 
-  // Question operations
-  getQuestions(filters: {
-    mockExamIds?: number[];
-    subjectIds?: number[];
-    topicIds?: number[];
-    keywords?: string;
-    learningStatus?: boolean[];
-    failureCountExact?: number;
-    failureCountMin?: number;
-    failureCountMax?: number;
-    userId: number;
-  }): Promise<QuestionWithRelations[]>;
-  createQuestion(question: InsertQuestion): Promise<Question>;
-  updateQuestionLearned(id: number, isLearned: boolean, userId: number): Promise<QuestionWithRelations | undefined>;
-  deleteQuestion(id: number, userId: number): Promise<boolean>;
-  updateQuestion(
-    id: number,
-    updates: {
-      mockExamId?: number;
-      subjectId?: number;
-      topicId?: number;
-      type?: string;
-      theory?: string;
-      failureCount?: number;
-      isLearned?: boolean;
-    },
-    userId: number
-  ): Promise<QuestionWithRelations | undefined>;
-  getQuestionById(id: number): Promise<QuestionWithRelations | undefined>;
+  async createUser(userData: Omit<FirestoreUser, 'id' | 'createdAt'>): Promise<FirestoreUser> {
+    const docRef = firestore.collection(COLLECTIONS.USERS).doc();
 
-  // Trash operations
-  getTrashedQuestions(userId: number): Promise<TrashedQuestionWithUser[]>;
-  restoreQuestion(trashedId: number, userId: number): Promise<boolean>;
-  permanentlyDeleteQuestion(trashedId: number, userId: number): Promise<boolean>;
-  emptyTrash(userId: number): Promise<boolean>;
+    // Generate numeric ID from Firestore doc ID
+    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
 
-  // Stats
-  getUserStats(userId: number): Promise<{
-    completedExams: number;
-    learnedQuestions: number;
-    totalQuestions: number;
-    progressPercentage: number;
-  }>;
+    const user: FirestoreUser = {
+      ...userData,
+      id: numericId,
+      createdAt: Timestamp.now(),
+    };
 
-  updateUserRole(userId: number, role: string): Promise<User>;
-
-  updateQuestionFailureCount(id: number, failureCount: number, userId: number): Promise<QuestionWithRelations | undefined>;
-}
-
-export class DatabaseStorage implements IStorage {
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    await docRef.set(user);
     return user;
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+  async updateUserRole(id: number, role: string): Promise<FirestoreUser | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.USERS)
+      .where('id', '==', id)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return null;
+
+    const doc = snapshot.docs[0];
+    await doc.ref.update({ role });
+
+    const updatedDoc = await doc.ref.get();
+    return updatedDoc.data() as FirestoreUser;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db.insert(users).values(insertUser).returning();
-    return user;
+  // Subject methods
+  async getSubjects(): Promise<FirestoreSubject[]> {
+    const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
+      .orderBy('name')
+      .get();
+    return snapshot.docs.map(doc => doc.data() as FirestoreSubject);
   }
 
-  async getMockExams(userId: number): Promise<MockExamWithQuestionCount[]> {
-    const result = await db
-      .select({
-        id: mockExams.id,
-        title: mockExams.title,
-        createdBy: mockExams.createdBy,
-        createdAt: mockExams.createdAt,
-        questionCount: count(questions.id),
-      })
-      .from(mockExams)
-      .leftJoin(questions, eq(questions.mockExamId, mockExams.id))
-      .where(eq(mockExams.createdBy, userId))
-      .groupBy(mockExams.id, mockExams.title, mockExams.createdBy, mockExams.createdAt)
-      .orderBy(desc(mockExams.createdAt));
+  async getSubjectByName(name: string): Promise<FirestoreSubject | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
+      .where('name', '==', name)
+      .limit(1)
+      .get();
 
-    return result;
+    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreSubject;
   }
 
-  async createMockExam(mockExam: InsertMockExam): Promise<MockExam> {
-    const [exam] = await db.insert(mockExams).values(mockExam).returning();
-    return exam;
-  }
+  async createSubject(subjectData: { name: string }): Promise<FirestoreSubject> {
+    const docRef = firestore.collection(COLLECTIONS.SUBJECTS).doc();
+    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
 
-  async updateMockExam(id: number, data: { title: string }, userId: number): Promise<MockExam | null> {
-    const [updated] = await db
-      .update(mockExams)
-      .set({ title: data.title })
-      .where(and(eq(mockExams.id, id), eq(mockExams.createdBy, userId)))
-      .returning();
+    const subject: FirestoreSubject = {
+      ...subjectData,
+      id: numericId,
+      createdAt: Timestamp.now(),
+    };
 
-    return updated || null;
-  }
-
-  async deleteMockExam(id: number, userId: number): Promise<boolean> {
-    // First get the mock exam to verify ownership
-    const mockExam = await db
-      .select()
-      .from(mockExams)
-      .where(and(eq(mockExams.id, id), eq(mockExams.createdBy, userId)))
-      .limit(1);
-
-    if (mockExam.length === 0) {
-      return false; // Mock exam not found or not owned by user
-    }
-
-    // Get all questions for this mock exam to move them to trash
-    const examQuestions = await db
-      .select({
-        id: questions.id,
-        mockExamId: questions.mockExamId,
-        subjectId: questions.subjectId,
-        topicId: questions.topicId,
-        type: questions.type,
-        theory: questions.theory,
-        isLearned: questions.isLearned,
-        createdBy: questions.createdBy,
-        createdAt: questions.createdAt,
-        mockExamTitle: mockExams.title,
-        subjectName: subjects.name,
-        topicName: topics.name,
-      })
-      .from(questions)
-      .leftJoin(mockExams, eq(questions.mockExamId, mockExams.id))
-      .leftJoin(subjects, eq(questions.subjectId, subjects.id))
-      .leftJoin(topics, eq(questions.topicId, topics.id))
-      .where(eq(questions.mockExamId, id));
-
-    // Move questions to trash if any exist
-    if (examQuestions.length > 0) {
-      const trashedData = examQuestions.map(q => ({
-        originalId: q.id,
-        mockExamId: q.mockExamId,
-        mockExamTitle: q.mockExamTitle || 'Unknown',
-        subjectId: q.subjectId,
-        subjectName: q.subjectName || 'Unknown',
-        topicId: q.topicId,
-        topicName: q.topicName || 'Unknown',
-        type: q.type,
-        theory: q.theory,
-        isLearned: q.isLearned,
-        createdBy: q.createdBy,
-        createdAt: q.createdAt,
-        mockExamTitle: q.mockExamTitle,
-        subjectName: q.subjectName,
-        topicName: q.topicName,
-      }));
-
-      await db.insert(trashedQuestions).values(trashedData);
-      await db.delete(questions).where(eq(questions.mockExamId, id));
-    }
-
-    // Delete the mock exam
-    const result = await db
-      .delete(mockExams)
-      .where(and(eq(mockExams.id, id), eq(mockExams.createdBy, userId)));
-
-    return result.rowCount > 0;
-  }
-
-  async getSubjects(): Promise<Subject[]> {
-    return await db.select().from(subjects).orderBy(subjects.name);
-  }
-
-  async createSubject(subject: InsertSubject): Promise<Subject> {
-    const [newSubject] = await db.insert(subjects).values(subject).returning();
-    return newSubject;
-  }
-
-  async getSubjectByName(name: string): Promise<Subject | undefined> {
-    const [subject] = await db.select().from(subjects).where(eq(subjects.name, name));
+    await docRef.set(subject);
     return subject;
   }
 
-  async updateSubject(id: number, data: { name: string }): Promise<Subject | undefined> {
-    const [subject] = await db
-      .update(subjects)
-      .set(data)
-      .where(eq(subjects.id, id))
-      .returning();
-    return subject;
+  async updateSubject(id: number, updates: { name: string }): Promise<FirestoreSubject | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
+      .where('id', '==', id)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return null;
+
+    const doc = snapshot.docs[0];
+    await doc.ref.update(updates);
+
+    const updatedDoc = await doc.ref.get();
+    return updatedDoc.data() as FirestoreSubject;
   }
 
   async deleteSubject(id: number): Promise<boolean> {
-    // Check if there are questions using this subject
-    const [questionsCount] = await db
-      .select({ count: count() })
-      .from(questions)
-      .where(eq(questions.subjectId, id));
+    // Check if subject has associated questions
+    const questionsSnapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+      .where('subjectId', '==', id)
+      .limit(1)
+      .get();
 
-    if (questionsCount.count > 0) {
-      return false; // Cannot delete subject with associated questions
-    }
+    if (!questionsSnapshot.empty) return false;
 
-    const result = await db.delete(subjects).where(eq(subjects.id, id));
-    return result.rowCount > 0;
+    const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
+      .where('id', '==', id)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return false;
+
+    await snapshot.docs[0].ref.delete();
+    return true;
   }
 
-  async getTopics(): Promise<Topic[]> {
-    return await db.select().from(topics).orderBy(topics.name);
+  // Topic methods
+  async getTopics(): Promise<FirestoreTopic[]> {
+    const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
+      .orderBy('name')
+      .get();
+    return snapshot.docs.map(doc => doc.data() as FirestoreTopic);
   }
 
-  async createTopic(topic: InsertTopic): Promise<Topic> {
-    const [newTopic] = await db.insert(topics).values(topic).returning();
-    return newTopic;
+  async getTopicByName(name: string): Promise<FirestoreTopic | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
+      .where('name', '==', name)
+      .limit(1)
+      .get();
+
+    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreTopic;
   }
 
-  async getTopicByName(name: string): Promise<Topic | undefined> {
-    const [topic] = await db.select().from(topics).where(eq(topics.name, name));
+  async createTopic(topicData: { name: string }): Promise<FirestoreTopic> {
+    const docRef = firestore.collection(COLLECTIONS.TOPICS).doc();
+    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
+
+    const topic: FirestoreTopic = {
+      ...topicData,
+      id: numericId,
+      createdAt: Timestamp.now(),
+    };
+
+    await docRef.set(topic);
     return topic;
   }
 
-  async updateTopic(id: number, data: { name: string }): Promise<Topic | undefined> {
-    const [topic] = await db
-      .update(topics)
-      .set(data)
-      .where(eq(topics.id, id))
-      .returning();
-    return topic;
+  async updateTopic(id: number, updates: { name: string }): Promise<FirestoreTopic | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
+      .where('id', '==', id)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return null;
+
+    const doc = snapshot.docs[0];
+    await doc.ref.update(updates);
+
+    const updatedDoc = await doc.ref.get();
+    return updatedDoc.data() as FirestoreTopic;
   }
 
   async deleteTopic(id: number): Promise<boolean> {
-    // Check if there are questions using this topic
-    const [questionsCount] = await db
-      .select({ count: count() })
-      .from(questions)
-      .where(eq(questions.topicId, id));
+    // Check if topic has associated questions
+    const questionsSnapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+      .where('topicId', '==', id)
+      .limit(1)
+      .get();
 
-    if (questionsCount.count > 0) {
-      return false; // Cannot delete topic with associated questions
-    }
+    if (!questionsSnapshot.empty) return false;
 
-    const result = await db.delete(topics).where(eq(topics.id, id));
-    return result.rowCount > 0;
+    const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
+      .where('id', '==', id)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return false;
+
+    await snapshot.docs[0].ref.delete();
+    return true;
   }
 
+  // Mock Exam methods
+  async getMockExams(userId: number): Promise<FirestoreMockExam[]> {
+    const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
+      .where('createdBy', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .get();
+    return snapshot.docs.map(doc => doc.data() as FirestoreMockExam);
+  }
+
+  async createMockExam(mockExamData: Omit<FirestoreMockExam, 'id' | 'createdAt'>): Promise<FirestoreMockExam> {
+    const docRef = firestore.collection(COLLECTIONS.MOCK_EXAMS).doc();
+    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
+
+    const mockExam: FirestoreMockExam = {
+      ...mockExamData,
+      id: numericId,
+      createdAt: Timestamp.now(),
+    };
+
+    await docRef.set(mockExam);
+    return mockExam;
+  }
+
+  async updateMockExam(id: number, updates: { title: string }, userId: number): Promise<FirestoreMockExam | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
+      .where('id', '==', id)
+      .where('createdBy', '==', userId)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return null;
+
+    const doc = snapshot.docs[0];
+    await doc.ref.update(updates);
+
+    const updatedDoc = await doc.ref.get();
+    return updatedDoc.data() as FirestoreMockExam;
+  }
+
+  async deleteMockExam(id: number, userId: number): Promise<boolean> {
+    // Check if mock exam has associated questions
+    const questionsSnapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+      .where('mockExamId', '==', id)
+      .limit(1)
+      .get();
+
+    if (!questionsSnapshot.empty) return false;
+
+    const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
+      .where('id', '==', id)
+      .where('createdBy', '==', userId)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return false;
+
+    await snapshot.docs[0].ref.delete();
+    return true;
+  }
+
+  // Question methods
   async getQuestions(filters: {
+    userId: number;
     mockExamIds?: number[];
     subjectIds?: number[];
     topicIds?: number[];
@@ -300,374 +265,243 @@ export class DatabaseStorage implements IStorage {
     failureCountExact?: number;
     failureCountMin?: number;
     failureCountMax?: number;
-    userId: number;
-  }): Promise<QuestionWithRelations[]> {
-    const conditions = [eq(mockExams.createdBy, filters.userId)];
+  }): Promise<FirestoreQuestion[]> {
+    let query = firestore.collection(COLLECTIONS.QUESTIONS)
+      .where('createdBy', '==', filters.userId);
 
-    if (filters.mockExamIds && filters.mockExamIds.length > 0) {
-      conditions.push(inArray(questions.mockExamId, filters.mockExamIds));
+    // Apply filters
+    if (filters.mockExamIds?.length) {
+      query = query.where('mockExamId', 'in', filters.mockExamIds);
     }
-
-    if (filters.subjectIds && filters.subjectIds.length > 0) {
-      conditions.push(inArray(questions.subjectId, filters.subjectIds));
+    if (filters.subjectIds?.length) {
+      query = query.where('subjectId', 'in', filters.subjectIds);
     }
-
-    if (filters.topicIds && filters.topicIds.length > 0) {
-      conditions.push(inArray(questions.topicId, filters.topicIds));
+    if (filters.topicIds?.length) {
+      query = query.where('topicId', 'in', filters.topicIds);
     }
-
-    if (filters.keywords) {
-      conditions.push(like(questions.theory, `%${filters.keywords}%`));
+    if (filters.learningStatus?.length === 1) {
+      query = query.where('isLearned', '==', filters.learningStatus[0]);
     }
-
-    if (filters.learningStatus && filters.learningStatus.length > 0) {
-      conditions.push(inArray(questions.isLearned, filters.learningStatus));
-    }
-
     if (filters.failureCountExact !== undefined) {
-      conditions.push(eq(questions.failureCount, filters.failureCountExact));
-    } else {
-      if (filters.failureCountMin !== undefined) {
-        conditions.push(gte(questions.failureCount, filters.failureCountMin));
-      }
-      if (filters.failureCountMax !== undefined) {
-        conditions.push(lte(questions.failureCount, filters.failureCountMax));
-      }
+      query = query.where('failureCount', '==', filters.failureCountExact);
     }
 
-    const result = await db
-      .select({
-        id: questions.id,
-        mockExamId: questions.mockExamId,
-        subjectId: questions.subjectId,
-        topicId: questions.topicId,
-        type: questions.type,
-        theory: questions.theory,
-        isLearned: questions.isLearned,
-        failureCount: questions.failureCount,
-        createdBy: questions.createdBy,
-        createdAt: questions.createdAt,
-        mockExam: {
-          id: mockExams.id,
-          title: mockExams.title,
-          createdBy: mockExams.createdBy,
-          createdAt: mockExams.createdAt,
-        },
-        subject: {
-          id: subjects.id,
-          name: subjects.name,
-          createdAt: subjects.createdAt,
-        },
-        topic: {
-          id: topics.id,
-          name: topics.name,
-          createdAt: topics.createdAt,
-        },
-        createdByUser: {
-          id: users.id,
-          email: users.email,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          role: users.role,
-          createdAt: users.createdAt,
-          password: users.password,
-        },
-      })
-      .from(questions)
-      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
-      .innerJoin(subjects, eq(questions.subjectId, subjects.id))
-      .innerJoin(topics, eq(questions.topicId, topics.id))
-      .innerJoin(users, eq(questions.createdBy, users.id))
-      .where(and(...conditions))
-      .orderBy(questions.createdAt);
+    const snapshot = await query.orderBy('createdAt', 'desc').get();
+    let questions = snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
 
-    return result.map((row) => ({
-      id: row.id,
-      mockExamId: row.mockExamId,
-      subjectId: row.subjectId,
-      topicId: row.topicId,
-      type: row.type,
-      theory: row.theory,
-      isLearned: row.isLearned,
-      failureCount: row.failureCount,
-      createdBy: row.createdByUser,
-      createdAt: row.createdAt,
-      mockExam: row.mockExam,
-      subject: row.subject,
-      topic: row.topic,
-    }));
+    // Apply additional filters that can't be done in Firestore query
+    if (filters.keywords) {
+      const keywords = filters.keywords.toLowerCase();
+      questions = questions.filter(q => 
+        q.theory.toLowerCase().includes(keywords)
+      );
+    }
+
+    if (filters.failureCountMin !== undefined) {
+      questions = questions.filter(q => q.failureCount >= filters.failureCountMin!);
+    }
+
+    if (filters.failureCountMax !== undefined) {
+      questions = questions.filter(q => q.failureCount <= filters.failureCountMax!);
+    }
+
+    return questions;
   }
 
-  async createQuestion(question: InsertQuestion): Promise<Question> {
-    const [newQuestion] = await db.insert(questions).values(question).returning();
-    return newQuestion;
+  async createQuestion(questionData: Omit<FirestoreQuestion, 'id' | 'createdAt'>): Promise<FirestoreQuestion> {
+    const docRef = firestore.collection(COLLECTIONS.QUESTIONS).doc();
+    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
+
+    const question: FirestoreQuestion = {
+      ...questionData,
+      id: numericId,
+      createdAt: Timestamp.now(),
+    };
+
+    await docRef.set(question);
+    return question;
   }
 
   async updateQuestion(
-    id: number,
-    updates: {
-      mockExamId?: number;
-      subjectId?: number;
-      topicId?: number;
-      type?: string;
-      theory?: string;
-      failureCount?: number;
-      isLearned?: boolean;
-    },
+    id: number, 
+    updates: Partial<FirestoreQuestion>, 
     userId: number
-  ): Promise<QuestionWithRelations | undefined> {
-    // First check if the question belongs to the user
-    const existingQuestion = await db
-      .select()
-      .from(questions)
-      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
-      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
-      .limit(1);
+  ): Promise<FirestoreQuestion | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+      .where('id', '==', id)
+      .where('createdBy', '==', userId)
+      .limit(1)
+      .get();
 
-    if (existingQuestion.length === 0) {
-      return undefined;
-    }
+    if (snapshot.empty) return null;
 
-    // Update the question
-    await db
-      .update(questions)
-      .set({
-        mockExamId: updates.mockExamId,
-        subjectId: updates.subjectId,
-        topicId: updates.topicId,
-        type: updates.type,
-        theory: updates.theory,
-        failureCount: updates.failureCount !== undefined ? Math.max(0, updates.failureCount) : undefined,
-        isLearned: updates.isLearned,
-      })
-      .where(eq(questions.id, id));
+    const doc = snapshot.docs[0];
+    await doc.ref.update(updates);
 
-    return this.getQuestionById(id);
+    const updatedDoc = await doc.ref.get();
+    return updatedDoc.data() as FirestoreQuestion;
   }
 
-  async updateQuestionLearned(id: number, isLearned: boolean, userId: number): Promise<QuestionWithRelations | undefined> {
-    // First check if the question belongs to the user
-    const existingQuestion = await db
-      .select()
-      .from(questions)
-      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
-      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
-      .limit(1);
+  async updateQuestionLearned(id: number, isLearned: boolean, userId: number): Promise<FirestoreQuestion | null> {
+    return this.updateQuestion(id, { isLearned }, userId);
+  }
 
-    if (existingQuestion.length === 0) {
-      return undefined;
-    }
-
-    await db
-      .update(questions)
-      .set({ isLearned })
-      .where(eq(questions.id, id));
-
-    return this.getQuestionById(id);
+  async updateQuestionFailureCount(id: number, failureCount: number, userId: number): Promise<FirestoreQuestion | null> {
+    return this.updateQuestion(id, { failureCount }, userId);
   }
 
   async deleteQuestion(id: number, userId: number): Promise<boolean> {
-    // First get the question with its relations to store in trash
-    const questionWithRelations = await this.getQuestionById(id);
-    if (!questionWithRelations || questionWithRelations.createdBy.id !== userId) {
-      return false;
-    }
+    const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+      .where('id', '==', id)
+      .where('createdBy', '==', userId)
+      .limit(1)
+      .get();
 
-    const question = questionWithRelations;
-    const mockExam = questionWithRelations.mockExam;
-    const subject = questionWithRelations.subject;
-    const topic = questionWithRelations.topic;
+    if (snapshot.empty) return false;
 
-    // Insert into trash
-    await db.insert(trashedQuestions).values({
-      originalId: question.id,
-      mockExamId: question.mockExamId,
-      mockExamTitle: mockExam.title,
-      subjectId: question.subjectId,
-      subjectName: subject.name,
-      topicId: question.topicId,
-      topicName: topic.name,
-      type: question.type,
-      theory: question.theory,
-      isLearned: question.isLearned,
-      createdBy: question.createdBy.id,
-      createdAt: question.createdAt!,
-      deletedAt: new Date(),
-    });
+    const question = snapshot.docs[0].data() as FirestoreQuestion;
 
-    // Delete from questions table
-    await db.delete(questions).where(eq(questions.id, id));
+    // Move to trash first
+    await this.moveQuestionToTrash(question);
+
+    // Delete from questions collection
+    await snapshot.docs[0].ref.delete();
     return true;
   }
 
-  async getQuestionById(id: number): Promise<QuestionWithRelations | undefined> {
-    const [question] = await db
-      .select()
-      .from(questions)
-      .leftJoin(mockExams, eq(questions.mockExamId, mockExams.id))
-      .leftJoin(subjects, eq(questions.subjectId, subjects.id))
-      .leftJoin(topics, eq(questions.topicId, topics.id))
-      .leftJoin(users, eq(questions.createdBy, users.id))
-      .where(eq(questions.id, id));
+  private async moveQuestionToTrash(question: FirestoreQuestion): Promise<void> {
+    // Get related data for trash
+    const [mockExamSnapshot, subjectSnapshot, topicSnapshot] = await Promise.all([
+      firestore.collection(COLLECTIONS.MOCK_EXAMS).where('id', '==', question.mockExamId).limit(1).get(),
+      firestore.collection(COLLECTIONS.SUBJECTS).where('id', '==', question.subjectId).limit(1).get(),
+      firestore.collection(COLLECTIONS.TOPICS).where('id', '==', question.topicId).limit(1).get()
+    ]);
 
-    if (!question) return undefined;
+    const mockExam = !mockExamSnapshot.empty ? mockExamSnapshot.docs[0].data() as FirestoreMockExam : null;
+    const subject = !subjectSnapshot.empty ? subjectSnapshot.docs[0].data() as FirestoreSubject : null;
+    const topic = !topicSnapshot.empty ? topicSnapshot.docs[0].data() as FirestoreTopic : null;
 
-    return {
-      ...question.questions,
-      mockExam: question.mock_exams!,
-      subject: question.subjects!,
-      topic: question.topics!,
-      createdBy: question.users!,
+    const docRef = firestore.collection(COLLECTIONS.TRASHED_QUESTIONS).doc();
+    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
+
+    const trashedQuestion: FirestoreTrashedQuestion = {
+      id: numericId,
+      originalId: question.id,
+      mockExamId: question.mockExamId,
+      mockExamTitle: mockExam?.title || 'Unknown',
+      subjectId: question.subjectId,
+      subjectName: subject?.name || 'Unknown',
+      topicId: question.topicId,
+      topicName: topic?.name || 'Unknown',
+      type: question.type,
+      theory: question.theory,
+      isLearned: question.isLearned,
+      failureCount: question.failureCount,
+      createdBy: question.createdBy,
+      createdAt: question.createdAt,
+      deletedAt: Timestamp.now(),
     };
+
+    await docRef.set(trashedQuestion);
   }
 
-  async getUserStats(userId: number): Promise<{
-    completedExams: number;
-    learnedQuestions: number;
-    totalQuestions: number;
-    progressPercentage: number;
-  }> {
-    const [examCount] = await db
-      .select({ count: count() })
-      .from(mockExams)
-      .where(eq(mockExams.createdBy, userId));
-
-    const [learnedCount] = await db
-      .select({ count: count() })
-      .from(questions)
-      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
-      .where(and(eq(mockExams.createdBy, userId), eq(questions.isLearned, true)));
-
-    const [totalCount] = await db
-      .select({ count: count() })
-      .from(questions)
-      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
-      .where(eq(mockExams.createdBy, userId));
-
-    const completedExams = examCount.count;
-    const learnedQuestions = learnedCount.count;
-    const totalQuestions = totalCount.count;
-    const progressPercentage = totalQuestions > 0 ? Math.round((learnedQuestions / totalQuestions) * 100) : 0;
-
-    return {
-      completedExams,
-      learnedQuestions,
-      totalQuestions,
-      progressPercentage,
-    };
-  }
-
-  async getTrashedQuestions(userId: number): Promise<TrashedQuestionWithUser[]> {
-    const result = await db
-      .select({
-        trashedQuestion: trashedQuestions,
-        createdBy: users,
-      })
-      .from(trashedQuestions)
-      .leftJoin(users, eq(trashedQuestions.createdBy, users.id))
-      .where(eq(trashedQuestions.createdBy, userId))
-      .orderBy(desc(trashedQuestions.deletedAt));
-
-    return result.map(row => ({
-      id: row.trashedQuestion.id,
-      originalId: row.trashedQuestion.originalId,
-      mockExamId: row.trashedQuestion.mockExamId,
-      mockExamTitle: row.trashedQuestion.mockExamTitle,
-      subjectId: row.trashedQuestion.subjectId,
-      subjectName: row.trashedQuestion.subjectName,
-      topicId: row.trashedQuestion.topicId,
-      topicName: row.topicName,
-      type: row.trashedQuestion.type,
-      theory: row.trashedQuestion.theory,
-      isLearned: row.trashedQuestion.isLearned,
-      createdBy: row.trashedQuestion.createdBy,
-      createdAt: row.trashedQuestion.createdAt,
-      deletedAt: row.trashedQuestion.deletedAt,
-    }));
+  // Trash methods
+  async getTrashedQuestions(userId: number): Promise<FirestoreTrashedQuestion[]> {
+    const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
+      .where('createdBy', '==', userId)
+      .orderBy('deletedAt', 'desc')
+      .get();
+    return snapshot.docs.map(doc => doc.data() as FirestoreTrashedQuestion);
   }
 
   async restoreQuestion(trashedId: number, userId: number): Promise<boolean> {
-    // Get the trashed question
-    const [trashedQuestion] = await db
-      .select()
-      .from(trashedQuestions)
-      .where(and(eq(trashedQuestions.id, trashedId), eq(trashedQuestions.createdBy, userId)));
+    const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
+      .where('id', '==', trashedId)
+      .where('createdBy', '==', userId)
+      .limit(1)
+      .get();
 
-    if (!trashedQuestion) {
-      return false;
-    }
+    if (snapshot.empty) return false;
 
-    // Check if the mock exam still exists
-    const [mockExam] = await db
-      .select()
-      .from(mockExams)
-      .where(and(eq(mockExams.id, trashedQuestion.mockExamId), eq(mockExams.createdBy, userId)));
+    const trashedQuestion = snapshot.docs[0].data() as FirestoreTrashedQuestion;
 
-    if (!mockExam) {
-      return false;
-    }
+    // Restore to questions collection
+    const questionDocRef = firestore.collection(COLLECTIONS.QUESTIONS).doc();
+    const numericId = parseInt(questionDocRef.id.slice(-9), 36) % 1000000;
 
-    // Restore the question
-    await db.insert(questions).values({
+    const restoredQuestion: FirestoreQuestion = {
+      id: numericId,
       mockExamId: trashedQuestion.mockExamId,
       subjectId: trashedQuestion.subjectId,
       topicId: trashedQuestion.topicId,
       type: trashedQuestion.type,
       theory: trashedQuestion.theory,
       isLearned: trashedQuestion.isLearned,
+      failureCount: trashedQuestion.failureCount,
       createdBy: trashedQuestion.createdBy,
       createdAt: trashedQuestion.createdAt,
-    });
+    };
 
-    // Remove from trash
-    await db.delete(trashedQuestions).where(eq(trashedQuestions.id, trashedId));
+    await questionDocRef.set(restoredQuestion);
+
+    // Delete from trash
+    await snapshot.docs[0].ref.delete();
     return true;
   }
 
   async permanentlyDeleteQuestion(trashedId: number, userId: number): Promise<boolean> {
-    const result = await db
-      .delete(trashedQuestions)
-      .where(and(eq(trashedQuestions.id, trashedId), eq(trashedQuestions.createdBy, userId)));
+    const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
+      .where('id', '==', trashedId)
+      .where('createdBy', '==', userId)
+      .limit(1)
+      .get();
 
-    return result.rowCount > 0;
-  }
+    if (snapshot.empty) return false;
 
-  async emptyTrash(userId: number): Promise<boolean> {
-    await db.delete(trashedQuestions).where(eq(trashedQuestions.createdBy, userId));
+    await snapshot.docs[0].ref.delete();
     return true;
   }
 
-    async updateUserRole(userId: number, role: string): Promise<User> {
-    const [user] = await db
-      .update(users)
-      .set({ role })
-      .where(eq(users.id, userId))
-      .returning();
+  async emptyTrash(userId: number): Promise<void> {
+    const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
+      .where('createdBy', '==', userId)
+      .get();
 
-    return user;
+    const batch = firestore.batch();
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+
+    await batch.commit();
   }
 
-  async updateQuestionFailureCount(id: number, failureCount: number, userId: number): Promise<QuestionWithRelations | undefined> {
-    // First check if the question belongs to the user
-    const existingQuestion = await db
-      .select()
-      .from(questions)
-      .innerJoin(mockExams, eq(questions.mockExamId, mockExams.id))
-      .where(and(eq(questions.id, id), eq(mockExams.createdBy, userId)))
-      .limit(1);
+  // User stats
+  async getUserStats(userId: number): Promise<{
+    totalQuestions: number;
+    learnedQuestions: number;
+    failedQuestions: number;
+    averageFailureCount: number;
+  }> {
+    const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+      .where('createdBy', '==', userId)
+      .get();
 
-    if (existingQuestion.length === 0) {
-      return undefined;
-    }
+    const questions = snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
 
-    // Update the question
-    await db
-      .update(questions)
-      .set({ failureCount: Math.max(0, failureCount) }) // Ensure count doesn't go below 0
-      .where(eq(questions.id, id));
+    const totalQuestions = questions.length;
+    const learnedQuestions = questions.filter(q => q.isLearned).length;
+    const failedQuestions = questions.filter(q => q.failureCount > 0).length;
+    const averageFailureCount = totalQuestions > 0 
+      ? questions.reduce((sum, q) => sum + q.failureCount, 0) / totalQuestions 
+      : 0;
 
-    return this.getQuestionById(id);
+    return {
+      totalQuestions,
+      learnedQuestions,
+      failedQuestions,
+      averageFailureCount,
+    };
   }
 }
 
-export const storage = new DatabaseStorage();
+export const storage = new Storage();
