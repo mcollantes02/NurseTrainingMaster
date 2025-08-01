@@ -137,8 +137,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mock exam routes
   app.get("/api/mock-exams", requireAuth, async (req, res) => {
     try {
-      const mockExams = await storage.getMockExams(req.session.userId!);
-      res.json(convertFirestoreArrayToDate(mockExams));
+      const [mockExams, questions] = await Promise.all([
+        storage.getMockExams(req.session.userId!),
+        storage.getQuestions({ userId: req.session.userId! })
+      ]);
+
+      // Count questions for each mock exam
+      const questionCounts = questions.reduce((counts, question) => {
+        counts[question.mockExamId] = (counts[question.mockExamId] || 0) + 1;
+        return counts;
+      }, {} as Record<number, number>);
+
+      // Add question count to each mock exam
+      const mockExamsWithCounts = mockExams.map(exam => ({
+        ...convertFirestoreToDate(exam),
+        questionCount: questionCounts[exam.id] || 0
+      }));
+
+      res.json(mockExamsWithCounts);
     } catch (error) {
       console.error("Get mock exams error:", error);
       res.status(500).json({ message: "Failed to get mock exams" });
