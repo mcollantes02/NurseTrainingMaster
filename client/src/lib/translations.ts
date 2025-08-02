@@ -94,6 +94,12 @@ export const translations = {
     "question.addedDescription": "La pregunta ha sido agregada exitosamente.",
     "question.updated": "Pregunta Actualizada",
     "question.updatedDescription": "La pregunta ha sido actualizada exitosamente.",
+    "question.deleteDescription": "Esta acción no se puede deshacer.",
+    "question.markAsLearned": "Marcar como aprendida",
+    "question.unlearned": "No aprendida",
+    "question.learned": "Aprendida",
+    "question.deleted": "Pregunta eliminada",
+    "question.deletedDescription": "La pregunta ha sido eliminada exitosamente.",
 
     // Trash
     "trash.title": "Papelera",
