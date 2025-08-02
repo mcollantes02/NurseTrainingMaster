@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { Plus, ChevronDown, ArrowUpDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -53,19 +53,6 @@ export default function Dashboard() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Prefetch common data on component mount
-  useMemo(() => {
-    // Prefetch subjects and topics as they're commonly used
-    queryClient.prefetchQuery({
-      queryKey: ["/api/subjects"],
-      staleTime: 10 * 60 * 1000, // 10 minutes
-    });
-    queryClient.prefetchQuery({
-      queryKey: ["/api/topics"],
-      staleTime: 10 * 60 * 1000, // 10 minutes
-    });
-  }, [queryClient]);
   const [activeTab, setActiveTab] = useState<string>("");
   const [isAddQuestionModalOpen, setIsAddQuestionModalOpen] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
@@ -88,13 +75,11 @@ export default function Dashboard() {
 
   const { data: mockExams = [], isLoading: isLoadingExams } = useQuery<MockExamWithQuestionCount[]>({
     queryKey: ["/api/mock-exams"],
-    staleTime: 5 * 60 * 1000, // Consider mock exams fresh for 5 minutes
-    select: useCallback((data: MockExamWithQuestionCount[]) => data || [], []),
   });
 
   // Sort mock exams based on selected criteria
   const sortedMockExamsForGrouping = useMemo(() => {
-    if (!mockExams?.length) return mockExams;
+    if (!mockExams.length) return mockExams;
 
     const sorted = [...mockExams];
 
@@ -111,7 +96,6 @@ export default function Dashboard() {
   }, [mockExams, sortBy]);
 
   const tabMockExams = useMemo(() => {
-    if (!mockExams?.length) return [];
     return [...mockExams].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
   }, [mockExams])
 

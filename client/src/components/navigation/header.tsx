@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { Stethoscope, ChevronDown, Home } from "lucide-react";
+import { useState } from "react";
+import { Stethoscope, ChevronDown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Trash2, Settings, BarChart3 } from "lucide-react"; // Added Trash2 and BarChart3 icons
 import { TrashModal } from "@/components/modals/trash-modal"; // Added TrashModal component
 import { AdminModal } from "@/components/modals/admin-modal";
-import { useLocation } from 'wouter';
 
 interface HeaderProps {
   onUserProfileClick: () => void;
@@ -29,7 +28,6 @@ interface HeaderProps {
 export function Header({ onUserProfileClick }: HeaderProps) {
   const { user, logout } = useAuth();
   const { language, changeLanguage, t } = useLanguage();
-  const [location, setLocation] = useLocation();
   const [isTrashModalOpen, setIsTrashModalOpen] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
 
@@ -61,14 +59,6 @@ export function Header({ onUserProfileClick }: HeaderProps) {
     return "U";
   };
 
-  const handleDashboardClick = useCallback(() => {
-    window.location.href = '/';
-  }, []);
-
-  const handleStatisticsClick = useCallback(() => {
-    window.location.href = '/statistics';
-  }, []);
-
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -82,30 +72,26 @@ export function Header({ onUserProfileClick }: HeaderProps) {
 
           <div className="flex items-center space-x-4">
             {/* Dashboard button */}
-            {location.pathname !== "/" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleDashboardClick}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <Stethoscope className="h-4 w-4" />
-                <span className="ml-2 hidden sm:inline">Dashboard</span>
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/'}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <Stethoscope className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">Dashboard</span>
+            </Button>
 
             {/* Statistics button */}
-            {location.pathname !== "/statistics" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleStatisticsClick}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span className="ml-2 hidden sm:inline">{t("statistics.title")}</span>
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/statistics'}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">{t("statistics.title")}</span>
+            </Button>
 
             {/* Trash button */}
             <Button
