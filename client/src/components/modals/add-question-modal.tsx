@@ -172,8 +172,8 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
       });
 
       toast({
-        title: t("success.title"),
-        description: t("success.questionAdded"),
+        title: t("question.added"),
+        description: t("question.addedDescription"),
       });
 
       onClose();
