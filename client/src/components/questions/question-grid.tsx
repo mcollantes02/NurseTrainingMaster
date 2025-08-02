@@ -130,13 +130,13 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
       if (!question.mockExam || !question.mockExam.title) {
         return acc;
       }
-      
+
       const examTitle = question.mockExam.title;
       if (!acc[examTitle]) {
         acc[examTitle] = [];
       }
       acc[examTitle].push(question);
-      
+
       return acc;
     }, {} as Record<string, typeof questions>);
 
