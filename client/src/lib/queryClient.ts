@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { auth } from './firebase';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -10,17 +11,40 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: any
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
 
-  await throwIfResNotOk(res);
-  return res;
+  // Add Firebase auth token if user is authenticated
+  if (auth.currentUser) {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      headers.Authorization = `Bearer ${token}`;
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+    }
+  }
+
+  const config: RequestInit = {
+    method,
+    headers,
+    credentials: "include",
+  };
+
+  if (data) {
+    config.body = JSON.stringify(data);
+  }
+
+  const response = await fetch(url, config);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`${response.status}: ${errorText}`);
+  }
+
+  return response;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

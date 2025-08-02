@@ -22,6 +22,15 @@ export class Storage {
     return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreUser;
   }
 
+  async getUserByFirebaseUid(firebaseUid: string): Promise<FirestoreUser | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.USERS)
+      .where('firebaseUid', '==', firebaseUid)
+      .limit(1)
+      .get();
+
+    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreUser;
+  }
+
   async getUser(id: number): Promise<FirestoreUser | null> {
     const snapshot = await firestore.collection(COLLECTIONS.USERS)
       .where('id', '==', id)
@@ -45,6 +54,48 @@ export class Storage {
 
     await docRef.set(user);
     return user;
+  }
+
+  async createUserFromFirebase(userData: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    firebaseUid: string;
+    role: string;
+  }): Promise<FirestoreUser> {
+    const docRef = firestore.collection(COLLECTIONS.USERS).doc();
+
+    // Generate numeric ID from Firestore doc ID
+    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
+
+    const user: FirestoreUser = {
+      id: numericId,
+      email: userData.email,
+      password: '', // No password needed for Firebase users
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      role: userData.role,
+      firebaseUid: userData.firebaseUid,
+      createdAt: Timestamp.now(),
+    };
+
+    await docRef.set(user);
+    return user;
+  }
+
+  async updateUserFirebaseUid(userId: number, firebaseUid: string): Promise<FirestoreUser | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.USERS)
+      .where('id', '==', userId)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) return null;
+
+    const doc = snapshot.docs[0];
+    await doc.ref.update({ firebaseUid, password: '' }); // Clear password when linking to Firebase
+
+    const updatedDoc = await doc.ref.get();
+    return updatedDoc.data() as FirestoreUser;
   }
 
   async updateUserRole(id: number, role: string): Promise<FirestoreUser | null> {

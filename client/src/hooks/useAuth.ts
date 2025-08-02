@@ -1,78 +1,137 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { useState, useEffect } from 'react';
+import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { 
+  loginWithEmail, 
+  registerWithEmail, 
+  loginWithGoogle, 
+  logout as firebaseLogout, 
+  onAuthChange 
+} from "@/lib/firebase";
 import type { User } from "@shared/schema";
+
+interface FirebaseUser {
+  uid: string;
+  email: string;
+  displayName: string;
+  firstName?: string;
+  lastName?: string;
+}
 
 export function useAuth() {
   const queryClient = useQueryClient();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoginPending, setIsLoginPending] = useState(false);
+  const [isRegisterPending, setIsRegisterPending] = useState(false);
+  const [isLogoutPending, setIsLogoutPending] = useState(false);
 
-  const { data: user, isLoading } = useQuery<User | null>({
-    queryKey: ["/api/auth/user"],
-    queryFn: async () => {
-      try {
-        const response = await fetch("/api/auth/user", {
-          credentials: "include",
-        });
-        if (response.status === 401) {
-          return null;
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      setIsLoading(true);
+      
+      if (firebaseUser) {
+        try {
+          // Get the ID token
+          const idToken = await firebaseUser.getIdToken();
+          
+          // Send the token to your backend to verify and get/create user
+          const response = await apiRequest("POST", "/api/auth/firebase", {
+            idToken,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            uid: firebaseUser.uid
+          });
+          
+          const userData = await response.json();
+          setUser(userData.user);
+        } catch (error) {
+          console.error('Error verifying Firebase token:', error);
+          setUser(null);
         }
-        if (!response.ok) {
-          throw new Error(`${response.status}: ${response.statusText}`);
-        }
-        return response.json();
-      } catch (error) {
-        return null;
+      } else {
+        setUser(null);
       }
-    },
-    retry: false,
-    refetchInterval: false,
-    refetchOnWindowFocus: false,
-  });
+      
+      setIsLoading(false);
+    });
 
-  const loginMutation = useMutation({
-    mutationFn: async (credentials: { email: string; password: string }) => {
-      const response = await apiRequest("POST", "/api/auth/login", credentials);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-    },
-  });
+    return () => unsubscribe();
+  }, []);
 
-  const registerMutation = useMutation({
-    mutationFn: async (userData: {
-      email: string;
-      password: string;
-      firstName: string;
-      lastName: string;
-      role?: string;
-    }) => {
-      const response = await apiRequest("POST", "/api/auth/register", userData);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-    },
-  });
+  const login = async (credentials: { email: string; password: string }) => {
+    setIsLoginPending(true);
+    try {
+      await loginWithEmail(credentials.email, credentials.password);
+      // User state will be updated by onAuthChange
+    } catch (error: any) {
+      throw new Error(error.message || 'Login failed');
+    } finally {
+      setIsLoginPending(false);
+    }
+  };
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
+  const loginWithGoogleProvider = async () => {
+    setIsLoginPending(true);
+    try {
+      await loginWithGoogle();
+      // User state will be updated by onAuthChange
+    } catch (error: any) {
+      throw new Error(error.message || 'Google login failed');
+    } finally {
+      setIsLoginPending(false);
+    }
+  };
+
+  const register = async (userData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    role?: string;
+  }) => {
+    setIsRegisterPending(true);
+    try {
+      const userCredential = await registerWithEmail(userData.email, userData.password);
+      
+      // Update the user profile with additional information
+      await userCredential.user.updateProfile({
+        displayName: `${userData.firstName} ${userData.lastName}`
+      });
+
+      // User state will be updated by onAuthChange with the additional data
+    } catch (error: any) {
+      throw new Error(error.message || 'Registration failed');
+    } finally {
+      setIsRegisterPending(false);
+    }
+  };
+
+  const logout = async () => {
+    setIsLogoutPending(true);
+    try {
+      await firebaseLogout();
       await apiRequest("POST", "/api/auth/logout");
-    },
-    onSuccess: () => {
-      queryClient.setQueryData(["/api/auth/user"], null);
       queryClient.clear();
-    },
-  });
+      setUser(null);
+    } catch (error: any) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLogoutPending(false);
+    }
+  };
 
   return {
     user,
     isLoading,
     isAuthenticated: !!user,
-    login: loginMutation.mutateAsync,
-    register: registerMutation.mutateAsync,
-    logout: logoutMutation.mutateAsync,
-    isLoginPending: loginMutation.isPending,
-    isRegisterPending: registerMutation.isPending,
-    isLogoutPending: logoutMutation.isPending,
+    login,
+    loginWithGoogle: loginWithGoogleProvider,
+    register,
+    logout,
+    isLoginPending,
+    isRegisterPending,
+    isLogoutPending,
   };
 }

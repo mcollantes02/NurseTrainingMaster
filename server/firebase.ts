@@ -1,6 +1,7 @@
 
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 
 // Initialize Firebase Admin SDK
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
@@ -29,4 +30,5 @@ const app = initializeApp({
 });
 
 export const firestore = getFirestore(app);
+export const auth = getAuth(app);
 export default firestore;

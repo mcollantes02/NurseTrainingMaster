@@ -20,6 +20,7 @@ export interface FirestoreUser {
   firstName: string;
   lastName: string;
   role: string;
+  firebaseUid?: string;
   createdAt: Timestamp;
 }
 
