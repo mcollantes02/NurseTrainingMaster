@@ -316,8 +316,8 @@ export const translations = {
       reset: "Reset",
       or: "or",
       exactCount: "Exact count",
-      minCount": "Minimum",
-      maxCount": "Maximum",
+      minCount: "Minimum",
+      maxCount: "Maximum",
     },
 
     // Stats
