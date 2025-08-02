@@ -92,7 +92,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       // Snapshot all question queries
       const previousData = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
 
-      // Optimistically update all question queries instantly
+      // Optimistically update all question queries
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
@@ -105,25 +105,26 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       return { previousData, newCount };
     },
     onError: (err, newCount, context) => {
-      // Rollback optimistic updates on error
+      // Rollback on error
       if (context?.previousData) {
         context.previousData.forEach(([queryKey, data]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
+
       toast({
         title: t("error.title"),
         description: t("error.updateQuestion"),
         variant: "destructive",
       });
     },
-    onSuccess: (updatedQuestion, newCount) => {
-      // Immediately update all question queries with server response
+    onSuccess: (updatedQuestion) => {
+      // Silently update the question in all queries with server response
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
           q.id === question.id 
-            ? { ...q, ...updatedQuestion, failureCount: newCount } 
+            ? { ...q, ...updatedQuestion } 
             : q
         );
       });

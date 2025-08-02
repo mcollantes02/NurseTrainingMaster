@@ -75,6 +75,7 @@ export default function Dashboard() {
 
   const { data: mockExams = [], isLoading: isLoadingExams } = useQuery<MockExamWithQuestionCount[]>({
     queryKey: ["/api/mock-exams"],
+    staleTime: 5 * 60 * 1000, // Consider mock exams fresh for 5 minutes
   });
 
   // Sort mock exams based on selected criteria
