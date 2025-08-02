@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Filter, Search } from "lucide-react";
+import { Filter, Search, RotateCcw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/hooks/useLanguage";
 import { Button } from "@/components/ui/button";
@@ -92,6 +92,21 @@ export function AdvancedFilters({
     onFiltersChange({
       ...filters,
       learningStatus: newStatus,
+    });
+  };
+
+  const handleReset = () => {
+    onFiltersChange({
+      mockExamIds: [],
+      subjectIds: [],
+      topicIds: [],
+      keywords: "",
+      learningStatus: [],
+      failureCount: {
+        min: undefined,
+        max: undefined,
+        exact: undefined,
+      },
     });
   };
 
@@ -271,13 +286,23 @@ export function AdvancedFilters({
           </div>
         </div>
 
-        <Button
-          onClick={onApplyFilters}
-          className="w-full bg-blue-600 hover:bg-blue-700"
-        >
-          <Search className="w-4 h-4 mr-2" />
-          {t("filters.apply")}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleReset}
+            variant="outline"
+            className="flex-1"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            {t("filters.reset")}
+          </Button>
+          <Button
+            onClick={onApplyFilters}
+            className="flex-1 bg-blue-600 hover:bg-blue-700"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            {t("filters.apply")}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

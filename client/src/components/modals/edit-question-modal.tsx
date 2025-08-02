@@ -34,10 +34,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Combobox } from "@/components/ui/combobox";
+import { MultiSelect } from "@/components/ui/multi-select";
 import type { QuestionWithRelations, MockExam, Subject, Topic } from "@shared/schema";
 
 const formSchema = z.object({
-  mockExamId: z.number(),
+  mockExamIds: z.array(z.number()).min(1, "At least one mock exam is required"),
   subjectName: z.string().min(1, "Subject is required"),
   topicName: z.string().min(1, "Topic is required"),
   type: z.enum(["error", "doubt"]),
@@ -58,8 +59,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [subjectSearch, setSubjectSearch] = useState("");
-  const [topicSearch, setTopicSearch] = useState("");
+
 
   const { data: mockExams = [] } = useQuery<MockExam[]>({
     queryKey: ["/api/mock-exams"],
@@ -85,7 +85,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
   useEffect(() => {
     if (question) {
       form.reset({
-        mockExamId: question.mockExamId,
+        mockExamIds: question.mockExams ? question.mockExams.map(exam => exam.id) : [question.mockExamId],
         subjectName: question.subject.name,
         topicName: question.topic.name,
         type: question.type as "error" | "doubt",
@@ -141,7 +141,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
       ]);
 
       const response = await apiRequest("PUT", `/api/questions/${question.id}`, {
-        mockExamId: data.mockExamId,
+        mockExamIds: data.mockExamIds,
         subjectId,
         topicId,
         type: data.type,
@@ -152,32 +152,24 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
       return response.json();
     },
     onMutate: async (data) => {
-      // Cancel any outgoing refetches
+      // Cancel any outgoing refetches for all question queries
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
 
-      // Snapshot the previous value
-      const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
+      // Snapshot all question queries
+      const previousQueries = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
 
-      // Create optimistic subject and topic objects
-      const optimisticSubject = subjects.find(s => s.name === data.subjectName) || { 
-        id: 0, 
-        name: data.subjectName, 
-        createdAt: new Date().toISOString() 
-      };
-      const optimisticTopic = topics.find(t => t.name === data.topicName) || { 
-        id: 0, 
-        name: data.topicName, 
-        createdAt: new Date().toISOString() 
-      };
+      // Find the optimistic subject and topic data
+      const optimisticSubject = subjects?.find(s => s.id === data.subjectId) || question?.subject;
+      const optimisticTopic = topics?.find(t => t.id === data.topicId) || question?.topic;
 
-      // Optimistically update to the new value
+      // Optimistically update ALL question queries instantly
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old || !question) return old;
         return old.map((q: any) => 
           q.id === question.id 
             ? { 
                 ...q, 
-                mockExamId: data.mockExamId,
+                mockExamIds: data.mockExamIds,
                 type: data.type,
                 theory: data.theory,
                 failureCount: data.failureCount,
@@ -189,25 +181,39 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
         );
       });
 
-      return { previousQuestions };
+      return { previousQueries };
     },
-    onSuccess: () => {
-      // Close modal immediately for better UX
+    onSuccess: async (updatedQuestion, variables) => {
+      // Clear all question-related queries immediately to ensure fresh data
+      await queryClient.removeQueries({ queryKey: ["/api/questions"] });
+      await queryClient.removeQueries({ queryKey: ["/api/mock-exams"] });
+      
+      // Force refetch all data to ensure consistency across all tabs
+      await queryClient.refetchQueries({ queryKey: ["/api/mock-exams"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/questions"] });
+      
+      // Also invalidate any potential cached queries with specific parameters
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return queryKey[0] === "/api/questions" || queryKey[0] === "/api/mock-exams";
+        }
+      });
+
       onClose();
       toast({
         title: t("question.updated"),
         description: t("question.updatedDescription"),
       });
-      // Only invalidate questions query in background
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
     },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousQuestions) {
-        context.previousQuestions.forEach(([queryKey, data]) => {
+    onError: (err, variables, context) => {
+      // Rollback all optimistic updates on error
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
+
       toast({
         title: t("error.title"),
         description: t("error.updateQuestion"),
@@ -223,13 +229,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
     updateQuestionMutation.mutate(data);
   };
 
-  const filteredSubjects = subjects.filter(subject =>
-    subject.name.toLowerCase().includes(subjectSearch.toLowerCase())
-  );
 
-  const filteredTopics = topics.filter(topic =>
-    topic.name.toLowerCase().includes(topicSearch.toLowerCase())
-  );
 
   if (!question) return null;
 
@@ -247,30 +247,33 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
             {/* Mock Exam Selection */}
             <FormField
               control={form.control}
-              name="mockExamId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("mockExam.label")}</FormLabel>
-                  <Select
-                    value={field.value?.toString()}
-                    onValueChange={(value) => field.onChange(parseInt(value))}
-                  >
+              name="mockExamIds"
+              render={({ field }) => {
+                const mockExamOptions = mockExams.map((exam) => ({
+                  value: exam.id.toString(),
+                  label: exam.title,
+                }));
+
+                const handleMockExamChange = (values: string[]) => {
+                  field.onChange(values.map(Number));
+                };
+
+                return (
+                  <FormItem>
+                    <FormLabel>{t("mockExam.selectMultiple")} *</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("mockExam.select")} />
-                      </SelectTrigger>
+                      <MultiSelect
+                        options={mockExamOptions}
+                        value={field.value.map(String)}
+                        onChange={handleMockExamChange}
+                        placeholder={t("mockExam.selectMultiple")}
+                        searchPlaceholder="Buscar simulacros..."
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {mockExams.map((exam) => (
-                        <SelectItem key={exam.id} value={exam.id.toString()}>
-                          {exam.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             {/* Subject and Topic Row */}
@@ -283,7 +286,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
                     <FormLabel>{t("subject.label")}</FormLabel>
                     <FormControl>
                       <Combobox
-                        options={filteredSubjects.map(s => ({ label: s.name, value: s.name }))}
+                        options={subjects.map(s => ({ label: s.name, value: s.name }))}
                         value={field.value}
                         onSelect={field.onChange}
                         placeholder={t("subject.select")}
@@ -305,7 +308,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
                     <FormLabel>{t("topic.label")}</FormLabel>
                     <FormControl>
                       <Combobox
-                        options={filteredTopics.map(t => ({ label: t.name, value: t.name }))}
+                        options={topics.map(t => ({ label: t.name, value: t.name }))}
                         value={field.value}
                         onSelect={field.onChange}
                         placeholder={t("topic.select")}

@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { auth } from './firebase';
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -10,17 +11,43 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: any
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
 
-  await throwIfResNotOk(res);
-  return res;
+  // Add Firebase auth token if user is authenticated
+  if (auth.currentUser) {
+    try {
+      // Force refresh the token to ensure it's valid
+      const token = await auth.currentUser.getIdToken(true);
+      headers.Authorization = `Bearer ${token}`;
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      // If token fails, try to refresh the auth state
+      throw new Error('Authentication failed');
+    }
+  }
+
+  const config: RequestInit = {
+    method,
+    headers,
+    credentials: "include",
+  };
+
+  if (data) {
+    config.body = JSON.stringify(data);
+  }
+
+  const response = await fetch(url, config);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`${response.status}: ${errorText}`);
+  }
+
+  return response;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -29,7 +56,25 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Add Firebase auth token if user is authenticated
+    if (auth.currentUser) {
+      try {
+        const token = await auth.currentUser.getIdToken(true);
+        headers.Authorization = `Bearer ${token}`;
+      } catch (error) {
+        console.error('Error getting auth token for query:', error);
+        if (unauthorizedBehavior === "throw") {
+          throw new Error('Authentication failed');
+        }
+      }
+    }
+
     const res = await fetch(queryKey[0] as string, {
+      headers,
       credentials: "include",
     });
 
@@ -46,10 +91,17 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-      retry: false,
+      refetchOnWindowFocus: true,
+      staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+      gcTime: 10 * 60 * 1000, // Keep unused data in cache for 10 minutes
+      retry: (failureCount, error) => {
+        // Don't retry auth errors
+        if (error.message.includes('401')) return false;
+        return failureCount < 1; // Only retry once
+      },
+      retryDelay: 200, // Faster retry
+      networkMode: 'online',
+      refetchOnMount: false, // Prevent unnecessary refetches
     },
     mutations: {
       retry: false,

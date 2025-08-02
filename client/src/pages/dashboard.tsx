@@ -75,6 +75,7 @@ export default function Dashboard() {
 
   const { data: mockExams = [], isLoading: isLoadingExams } = useQuery<MockExamWithQuestionCount[]>({
     queryKey: ["/api/mock-exams"],
+    staleTime: 5 * 60 * 1000, // Consider mock exams fresh for 5 minutes
   });
 
   // Sort mock exams based on selected criteria
@@ -155,23 +156,23 @@ export default function Dashboard() {
       appliedFilters.topicIds.forEach(id => params.append('topicIds', id.toString()));
     }
 
-    if (appliedFilters.keywords) {
-      params.append('keywords', appliedFilters.keywords);
+    if (appliedFilters.keywords.trim()) {
+      params.append('keywords', appliedFilters.keywords.trim());
     }
 
     if (appliedFilters.learningStatus.length > 0) {
       appliedFilters.learningStatus.forEach(status => params.append('learningStatus', status.toString()));
     }
 
-    if (appliedFilters.failureCount.exact !== undefined && appliedFilters.failureCount.exact !== null) {
+    if (appliedFilters.failureCount.exact !== undefined && appliedFilters.failureCount.exact !== null && appliedFilters.failureCount.exact >= 0) {
       params.append('failureCountExact', appliedFilters.failureCount.exact.toString());
     }
 
-    if (appliedFilters.failureCount.min !== undefined && appliedFilters.failureCount.min !== null) {
+    if (appliedFilters.failureCount.min !== undefined && appliedFilters.failureCount.min !== null && appliedFilters.failureCount.min >= 0) {
       params.append('failureCountMin', appliedFilters.failureCount.min.toString());
     }
 
-    if (appliedFilters.failureCount.max !== undefined && appliedFilters.failureCount.max !== null) {
+    if (appliedFilters.failureCount.max !== undefined && appliedFilters.failureCount.max !== null && appliedFilters.failureCount.max >= 0) {
       params.append('failureCountMax', appliedFilters.failureCount.max.toString());
     }
 
@@ -416,8 +417,12 @@ export default function Dashboard() {
                     <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
                       <QuestionGrid 
                         filters={{
-                          ...appliedFilters,
-                          mockExamIds: [exam.id]
+                          mockExamIds: [exam.id],
+                          subjectIds: appliedFilters.subjectIds,
+                          topicIds: appliedFilters.topicIds,
+                          keywords: appliedFilters.keywords,
+                          learningStatus: appliedFilters.learningStatus,
+                          failureCount: appliedFilters.failureCount
                         }} 
                       />
                     </TabsContent>
@@ -433,6 +438,7 @@ export default function Dashboard() {
       <AddQuestionModal
         isOpen={isAddQuestionModalOpen}
         onClose={() => setIsAddQuestionModalOpen(false)}
+        preSelectedMockExamId={activeTab !== "all" ? parseInt(activeTab) : undefined}
       />
 
       <UserProfileModal

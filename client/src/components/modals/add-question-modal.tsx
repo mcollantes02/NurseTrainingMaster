@@ -35,10 +35,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
+import { MultiSelect } from "@/components/ui/multi-select";
 import type { MockExam, Subject, Topic } from "@shared/schema";
 
 const formSchema = z.object({
-  mockExamId: z.number().min(1, "Mock exam is required"),
+  mockExamIds: z.array(z.number()).min(1, "At least one mock exam is required"),
   subjectName: z.string().min(1, "Subject is required"),
   topicName: z.string().min(1, "Topic is required"),
   type: z.enum(["error", "doubt"], { required_error: "Type is required" }),
@@ -52,13 +53,14 @@ type FormData = z.infer<typeof formSchema>;
 interface AddQuestionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  preSelectedMockExamId?: number;
 }
 
-export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
+export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: AddQuestionModalProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
 
   const { data: mockExams = [] } = useQuery<MockExam[]>({
     queryKey: ["/api/mock-exams"],
@@ -75,31 +77,43 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      mockExamIds: [],
+      subjectName: "",
+      topicName: "",
+      type: "error",
+      theory: "",
       isLearned: false,
+      failureCount: 0,
     },
   });
 
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
+      const defaultMockExamIds = preSelectedMockExamId ? [preSelectedMockExamId] : [];
       form.reset({
-        mockExamId: undefined,
+        mockExamIds: defaultMockExamIds,
         subjectName: "",
         topicName: "",
-        type: undefined,
+        type: "error",
         theory: "",
         isLearned: false,
+        failureCount: 0,
       });
     }
-  }, [isOpen, form]);
+  }, [isOpen, form, preSelectedMockExamId]);
 
   const createSubjectMutation = useMutation({
     mutationFn: async (name: string) => {
       const response = await apiRequest("POST", "/api/subjects", { name });
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+    onSuccess: (newSubject) => {
+      // Optimistically update cache instead of invalidating
+      queryClient.setQueryData(["/api/subjects"], (old: Subject[] = []) => {
+        const exists = old.find(s => s.name === newSubject.name);
+        return exists ? old : [...old, newSubject];
+      });
     },
   });
 
@@ -108,87 +122,87 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
       const response = await apiRequest("POST", "/api/topics", { name });
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/topics"] });
+    onSuccess: (newTopic) => {
+      // Optimistically update cache instead of invalidating
+      queryClient.setQueryData(["/api/topics"], (old: Topic[] = []) => {
+        const exists = old.find(t => t.name === newTopic.name);
+        return exists ? old : [...old, newTopic];
+      });
     },
   });
 
   const createQuestionMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      // Find subject and topic IDs
-      const subjectId = subjects.find(s => s.name === data.subjectName)?.id;
-      const topicId = topics.find(t => t.name === data.topicName)?.id;
-
-      if (!subjectId || !topicId) {
-        throw new Error("Subject or topic not found");
-      }
+      // Get or create subject and topic in parallel
+      const [subjectId, topicId] = await Promise.all([
+        (async () => {
+          const existingSubject = subjects.find(s => s.name === data.subjectName);
+          if (existingSubject) {
+            return existingSubject.id;
+          }
+          const newSubject = await createSubjectMutation.mutateAsync(data.subjectName);
+          return newSubject.id;
+        })(),
+        (async () => {
+          const existingTopic = topics.find(t => t.name === data.topicName);
+          if (existingTopic) {
+            return existingTopic.id;
+          }
+          const newTopic = await createTopicMutation.mutateAsync(data.topicName);
+          return newTopic.id;
+        })()
+      ]);
 
       const response = await apiRequest("POST", "/api/questions", {
-        mockExamId: data.mockExamId,
+        mockExamIds: data.mockExamIds,
         subjectId,
         topicId,
         type: data.type,
         theory: data.theory,
         isLearned: data.isLearned,
+        failureCount: data.failureCount,
       });
       return response.json();
     },
-    onMutate: async (data) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
-
-      // Snapshot the previous value
-      const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
-
-      // Create optimistic question
-      const optimisticQuestion = {
-        id: Date.now(), // temporary ID
-        mockExamId: data.mockExamId,
-        subjectId: subjects.find(s => s.name === data.subjectName)?.id || 0,
-        topicId: topics.find(t => t.name === data.topicName)?.id || 0,
-        type: data.type,
-        theory: data.theory,
-        isLearned: data.isLearned,
-        failureCount: data.failureCount,
-        createdAt: new Date().toISOString(),
-        subject: subjects.find(s => s.name === data.subjectName) || { name: data.subjectName },
-        topic: topics.find(t => t.name === data.topicName) || { name: data.topicName },
-        mockExam: mockExams.find(m => m.id === data.mockExamId)
-      };
-
-      // Optimistically update
-      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
-        if (!old) return [optimisticQuestion];
-        return [optimisticQuestion, ...old];
-      });
-
-      return { previousQuestions };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+    onSuccess: (newQuestion, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
-      onClose();
-      toast({
-        title: t("question.added"),
-        description: t("question.addedDescription"),
-      });
-    },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousQuestions) {
-        context.previousQuestions.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+
+      // Invalidate specific mock exam queries for each selected exam
+      if (variables.mockExamIds && Array.isArray(variables.mockExamIds)) {
+        variables.mockExamIds.forEach(mockExamId => {
+          queryClient.invalidateQueries({ 
+            queryKey: ["/api/questions"],
+            predicate: (query) => {
+              const queryString = query.queryKey[1] as string;
+              return queryString && queryString.includes(`mockExamIds=${mockExamId}`);
+            }
+          });
         });
       }
+
+      form.reset({
+        mockExamIds: preSelectedMockExamId ? [preSelectedMockExamId] : [],
+        subjectName: "",
+        topicName: "",
+        type: "error",
+        theory: "",
+        isLearned: false,
+        failureCount: 0,
+      });
+      onClose();
       toast({
-        title: t("error.title"),
-        description: t("error.addQuestion"),
-        variant: "destructive",
+        title: t("question.created"),
+        description: t("question.createdDescription"),
       });
     },
-    onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+    onError: (error) => {
+      console.error("Create question error:", error);
+      toast({
+        title: t("error.title"),
+        description: t("error.createQuestion"),
+        variant: "destructive",
+      });
     },
   });
 
@@ -196,10 +210,24 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
     createQuestionMutation.mutate(data);
   };
 
-  
+  const handleClose = () => {
+    const defaultMockExamIds = preSelectedMockExamId ? [preSelectedMockExamId] : [];
+    form.reset({
+      mockExamIds: defaultMockExamIds,
+      subjectName: "",
+      topicName: "",
+      type: "error",
+      theory: "",
+      isLearned: false,
+      failureCount: 0,
+    });
+    onClose();
+  };
+
+
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">
@@ -209,27 +237,36 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Mock Exam */}
+            {/* Mock Exams */}
             <FormField
               control={form.control}
-              name="mockExamId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("mockExam.title")} *</FormLabel>
-                  <FormControl>
-                    <Combobox
-                      options={mockExams.map(exam => ({ label: exam.title, value: exam.id.toString() }))}
-                      value={field.value?.toString() || ""}
-                      onSelect={(value) => field.onChange(Number(value))}
-                      placeholder={t("mockExam.select")}
-                      searchPlaceholder="Buscar simulacro..."
-                      emptyText="No se encontró el simulacro"
-                      allowCustom={false}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              name="mockExamIds"
+              render={({ field }) => {
+                const mockExamOptions = mockExams.map((exam) => ({
+                  value: exam.id.toString(),
+                  label: exam.title,
+                }));
+
+                const handleMockExamChange = (values: string[]) => {
+                  field.onChange(values.map(Number));
+                };
+
+                return (
+                  <FormItem>
+                    <FormLabel>{t("mockExam.selectMultiple")} *</FormLabel>
+                    <FormControl>
+                      <MultiSelect
+                        options={mockExamOptions}
+                        value={field.value.map(String)}
+                        onChange={handleMockExamChange}
+                        placeholder={t("mockExam.selectMultiple")}
+                        searchPlaceholder="Buscar simulacros..."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             {/* Subject */}
@@ -368,7 +405,7 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
 
             {/* Form Actions */}
             <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={handleClose}>
                 {t("cancel")}
               </Button>
               <Button

@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Trash2, Settings } from "lucide-react"; // Added Trash2 icon
+import { Trash2, Settings, BarChart3 } from "lucide-react"; // Added Trash2 and BarChart3 icons
 import { TrashModal } from "@/components/modals/trash-modal"; // Added TrashModal component
 import { AdminModal } from "@/components/modals/admin-modal";
 
@@ -41,7 +41,22 @@ export function Header({ onUserProfileClick }: HeaderProps) {
 
   const getUserInitials = () => {
     if (!user) return "U";
-    return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+
+    // For Firebase users, use displayName or email as fallback
+    if (user.displayName) {
+      const names = user.displayName.split(' ');
+      if (names.length >= 2) {
+        return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+      }
+      return names[0].charAt(0).toUpperCase();
+    }
+
+    // Fallback to email first letter
+    if (user.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+
+    return "U";
   };
 
   return (
@@ -56,7 +71,29 @@ export function Header({ onUserProfileClick }: HeaderProps) {
           </div>
 
           <div className="flex items-center space-x-4">
-               {/* Trash button */}
+            {/* Dashboard button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/'}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <Stethoscope className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">Dashboard</span>
+            </Button>
+
+            {/* Statistics button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/statistics'}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">{t("statistics.title")}</span>
+            </Button>
+
+            {/* Trash button */}
             <Button
               variant="ghost"
               size="sm"
@@ -66,7 +103,7 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               <Trash2 className="h-4 w-4" />
               <span className="ml-2 hidden sm:inline">{t("trash.title")}</span>
             </Button>
-            
+
             {/* Manage button */}
             <Button
               variant="ghost"
@@ -77,7 +114,7 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               <Settings className="h-4 w-4" />
               <span className="ml-2 hidden sm:inline">Administrar</span>
             </Button>
-            
+
             {/* Language Switcher */}
             <Select value={language} onValueChange={changeLanguage}>
               <SelectTrigger className="w-auto border-gray-300">
@@ -103,7 +140,7 @@ export function Header({ onUserProfileClick }: HeaderProps) {
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm font-medium">
-                    {user ? `${user.firstName} ${user.lastName}` : "User"}
+                    {user ? (user.displayName || user.email || "User") : "User"}
                   </span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>

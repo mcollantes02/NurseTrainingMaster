@@ -114,12 +114,20 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
     mutationFn: async (data: FormData) => {
       // Check if subject already exists (trim whitespace and case-insensitive)
       const trimmedName = data.name.trim();
+      if (!trimmedName) {
+        throw new Error("El nombre de la asignatura es requerido");
+      }
+      
       const existing = subjects.find(s => s.name.trim().toLowerCase() === trimmedName.toLowerCase());
       if (existing) {
         throw new Error("Ya existe una asignatura con este nombre");
       }
       
       const response = await apiRequest("POST", "/api/subjects", { name: trimmedName });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Error del servidor al crear la asignatura");
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -131,6 +139,7 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
       });
     },
     onError: (error: Error) => {
+      console.error('Create subject error:', error);
       toast({
         title: "Error",
         description: error.message || "Error al crear la asignatura",
@@ -189,12 +198,20 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
     mutationFn: async (data: FormData) => {
       // Check if topic already exists (trim whitespace and case-insensitive)
       const trimmedName = data.name.trim();
+      if (!trimmedName) {
+        throw new Error("El nombre del tema es requerido");
+      }
+      
       const existing = topics.find(t => t.name.trim().toLowerCase() === trimmedName.toLowerCase());
       if (existing) {
         throw new Error("Ya existe un tema con este nombre");
       }
       
       const response = await apiRequest("POST", "/api/topics", { name: trimmedName });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Error del servidor al crear el tema");
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -206,6 +223,7 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
       });
     },
     onError: (error: Error) => {
+      console.error('Create topic error:', error);
       toast({
         title: "Error",
         description: error.message || "Error al crear el tema",
@@ -264,12 +282,20 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
     mutationFn: async (data: FormData) => {
       // Check if mock exam already exists (trim whitespace and case-insensitive)
       const trimmedName = data.name.trim();
+      if (!trimmedName) {
+        throw new Error("El nombre del examen simulacro es requerido");
+      }
+      
       const existing = mockExams.find(e => e.title.trim().toLowerCase() === trimmedName.toLowerCase());
       if (existing) {
         throw new Error("Ya existe un examen simulacro con este nombre");
       }
       
       const response = await apiRequest("POST", "/api/mock-exams", { title: trimmedName });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Error del servidor al crear el examen simulacro");
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -281,6 +307,7 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
       });
     },
     onError: (error: Error) => {
+      console.error('Create mock exam error:', error);
       toast({
         title: "Error",
         description: error.message || "Error al crear el examen simulacro",
@@ -409,7 +436,10 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
               <div className="border rounded-lg p-4">
                 <h3 className="text-lg font-medium mb-4">Agregar Nueva Asignatura</h3>
                 <Form {...subjectForm}>
-                  <form onSubmit={subjectForm.handleSubmit((data) => createSubjectMutation.mutate(data))} className="flex gap-2">
+                  <form onSubmit={subjectForm.handleSubmit((data) => {
+                    console.log('Creating subject:', data);
+                    createSubjectMutation.mutate(data);
+                  })} className="flex gap-2">
                     <FormField
                       control={subjectForm.control}
                       name="name"
@@ -515,7 +545,10 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
               <div className="border rounded-lg p-4">
                 <h3 className="text-lg font-medium mb-4">Agregar Nuevo Tema</h3>
                 <Form {...topicForm}>
-                  <form onSubmit={topicForm.handleSubmit((data) => createTopicMutation.mutate(data))} className="flex gap-2">
+                  <form onSubmit={topicForm.handleSubmit((data) => {
+                    console.log('Creating topic:', data);
+                    createTopicMutation.mutate(data);
+                  })} className="flex gap-2">
                     <FormField
                       control={topicForm.control}
                       name="name"
@@ -621,7 +654,10 @@ export function AdminModal({ isOpen, onClose }: AdminModalProps) {
               <div className="border rounded-lg p-4">
                 <h3 className="text-lg font-medium mb-4">Agregar Nuevo Examen Simulacro</h3>
                 <Form {...mockExamForm}>
-                  <form onSubmit={mockExamForm.handleSubmit((data) => createMockExamMutation.mutate(data))} className="flex gap-2">
+                  <form onSubmit={mockExamForm.handleSubmit((data) => {
+                    console.log('Creating mock exam:', data);
+                    createMockExamMutation.mutate(data);
+                  })} className="flex gap-2">
                     <FormField
                       control={mockExamForm.control}
                       name="name"

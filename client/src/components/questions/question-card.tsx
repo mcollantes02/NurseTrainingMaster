@@ -32,14 +32,14 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       return response.json();
     },
     onMutate: async (isLearned: boolean) => {
-      // Cancel any outgoing refetches
+      // Cancel any outgoing refetches for all question queries
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
 
-      // Snapshot the previous value
-      const previousQuestions = queryClient.getQueryData(["/api/questions"]);
+      // Snapshot all current question queries
+      const previousQueries = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
 
-      // Optimistically update the cache
-      queryClient.setQueryData(["/api/questions"], (old: any) => {
+      // Optimistically update ALL question queries
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
           q.id === question.id 
@@ -48,25 +48,38 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         );
       });
 
-      // Return a context object with the snapshotted value
-      return { previousQuestions };
+      return { previousQueries, isLearned };
     },
     onError: (err, isLearned, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousQuestions) {
-        queryClient.setQueryData(["/api/questions"], context.previousQuestions);
+      // Rollback all optimistic updates
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
-      
+
       toast({
         title: t("error.title"),
         description: t("error.updateQuestion"),
         variant: "destructive",
       });
     },
-    onSettled: () => {
-      // Always refetch after error or success to ensure we have the correct data
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+    onSuccess: (updatedQuestion) => {
+      // Silently update the question in all queries with server response
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return old;
+        return old.map((q: any) => 
+          q.id === question.id 
+            ? { ...q, ...updatedQuestion } 
+            : q
+        );
+      });
+
+      // Silently invalidate mock exams to update counts (no refetch)
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/mock-exams"],
+        refetchType: "none" // Don't refetch, just mark as stale
+      });
     },
   });
 
@@ -82,16 +95,12 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     onMutate: async (newCount: number) => {
       // Cancel any outgoing refetches for instant UI updates
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
-      
-      // Snapshot the previous value  
-      const previousQuestions = queryClient.getQueryData(["/api/questions"]);
 
-      // Build the correct query key that matches what's being used
-      const currentFilters = new URLSearchParams(window.location.search);
-      const queryKey = ["/api/questions", currentFilters.toString()];
+      // Snapshot all question queries
+      const previousData = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
 
-      // Optimistically update both possible query keys
-      queryClient.setQueryData(["/api/questions"], (old: any) => {
+      // Optimistically update all question queries
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
           q.id === question.id 
@@ -100,48 +109,32 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         );
       });
 
-      queryClient.setQueryData(queryKey, (old: any) => {
-        if (!old) return old;
-        return old.map((q: any) => 
-          q.id === question.id 
-            ? { ...q, failureCount: newCount } 
-            : q
-        );
-      });
-
-      return { previousQuestions, newCount };
+      return { previousData, newCount };
     },
     onError: (err, newCount, context) => {
-      // Rollback optimistic updates on error
-      if (context?.previousQuestions) {
-        queryClient.setQueryData(["/api/questions"], context.previousQuestions);
-        
-        const currentFilters = new URLSearchParams(window.location.search);
-        const queryKey = ["/api/questions", currentFilters.toString()];
-        queryClient.setQueryData(queryKey, context.previousQuestions);
+      // Rollback on error
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
+
       toast({
         title: t("error.title"),
         description: t("error.updateQuestion"),
         variant: "destructive",
       });
     },
-    onSuccess: (data) => {
-      // Ensure the UI reflects the server response
-      const updateQueries = (old: any) => {
+    onSuccess: (updatedQuestion) => {
+      // Silently update the question in all queries with server response
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
           q.id === question.id 
-            ? { ...q, failureCount: data.failureCount } 
+            ? { ...q, ...updatedQuestion } 
             : q
         );
-      };
-
-      queryClient.setQueryData(["/api/questions"], updateQueries);
-      
-      const currentFilters = new URLSearchParams(window.location.search);
-      const queryKey = ["/api/questions", currentFilters.toString()];
-      queryClient.setQueryData(queryKey, updateQueries);
+      });
     },
   });
 
@@ -150,20 +143,40 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       const response = await apiRequest("DELETE", `/api/questions/${id}`);
       return response.json();
     },
+    onMutate: async (id: number) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
+
+      // Snapshot all question queries
+      const previousData = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
+
+      // Optimistically remove the question from all queries
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return old;
+        return old.filter((q: any) => q.id !== id);
+      });
+
+      return { previousData };
+    },
+    onError: (err, id, context) => {
+      // Rollback optimistic updates on error
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      toast({
+        title: t("error.title"),
+        description: t("error.deleteQuestion"),
+        variant: "destructive",
+      });
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
       toast({
         title: t("question.deleted"),
         description: t("question.deletedDescription"),
-      });
-    },
-    onError: () => {
-      toast({
-        title: t("error.title"),
-        description: t("error.deleteQuestion"),
-        variant: "destructive",
       });
     },
   });
@@ -187,16 +200,9 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     }
   };
 
-  const handleFailureCountChange = (e: React.MouseEvent, delta: number) => {
-    e.stopPropagation();
-    e.preventDefault();
-    const currentCount = question.failureCount || 0;
-    const newCount = Math.max(0, currentCount + delta);
-    
-    // Only proceed if the count actually changes
-    if (newCount !== currentCount) {
-      updateFailureCountMutation.mutate(newCount);
-    }
+  const handleFailureCountChange = (change: 1 | -1) => {
+    const newCount = Math.max(0, (question.failureCount || 0) + change);
+    updateFailureCountMutation.mutate(newCount);
   };
 
   const getFailureCountColor = (count: number) => {
@@ -224,7 +230,15 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     return type === "error" ? t("question.error") : t("question.doubt");
   };
 
-  const formatDate = (date: Date | string) => {
+  const formatDate = (date: Date | string | any) => {
+    if (!date) return '';
+
+    // Handle Firestore Timestamp objects  
+    if (date && typeof date === 'object' && '_seconds' in date) {
+      return new Date(date._seconds * 1000).toLocaleDateString();
+    }
+
+    // Handle regular Date objects and ISO strings
     const d = typeof date === "string" ? new Date(date) : date;
     return d.toLocaleDateString();
   };
@@ -239,10 +253,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       )}
       onClick={handleCardClick}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-3">
         {/* Main Row - Metadata and Theory side by side */}
         <div className="flex items-start gap-4">
-          {/* Left Section - Status and Metadata */}
+
           <div className="flex items-center gap-2 min-w-0 flex-shrink-0 flex-wrap">
             <Badge
               className={cn(
@@ -266,7 +280,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             </Badge>
           </div>
 
-          {/* Center Section - Theory Text */}
+
           <div className="flex-1 min-w-0 overflow-hidden">
             <div className={cn(
               "text-sm text-gray-700 leading-relaxed break-all",
@@ -276,15 +290,18 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             </div>
           </div>
 
-          {/* Right Section - Actions and Date */}
+
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Failure Counter */}
+
             <div className="flex items-center gap-1 bg-gray-50 rounded-md px-2 py-1">
               <Button
                 variant="ghost"
                 size="sm"
                 className="p-0 h-5 w-5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors duration-75 flex items-center justify-center"
-                onClick={(e) => handleFailureCountChange(e, -1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFailureCountChange(-1);
+                }}
                 disabled={(question.failureCount || 0) === 0}
                 type="button"
                 aria-label="Decrease failure count"
@@ -298,7 +315,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
                 variant="ghost"
                 size="sm"
                 className="p-0 h-5 w-5 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition-colors duration-75 flex items-center justify-center"
-                onClick={(e) => handleFailureCountChange(e, 1)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFailureCountChange(1);
+                }}
                 type="button"
                 aria-label="Increase failure count"
               >
@@ -359,7 +379,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
           </div>
         </div>
 
-        {/* Mobile-only metadata row */}
+
         <div className="flex items-center gap-2 text-xs text-gray-600 mt-3 sm:hidden">
           <span>{question.topic.name}</span>
           <span className="text-gray-400">•</span>

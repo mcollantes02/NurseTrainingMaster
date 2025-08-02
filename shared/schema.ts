@@ -1,179 +1,135 @@
-import { pgTable, text, serial, integer, boolean, timestamp, varchar } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  role: text("role").notNull().default("student"), // student, admin
-  createdAt: timestamp("created_at").defaultNow(),
+// Input validation schemas (for API requests)
+export const insertMockExamSchema = z.object({
+  title: z.string().min(1),
+  createdBy: z.string(), // Firebase UID
 });
 
-// Mock exams table
-export const mockExams = pgTable("mock_exams", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  createdBy: integer("created_by").notNull().references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
+export const insertSubjectSchema = z.object({
+  name: z.string().min(1),
+  createdBy: z.string(), // Firebase UID
 });
 
-// Subjects table
-export const subjects = pgTable("subjects", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow(),
+export const insertTopicSchema = z.object({
+  name: z.string().min(1),
+  createdBy: z.string(), // Firebase UID
 });
 
-// Topics table
-export const topics = pgTable("topics", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  createdAt: timestamp("created_at").defaultNow(),
+export const insertQuestionSchema = z.object({
+  mockExamIds: z.array(z.number()).min(1, "At least one mock exam is required"),
+  subjectId: z.number(),
+  topicId: z.number(),
+  type: z.string(),
+  theory: z.string(),
+  isLearned: z.boolean().default(false),
+  failureCount: z.number().default(0),
+  createdBy: z.string(), // Firebase UID
 });
 
-// Questions table
-export const questions = pgTable("questions", {
-  id: serial("id").primaryKey(),
-  mockExamId: integer("mock_exam_id").notNull().references(() => mockExams.id),
-  subjectId: integer("subject_id").notNull().references(() => subjects.id),
-  topicId: integer("topic_id").notNull().references(() => topics.id),
-  type: text("type").notNull(), // error, doubt
-  theory: text("theory").notNull(),
-  isLearned: boolean("is_learned").default(false),
-  failureCount: integer("failure_count").default(0),
-  createdBy: integer("created_by").notNull().references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+// Firestore types
+export type FirestoreTimestamp = {
+  seconds: number;
+  nanoseconds: number;
+};
 
-// Trash table for deleted questions
-export const trashedQuestions = pgTable("trashed_questions", {
-  id: serial("id").primaryKey(),
-  originalId: integer("original_id").notNull(),
-  mockExamId: integer("mock_exam_id").notNull(),
-  mockExamTitle: text("mock_exam_title").notNull(),
-  subjectId: integer("subject_id").notNull(),
-  subjectName: text("subject_name").notNull(),
-  topicId: integer("topic_id").notNull(),
-  topicName: text("topic_name").notNull(),
-  type: text("type").notNull(),
-  theory: text("theory").notNull(),
-  isLearned: boolean("is_learned").default(false),
-  failureCount: integer("failure_count").default(0),
-  createdBy: integer("created_by").notNull().references(() => users.id),
-  createdAt: timestamp("created_at").notNull(),
-  deletedAt: timestamp("deleted_at").defaultNow(),
-});
+// Base types (matching Firestore documents)
+export type User = {
+  uid: string;
+  email: string;
+  name?: string;
+  picture?: string;
+};
 
-// Relations
-export const usersRelations = relations(users, ({ many }) => ({
-  mockExams: many(mockExams),
-  questions: many(questions),
-}));
+export type MockExam = {
+  id: number;
+  title: string;
+  createdBy: string; // Firebase UID
+  createdAt: Date;
+};
 
-export const mockExamsRelations = relations(mockExams, ({ one, many }) => ({
-  createdBy: one(users, {
-    fields: [mockExams.createdBy],
-    references: [users.id],
-  }),
-  questions: many(questions),
-}));
+export type Subject = {
+  id: number;
+  name: string;
+  createdBy: string; // Firebase UID
+  createdAt: Date;
+};
 
-export const questionsRelations = relations(questions, ({ one }) => ({
-  mockExam: one(mockExams, {
-    fields: [questions.mockExamId],
-    references: [mockExams.id],
-  }),
-  subject: one(subjects, {
-    fields: [questions.subjectId],
-    references: [subjects.id],
-  }),
-  topic: one(topics, {
-    fields: [questions.topicId],
-    references: [topics.id],
-  }),
-  createdBy: one(users, {
-    fields: [questions.createdBy],
-    references: [users.id],
-  }),
-}));
+export type Topic = {
+  id: number;
+  name: string;
+  createdBy: string; // Firebase UID
+  createdAt: Date;
+};
 
-export const subjectsRelations = relations(subjects, ({ many }) => ({
-  questions: many(questions),
-}));
+export type Question = {
+  id: number;
+  subjectId: number;
+  topicId: number;
+  type: string;
+  theory: string;
+  isLearned: boolean;
+  failureCount: number;
+  createdBy: string; // Firebase UID
+  createdAt: Date;
+};
 
-export const trashedQuestionsRelations = relations(trashedQuestions, ({ one }) => ({
-  createdBy: one(users, {
-    fields: [trashedQuestions.createdBy],
-    references: [users.id],
-  }),
-}));
+export type QuestionMockExam = {
+  id: number;
+  questionId: number;
+  mockExamId: number;
+  createdBy: string; // Firebase UID
+  createdAt: Date;
+};
 
-export const topicsRelations = relations(topics, ({ many }) => ({
-  questions: many(questions),
-}));
+export type TrashedQuestion = {
+  id: number;
+  originalId: number;
+  mockExamIds: number[];
+  mockExamTitles: string[];
+  subjectId: number;
+  subjectName: string;
+  topicId: number;
+  topicName: string;
+  type: string;
+  theory: string;
+  isLearned: boolean;
+  failureCount: number;
+  createdBy: string; // Firebase UID
+  createdAt: Date;
+  deletedAt: Date;
+};
 
-// Insert schemas
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-});
+export type FirestoreMockExam = Omit<MockExam, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
 
-export const insertMockExamSchema = createInsertSchema(mockExams).omit({
-  id: true,
-  createdAt: true,
-});
+export type FirestoreSubject = Omit<Subject, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
 
-export const insertSubjectSchema = createInsertSchema(subjects).omit({
-  id: true,
-  createdAt: true,
-});
+export type FirestoreTopic = Omit<Topic, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
 
-export const insertTopicSchema = createInsertSchema(topics).omit({
-  id: true,
-  createdAt: true,
-});
+export type FirestoreQuestion = Omit<Question, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
 
-export const insertQuestionSchema = createInsertSchema(questions).omit({
-  id: true,
-  createdAt: true,
-});
+export type FirestoreQuestionMockExam = Omit<QuestionMockExam, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
 
-// Types
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type FirestoreTrashedQuestion = Omit<TrashedQuestion, 'createdAt' | 'deletedAt'> & {
+  createdAt: FirestoreTimestamp;
+  deletedAt: FirestoreTimestamp;
+};
 
-export type MockExam = typeof mockExams.$inferSelect;
-export type InsertMockExam = z.infer<typeof insertMockExamSchema>;
-
-export type Subject = typeof subjects.$inferSelect;
-export type InsertSubject = z.infer<typeof insertSubjectSchema>;
-
-export type Topic = typeof topics.$inferSelect;
-export type InsertTopic = z.infer<typeof insertTopicSchema>;
-
-export type Question = typeof questions.$inferSelect;
-export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
-
-// Extended types with relations
+// Types with relations (for API responses)
 export type QuestionWithRelations = Question & {
-  mockExam: MockExam;
+  mockExam?: MockExam; // For backward compatibility
+  mockExams: MockExam[];
   subject: Subject;
   topic: Topic;
   createdBy: User;
-};
-
-export type TrashedQuestion = typeof trashedQuestions.$inferSelect;
-export type InsertTrashedQuestion = typeof trashedQuestions.$inferInsert;
-
-export type TrashedQuestionWithUser = TrashedQuestion & {
-  createdBy: User;
-};
-
-export type MockExamWithQuestionCount = MockExam & {
-  questionCount: number;
 };

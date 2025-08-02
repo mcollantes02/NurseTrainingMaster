@@ -8,6 +8,19 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { QuestionWithRelations } from "@shared/schema";
 
+interface FiltersState {
+  mockExamIds: number[];
+  subjectIds: number[];
+  topicIds: number[];
+  keywords: string;
+  learningStatus: boolean[];
+  failureCount: {
+    min: number | undefined;
+    max: number | undefined;
+    exact: number | undefined;
+  };
+}
+
 interface QuestionGridProps {
   filters: FiltersState;
   groupByExam?: boolean;
@@ -42,14 +55,35 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
   if (filters.learningStatus?.length) {
     filters.learningStatus.forEach(status => queryParams.append('learningStatus', status.toString()));
   }
+  if (filters.failureCount?.exact !== undefined && filters.failureCount.exact !== null) {
+    queryParams.append('failureCountExact', filters.failureCount.exact.toString());
+  }
+  if (filters.failureCount?.min !== undefined && filters.failureCount.min !== null) {
+    queryParams.append('failureCountMin', filters.failureCount.min.toString());
+  }
+  if (filters.failureCount?.max !== undefined && filters.failureCount.max !== null) {
+    queryParams.append('failureCountMax', filters.failureCount.max.toString());
+  }
 
-  const { data: questions = [], isLoading } = useQuery<QuestionWithRelations[]>({
+  const { data: questions = [], isLoading, refetch } = useQuery({
     queryKey: ["/api/questions", queryParams.toString()],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/questions?${queryParams.toString()}`);
+      const url = `/api/questions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiRequest("GET", url);
       return response.json();
     },
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: true,
+    keepPreviousData: true, // Keep previous data while fetching new data
+    refetchOnMount: false, // Don't refetch on component mount if data is fresh
   });
+
+  // Force refetch when filters change to ensure fresh data across tabs
+  useEffect(() => {
+    refetch();
+  }, [filters, refetch]);
 
   const totalPages = Math.ceil(questions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -89,14 +123,35 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
     );
   }
 
+  // Debug: log the first question to see its structure
+  if (questions.length > 0) {
+    console.log("First question structure:", questions[0]);
+  }
+
   if (groupByExam) {
     // Group questions by mock exam
     const questionsByExam = questions.reduce((acc, question) => {
-      const examTitle = question.mockExam.title;
-      if (!acc[examTitle]) {
-        acc[examTitle] = [];
+      // Check if question has mockExams array (for questions belonging to multiple exams)
+      if (question.mockExams && Array.isArray(question.mockExams) && question.mockExams.length > 0) {
+        // Add question to each mock exam it belongs to
+        question.mockExams.forEach(mockExam => {
+          if (mockExam && mockExam.title) {
+            const examTitle = mockExam.title;
+            if (!acc[examTitle]) {
+              acc[examTitle] = [];
+            }
+            acc[examTitle].push(question);
+          }
+        });
+      } else if (question.mockExam && question.mockExam.title) {
+        // Fallback to single mockExam if mockExams array is not available
+        const examTitle = question.mockExam.title;
+        if (!acc[examTitle]) {
+          acc[examTitle] = [];
+        }
+        acc[examTitle].push(question);
       }
-      acc[examTitle].push(question);
+
       return acc;
     }, {} as Record<string, typeof questions>);
 
@@ -108,8 +163,11 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
       if (questionsA.length === 0 || questionsB.length === 0) return 0;
 
       // Use the first question's mockExam data to compare
-      const examA = questionsA[0].mockExam;
-      const examB = questionsB[0].mockExam;
+      const examA = questionsA[0]?.mockExam;
+      const examB = questionsB[0]?.mockExam;
+
+      // Safety check: ensure both exams exist
+      if (!examA || !examB) return 0;
 
       if (sortBy === "newest") {
         return new Date(examB.createdAt).getTime() - new Date(examA.createdAt).getTime();
@@ -131,7 +189,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
               <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
                 {examTitle} ({examQuestions.length} {examQuestions.length === 1 ? t("question.single") : t("questions.label")})
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {examQuestions.map((question) => (
                   <QuestionCard 
                     key={question.id} 
