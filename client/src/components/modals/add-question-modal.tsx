@@ -130,10 +130,30 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
 
   const createQuestionMutation = useMutation({
     mutationFn: async (data: FormData) => {
+      // Get or create subject and topic in parallel
+      const [subjectId, topicId] = await Promise.all([
+        (async () => {
+          const existingSubject = subjects.find(s => s.name === data.subjectName);
+          if (existingSubject) {
+            return existingSubject.id;
+          }
+          const newSubject = await createSubjectMutation.mutateAsync(data.subjectName);
+          return newSubject.id;
+        })(),
+        (async () => {
+          const existingTopic = topics.find(t => t.name === data.topicName);
+          if (existingTopic) {
+            return existingTopic.id;
+          }
+          const newTopic = await createTopicMutation.mutateAsync(data.topicName);
+          return newTopic.id;
+        })()
+      ]);
+
       const response = await apiRequest("POST", "/api/questions", {
         mockExamIds: data.mockExamIds,
-        subjectName: data.subjectName,
-        topicName: data.topicName,
+        subjectId,
+        topicId,
         type: data.type,
         theory: data.theory,
         isLearned: data.isLearned,
