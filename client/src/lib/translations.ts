@@ -427,6 +427,7 @@ export const translations = {
     "statistics.learningProgress": "Learning progress",
     "statistics.weeklyActivity": "Weekly activity",
     "statistics.failureDistribution": "Failure distribution",
-        "navigation.dashboard": "Dashboard",
+    "navigation.dashboard": "Dashboard", 
     "navigation.back": "Back",
+  }
 };
