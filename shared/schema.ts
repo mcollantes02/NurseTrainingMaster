@@ -124,3 +124,12 @@ export type FirestoreTrashedQuestion = Omit<TrashedQuestion, 'createdAt' | 'dele
   createdAt: FirestoreTimestamp;
   deletedAt: FirestoreTimestamp;
 };
+
+// Types with relations (for API responses)
+export type QuestionWithRelations = Question & {
+  mockExam?: MockExam; // For backward compatibility
+  mockExams: MockExam[];
+  subject: Subject;
+  topic: Topic;
+  createdBy: User;
+};
