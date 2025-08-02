@@ -52,9 +52,10 @@ type FormData = z.infer<typeof formSchema>;
 interface AddQuestionModalProps {
   isOpen: boolean;
   onClose: () => void;
+  preSelectedMockExamId?: number;
 }
 
-export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
+export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: AddQuestionModalProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,8 +89,9 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
+      const defaultMockExamIds = preSelectedMockExamId ? [preSelectedMockExamId] : [];
       form.reset({
-        mockExamIds: [],
+        mockExamIds: defaultMockExamIds,
         subjectName: "",
         topicName: "",
         type: "error",
@@ -98,7 +100,7 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
         failureCount: 0,
       });
     }
-  }, [isOpen, form]);
+  }, [isOpen, form, preSelectedMockExamId]);
 
   const createSubjectMutation = useMutation({
     mutationFn: async (name: string) => {
@@ -170,8 +172,9 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
 
       // Close modal and reset form
       onClose();
+      const defaultMockExamIds = preSelectedMockExamId ? [preSelectedMockExamId] : [];
       form.reset({
-        mockExamIds: [],
+        mockExamIds: defaultMockExamIds,
         subjectName: "",
         topicName: "",
         type: "error",
@@ -199,8 +202,9 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
   };
 
   const handleClose = () => {
+    const defaultMockExamIds = preSelectedMockExamId ? [preSelectedMockExamId] : [];
     form.reset({
-      mockExamIds: [],
+      mockExamIds: defaultMockExamIds,
       subjectName: "",
       topicName: "",
       type: "error",
