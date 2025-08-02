@@ -65,7 +65,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
     queryParams.append('failureCountMax', filters.failureCount.max.toString());
   }
 
-  const { data: questions = [], isLoading } = useQuery({
+  const { data: questions = [], isLoading, refetch } = useQuery({
     queryKey: ["/api/questions", queryParams.toString()],
     queryFn: async () => {
       const url = `/api/questions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
@@ -79,6 +79,11 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
     keepPreviousData: true, // Keep previous data while fetching new data
     refetchOnMount: false, // Don't refetch on component mount if data is fresh
   });
+
+  // Force refetch when filters change to ensure fresh data across tabs
+  useEffect(() => {
+    refetch();
+  }, [filters, refetch]);
 
   const totalPages = Math.ceil(questions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
