@@ -366,6 +366,7 @@ export const translations = {
     "error.title": "Error",
     "error.addQuestion": "Error adding question",
     "error.updateQuestion": "Error updating question",
+    "error.createQuestion": "Error al crear la pregunta",
     "error.createExam": "Failed to create mock exam. Please try again.",
     "error.updateExam": "Failed to update mock exam. Please try again.",
     "error.deleteExam": "Failed to delete mock exam. Please check if it has questions and try again.",
