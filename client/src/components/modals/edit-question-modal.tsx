@@ -59,8 +59,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [subjectSearch, setSubjectSearch] = useState("");
-  const [topicSearch, setTopicSearch] = useState("");
+  
 
   const { data: mockExams = [] } = useQuery<MockExam[]>({
     queryKey: ["/api/mock-exams"],
@@ -224,13 +223,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
     updateQuestionMutation.mutate(data);
   };
 
-  const filteredSubjects = subjects.filter(subject =>
-    subject.name.toLowerCase().includes(subjectSearch.toLowerCase())
-  );
-
-  const filteredTopics = topics.filter(topic =>
-    topic.name.toLowerCase().includes(topicSearch.toLowerCase())
-  );
+  
 
   if (!question) return null;
 
@@ -250,69 +243,26 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
               control={form.control}
               name="mockExamIds"
               render={({ field }) => {
-                const [searchTerm, setSearchTerm] = useState("");
-                const filteredExams = mockExams.filter(exam =>
-                  exam.title.toLowerCase().includes(searchTerm.toLowerCase())
-                );
+                const mockExamOptions = mockExams.map((exam) => ({
+                  value: exam.id.toString(),
+                  label: exam.title,
+                }));
+
+                const handleMockExamChange = (values: string[]) => {
+                  field.onChange(values.map(Number));
+                };
 
                 return (
                   <FormItem>
                     <FormLabel>{t("mockExam.selectMultiple")} *</FormLabel>
                     <FormControl>
-                      <div className="space-y-3">
-                        <Input
-                          placeholder="Buscar simulacros..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="w-full"
-                        />
-                        {searchTerm.trim() && (
-                          <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-                            {filteredExams.length > 0 ? (
-                              filteredExams.map((exam) => (
-                                <div key={exam.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`exam-${exam.id}`}
-                                    checked={field.value.includes(exam.id)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        field.onChange([...field.value, exam.id]);
-                                      } else {
-                                        field.onChange(field.value.filter(id => id !== exam.id));
-                                      }
-                                    }}
-                                  />
-                                  <Label htmlFor={`exam-${exam.id}`} className="text-sm font-normal">
-                                    {exam.title}
-                                  </Label>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-sm text-gray-500">No se encontraron simulacros</p>
-                            )}
-                          </div>
-                        )}
-                        {/* Show selected exams */}
-                        {field.value.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {field.value.map(examId => {
-                              const exam = mockExams.find(e => e.id === examId);
-                              return exam ? (
-                                <div key={examId} className="flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm">
-                                  {exam.title}
-                                  <button
-                                    type="button"
-                                    onClick={() => field.onChange(field.value.filter(id => id !== examId))}
-                                    className="ml-2 hover:text-blue-600"
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                              ) : null;
-                            })}
-                          </div>
-                        )}
-                      </div>
+                      <MultiSelect
+                        options={mockExamOptions}
+                        value={field.value.map(String)}
+                        onChange={handleMockExamChange}
+                        placeholder={t("mockExam.selectMultiple")}
+                        searchPlaceholder="Buscar simulacros..."
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -330,7 +280,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
                     <FormLabel>{t("subject.label")}</FormLabel>
                     <FormControl>
                       <Combobox
-                        options={filteredSubjects.map(s => ({ label: s.name, value: s.name }))}
+                        options={subjects.map(s => ({ label: s.name, value: s.name }))}
                         value={field.value}
                         onSelect={field.onChange}
                         placeholder={t("subject.select")}
@@ -352,7 +302,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
                     <FormLabel>{t("topic.label")}</FormLabel>
                     <FormControl>
                       <Combobox
-                        options={filteredTopics.map(t => ({ label: t.name, value: t.name }))}
+                        options={topics.map(t => ({ label: t.name, value: t.name }))}
                         value={field.value}
                         onSelect={field.onChange}
                         placeholder={t("topic.select")}
