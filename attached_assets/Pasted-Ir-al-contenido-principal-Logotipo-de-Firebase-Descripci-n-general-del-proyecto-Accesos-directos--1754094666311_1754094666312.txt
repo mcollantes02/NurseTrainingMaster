@@ -1,0 +1,146 @@
+Ir al contenido principal
+Logotipo de Firebase
+Descripción general del proyecto
+Accesos directos a proyectos
+Authentication
+Firestore Database
+Novedades
+AI Logic
+Nuevo
+Categorías de producto
+Compilación
+Ejecución
+Analytics
+IA
+Todos los productos
+Herramientas de desarrollo relacionadas
+Firebase Studio
+Plan de facturación:Spark
+Sin costo (USD 0 al mes)
+
+NurseTrainingMaster
+Configuración de proyecto
+General
+Cloud Messaging
+Integraciones
+Cuentas de servicio
+Privacidad de los datos
+Usuarios y permisos
+Alertas
+Tu proyecto
+Nombre del proyecto
+NurseTrainingMaster
+ID del proyecto
+nursetrainingmaster
+Número del proyecto
+180309622649
+Clave de API web
+AIzaSyBL7ZgCMw1glr07lfp6lvqfidRU1JiDTIs
+Entorno
+Este parámetro de configuración permite personalizar tu proyecto para las diferentes etapas del ciclo de vida de la app
+Tipo de entorno
+Sin especificar
+Configuración pública
+Esta configuración controla las instancias de tu proyecto que se muestran al público
+Nombre público 
+project-180309622649
+Correo electrónico de asistencia
+ruizsanchezroberto12@gmail.com
+Tus apps
+Apps web
+nursetrainingmaster
+App web
+Sobrenombre de la app
+nursetrainingmaster
+ID de la app
+1:180309622649:web:da1b3f004ef4c96d22b9a8
+Sitio de Firebase Hosting vinculado
+nursetrainingmaster
+
+Configuración del SDK
+
+npm
+
+CDN
+
+Config
+Si ya usas npm y un agrupador de módulos como Webpack o Rollup, puedes ejecutar el siguiente comando para instalar la versión más reciente del SDK (más información):
+
+npm install firebase
+Luego, inicializa Firebase y comienza a usar los SDK de los productos que quieres utilizar.
+
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyBL7ZgCMw1glr07lfp6lvqfidRU1JiDTIs",
+  authDomain: "nursetrainingmaster.firebaseapp.com",
+  projectId: "nursetrainingmaster",
+  storageBucket: "nursetrainingmaster.firebasestorage.app",
+  messagingSenderId: "180309622649",
+  appId: "1:180309622649:web:da1b3f004ef4c96d22b9a8"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+Nota: Esta opción utiliza el SDK de JavaScript modular, que proporciona un tamaño reducido del SDK.
+
+Obtén más información sobre Firebase para la Web: primeros pasos, referencia de la API del SDK web y muestras
+
+Ayuda
+Busca en la documentación para desarrolladores
+Buscar
+Documentación para desarrolladores de Firebase
+Ya sea que te resulte más fácil aprender leyendo o haciendo, Firebase te ofrece varios recursos para adquirir destrezas sobre nuestros productos
+Google Developer Program
+Enriquece tu recorrido como desarrollador con acceso a asistencia de IA, recursos de aprendizaje, insignias de perfil y mucho más.
+Asistencia de Firebase
+Presentar un informe de errores o un caso de asistencia
+Informar un error
+Enviar un informe de un error claramente definido
+Solicitar una función (privada)
+Solicitar una función nueva
+Enviar comentarios (comunidad)
+Compartir ideas, votar por las existentes y participar en el debate
+El sobrenombre de la app se usará en Firebase console para representarla. Los usuarios no pueden ver los sobrenombres.
+Gemini en Firebase
+Obtén respuestas a preguntas sobre productos, casos de uso y funciones de Firebase. Genera código para el desarrollo y acorta el proceso de solución de problemas con estadísticas nuevas gracias a una interfaz de chat de lenguaje natural directamente en Firebase console.
+
+Vertex AI in Firebase ahora es Firebase AI Logic y te da acceso a Gemini Developer API
+Vertex AI in Firebase ahora es Firebase AI Logic y te da acceso a Gemini Developer API
+Ir a la documentación
+Agrega Firebase a tu app web
+Completed
+Registrar app
+Editable
+Agrega el SDK de Firebase
+
+
+
+
+Editable
+Instala Firebase CLI
+
+
+4
+Realiza la implementación en Firebase Hosting
+Puedes realizar la implementación ahora o más adelante. Para hacerlo ahora mismo, abre una ventana de la terminal y, luego, navega al directorio raíz de tu app web o crea uno.
+
+Acceder a Google
+firebase login
+Inicia el proyecto
+Ejecuta el siguiente comando en el directorio raíz de tu app:
+
+firebase init
+Cuando tengas todo listo, implementa tu app web
+Ubica los archivos estáticos (p. ej., HTML, CSS y JS) en el directorio de implementación de la app (el directorio predeterminado es "public"). Luego, ejecuta este comando desde el directorio raíz de tu app:
+
+firebase deploy
+Después de la implementación, consulta tu app en nursetrainingmaster.web.app
+
+¿Necesitas ayuda? Consulta los documentos de Hosting.
+
+
