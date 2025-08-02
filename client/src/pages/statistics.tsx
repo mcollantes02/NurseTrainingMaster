@@ -1,6 +1,6 @@
 
-import { useState, useMemo, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/hooks/useLanguage";
 import { apiRequest } from "@/lib/queryClient";
 import { Header } from "@/components/navigation/header";
@@ -74,28 +74,10 @@ const PIE_COLORS = [COLORS.learned, COLORS.doubt, COLORS.error, "#8B5CF6", "#06B
 
 export default function Statistics() {
   const { t } = useLanguage();
-  const queryClient = useQueryClient();
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
-
-  // Prefetch common data that might be needed
-  useMemo(() => {
-    queryClient.prefetchQuery({
-      queryKey: ["/api/mock-exams"],
-      staleTime: 5 * 60 * 1000,
-    });
-    queryClient.prefetchQuery({
-      queryKey: ["/api/subjects"],
-      staleTime: 10 * 60 * 1000,
-    });
-    queryClient.prefetchQuery({
-      queryKey: ["/api/topics"],
-      staleTime: 10 * 60 * 1000,
-    });
-  }, [queryClient]);
 
   const { data: stats, isLoading } = useQuery<DetailedStats>({
     queryKey: ["/api/user/detailed-stats"],
-    staleTime: 2 * 60 * 1000, // Consider stats fresh for 2 minutes
   });
 
   const chartConfig = {
@@ -120,11 +102,11 @@ export default function Statistics() {
       { name: t("questions.doubt"), value: stats.doubtQuestions, color: COLORS.doubt },
       { name: t("questions.error"), value: stats.errorQuestions, color: COLORS.error },
     ];
-  }, [stats?.learnedQuestions, stats?.doubtQuestions, stats?.errorQuestions, t]);
+  }, [stats, t]);
 
-  const handleGoBack = useCallback(() => {
+  const handleGoBack = () => {
     window.history.back();
-  }, []);
+  };
 
   if (isLoading) {
     return (
