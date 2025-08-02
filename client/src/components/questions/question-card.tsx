@@ -227,7 +227,15 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     return type === "error" ? t("question.error") : t("question.doubt");
   };
 
-  const formatDate = (date: Date | string) => {
+  const formatDate = (date: Date | string | any) => {
+    if (!date) return '';
+    
+    // Handle Firestore Timestamp objects  
+    if (date && typeof date === 'object' && '_seconds' in date) {
+      return new Date(date._seconds * 1000).toLocaleDateString();
+    }
+    
+    // Handle regular Date objects and ISO strings
     const d = typeof date === "string" ? new Date(date) : date;
     return d.toLocaleDateString();
   };
