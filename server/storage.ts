@@ -1,4 +1,3 @@
-
 import { firestore } from './firebase';
 import { Timestamp } from 'firebase-admin/firestore';
 import { 
@@ -249,7 +248,7 @@ export class Storage {
         .get();
 
       questionIds = relationSnapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).questionId);
-      
+
       if (questionIds.length === 0) return []; // No questions found for these mock exams
     }
 
