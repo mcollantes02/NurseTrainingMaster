@@ -35,6 +35,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
+import { MultiSelect } from "@/components/ui/multi-select";
 import type { MockExam, Subject, Topic } from "@shared/schema";
 
 const formSchema = z.object({
@@ -236,32 +237,16 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
                 <FormItem>
                   <FormLabel>{t("mockExam.selectMultiple")} *</FormLabel>
                   <FormControl>
-                    <div className="space-y-2">
-                      {mockExams.length > 0 ? (
-                        <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
-                          {mockExams.map((exam) => (
-                            <div key={exam.id} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`exam-${exam.id}`}
-                                checked={field.value.includes(exam.id)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    field.onChange([...field.value, exam.id]);
-                                  } else {
-                                    field.onChange(field.value.filter(id => id !== exam.id));
-                                  }
-                                }}
-                              />
-                              <Label htmlFor={`exam-${exam.id}`} className="text-sm">
-                                {exam.title}
-                              </Label>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500 text-sm">No hay simulacros disponibles</p>
-                      )}
-                    </div>
+                    <MultiSelect
+                      options={mockExams.map(exam => ({
+                        value: exam.id.toString(),
+                        label: exam.title
+                      }))}
+                      value={field.value.map(id => id.toString())}
+                      onChange={(values) => field.onChange(values.map(v => parseInt(v)))}
+                      placeholder="Seleccionar simulacros"
+                      searchPlaceholder="Buscar simulacros..."
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

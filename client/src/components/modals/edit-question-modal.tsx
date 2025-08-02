@@ -34,10 +34,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Combobox } from "@/components/ui/combobox";
+import { MultiSelect } from "@/components/ui/multi-select";
 import type { QuestionWithRelations, MockExam, Subject, Topic } from "@shared/schema";
 
 const formSchema = z.object({
-  mockExamId: z.number(),
+  mockExamIds: z.array(z.number()).min(1, "At least one mock exam is required"),
   subjectName: z.string().min(1, "Subject is required"),
   topicName: z.string().min(1, "Topic is required"),
   type: z.enum(["error", "doubt"]),
@@ -85,7 +86,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
   useEffect(() => {
     if (question) {
       form.reset({
-        mockExamId: question.mockExamId,
+        mockExamIds: question.mockExams ? question.mockExams.map(exam => exam.id) : [question.mockExamId],
         subjectName: question.subject.name,
         topicName: question.topic.name,
         type: question.type as "error" | "doubt",
@@ -141,7 +142,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
       ]);
 
       const response = await apiRequest("PUT", `/api/questions/${question.id}`, {
-        mockExamId: data.mockExamId,
+        mockExamIds: data.mockExamIds,
         subjectId,
         topicId,
         type: data.type,
@@ -177,7 +178,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
           q.id === question.id 
             ? { 
                 ...q, 
-                mockExamId: data.mockExamId,
+                mockExamIds: data.mockExamIds,
                 type: data.type,
                 theory: data.theory,
                 failureCount: data.failureCount,
@@ -247,27 +248,22 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
             {/* Mock Exam Selection */}
             <FormField
               control={form.control}
-              name="mockExamId"
+              name="mockExamIds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("mockExam.label")}</FormLabel>
-                  <Select
-                    value={field.value?.toString()}
-                    onValueChange={(value) => field.onChange(parseInt(value))}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t("mockExam.select")} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {mockExams.map((exam) => (
-                        <SelectItem key={exam.id} value={exam.id.toString()}>
-                          {exam.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>{t("mockExam.selectMultiple")} *</FormLabel>
+                  <FormControl>
+                    <MultiSelect
+                      options={mockExams.map(exam => ({
+                        value: exam.id.toString(),
+                        label: exam.title
+                      }))}
+                      value={field.value.map(id => id.toString())}
+                      onChange={(values) => field.onChange(values.map(v => parseInt(v)))}
+                      placeholder="Seleccionar simulacros"
+                      searchPlaceholder="Buscar simulacros..."
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
