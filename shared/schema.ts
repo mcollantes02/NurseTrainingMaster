@@ -1,27 +1,19 @@
 import { z } from "zod";
 
 // Input validation schemas (for API requests)
-export const insertUserSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  role: z.string().default('user'),
-});
-
 export const insertMockExamSchema = z.object({
   title: z.string().min(1),
-  createdBy: z.number(),
+  createdBy: z.string(), // Firebase UID
 });
 
 export const insertSubjectSchema = z.object({
   name: z.string().min(1),
-  createdBy: z.number(),
+  createdBy: z.string(), // Firebase UID
 });
 
 export const insertTopicSchema = z.object({
   name: z.string().min(1),
-  createdBy: z.number(),
+  createdBy: z.string(), // Firebase UID
 });
 
 export const insertQuestionSchema = z.object({
@@ -32,7 +24,7 @@ export const insertQuestionSchema = z.object({
   theory: z.string(),
   isLearned: z.boolean().default(false),
   failureCount: z.number().default(0),
-  createdBy: z.number(),
+  createdBy: z.string(), // Firebase UID
 });
 
 // Firestore types
@@ -43,33 +35,30 @@ export type FirestoreTimestamp = {
 
 // Base types (matching Firestore documents)
 export type User = {
-  id: number;
+  uid: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  firebaseUid?: string;
-  createdAt: Date;
+  name?: string;
+  picture?: string;
 };
 
 export type MockExam = {
   id: number;
   title: string;
-  createdBy: number;
+  createdBy: string; // Firebase UID
   createdAt: Date;
 };
 
 export type Subject = {
   id: number;
   name: string;
-  createdBy: number;
+  createdBy: string; // Firebase UID
   createdAt: Date;
 };
 
 export type Topic = {
   id: number;
   name: string;
-  createdBy: number;
+  createdBy: string; // Firebase UID
   createdAt: Date;
 };
 
@@ -82,7 +71,7 @@ export type Question = {
   theory: string;
   isLearned: boolean;
   failureCount: number;
-  createdBy: number;
+  createdBy: string; // Firebase UID
   createdAt: Date;
 };
 
@@ -99,37 +88,9 @@ export type TrashedQuestion = {
   theory: string;
   isLearned: boolean;
   failureCount: number;
-  createdBy: number;
+  createdBy: string; // Firebase UID
   createdAt: Date;
   deletedAt: Date;
-};
-
-// Insert types
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type InsertMockExam = z.infer<typeof insertMockExamSchema>;
-export type InsertSubject = z.infer<typeof insertSubjectSchema>;
-export type InsertTopic = z.infer<typeof insertTopicSchema>;
-export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
-
-// Extended types with relations
-export type QuestionWithRelations = Question & {
-  mockExam: MockExam;
-  subject: Subject;
-  topic: Topic;
-  createdBy: User;
-};
-
-export type TrashedQuestionWithUser = TrashedQuestion & {
-  createdBy: User;
-};
-
-export type MockExamWithQuestionCount = MockExam & {
-  questionCount: number;
-};
-
-// Firestore document types
-export type FirestoreUser = Omit<User, 'createdAt'> & {
-  createdAt: FirestoreTimestamp;
 };
 
 export type FirestoreMockExam = Omit<MockExam, 'createdAt'> & {

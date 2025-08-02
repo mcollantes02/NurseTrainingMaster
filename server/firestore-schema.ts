@@ -1,10 +1,8 @@
-
 import { firestore } from './firebase';
 import { Timestamp } from 'firebase-admin/firestore';
 
-// Firestore collection names (same as PostgreSQL table names)
+// Firestore collection names
 export const COLLECTIONS = {
-  USERS: 'users',
   MOCK_EXAMS: 'mock_exams',
   SUBJECTS: 'subjects',
   TOPICS: 'topics',
@@ -12,23 +10,11 @@ export const COLLECTIONS = {
   TRASHED_QUESTIONS: 'trashed_questions',
 } as const;
 
-// User document structure
-export interface FirestoreUser {
-  id: number;
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  firebaseUid?: string;
-  createdAt: Timestamp;
-}
-
 // MockExam document structure
 export interface FirestoreMockExam {
   id: number;
   title: string;
-  createdBy: number;
+  createdBy: string; // Firebase UID
   createdAt: Timestamp;
 }
 
@@ -36,7 +22,7 @@ export interface FirestoreMockExam {
 export interface FirestoreSubject {
   id: number;
   name: string;
-  createdBy: number;
+  createdBy: string; // Firebase UID
   createdAt: Timestamp;
 }
 
@@ -44,7 +30,7 @@ export interface FirestoreSubject {
 export interface FirestoreTopic {
   id: number;
   name: string;
-  createdBy: number;
+  createdBy: string; // Firebase UID
   createdAt: Timestamp;
 }
 
@@ -58,7 +44,7 @@ export interface FirestoreQuestion {
   theory: string;
   isLearned: boolean;
   failureCount: number;
-  createdBy: number;
+  createdBy: string; // Firebase UID
   createdAt: Timestamp;
 }
 
@@ -76,36 +62,18 @@ export interface FirestoreTrashedQuestion {
   theory: string;
   isLearned: boolean;
   failureCount: number;
-  createdBy: number;
+  createdBy: string; // Firebase UID
   createdAt: Timestamp;
   deletedAt: Timestamp;
 }
 
-
-
 // Firestore query utilities (equivalent to the current storage.ts functionality)
 export class FirestoreStorage {
   
-  // Get all users
-  static async getUsers() {
-    const snapshot = await firestore.collection(COLLECTIONS.USERS).get();
-    return snapshot.docs.map(doc => doc.data() as FirestoreUser);
-  }
-
-  // Get user by email
-  static async getUserByEmail(email: string) {
-    const snapshot = await firestore.collection(COLLECTIONS.USERS)
-      .where('email', '==', email)
-      .limit(1)
-      .get();
-    
-    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreUser;
-  }
-
   // Get subjects by user
-  static async getSubjects(userId: number) {
+  static async getSubjects(firebaseUid: string) {
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .get();
     const subjects = snapshot.docs.map(doc => doc.data() as FirestoreSubject);
     // Sort in memory to avoid Firestore index requirement
@@ -113,9 +81,9 @@ export class FirestoreStorage {
   }
 
   // Get topics by user
-  static async getTopics(userId: number) {
+  static async getTopics(firebaseUid: string) {
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .get();
     const topics = snapshot.docs.map(doc => doc.data() as FirestoreTopic);
     // Sort in memory to avoid Firestore index requirement
@@ -123,9 +91,9 @@ export class FirestoreStorage {
   }
 
   // Get mock exams by user
-  static async getMockExamsByUser(userId: number) {
+  static async getMockExamsByUser(firebaseUid: string) {
     const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .orderBy('createdAt', 'desc')
       .get();
     return snapshot.docs.map(doc => doc.data() as FirestoreMockExam);
@@ -133,7 +101,7 @@ export class FirestoreStorage {
 
   // Get questions by user with pagination
   static async getQuestionsByUser(
-    userId: number, 
+    firebaseUid: string, 
     limit: number = 20, 
     offset: number = 0,
     filters?: {
@@ -145,7 +113,7 @@ export class FirestoreStorage {
     }
   ) {
     let query = firestore.collection(COLLECTIONS.QUESTIONS)
-      .where('createdBy', '==', userId);
+      .where('createdBy', '==', firebaseUid);
 
     // Apply filters
     if (filters?.mockExamIds?.length) {
@@ -205,10 +173,10 @@ export class FirestoreStorage {
   }
 
   // Delete question (move to trash)
-  static async deleteQuestion(questionId: number, userId: number) {
+  static async deleteQuestion(questionId: number, firebaseUid: string) {
     const querySnapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
       .where('id', '==', questionId)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
     
