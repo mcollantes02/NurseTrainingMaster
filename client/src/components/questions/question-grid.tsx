@@ -189,7 +189,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
               <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
                 {examTitle} ({examQuestions.length} {examQuestions.length === 1 ? t("question.single") : t("questions.label")})
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {examQuestions.map((question) => (
                   <QuestionCard 
                     key={question.id} 
