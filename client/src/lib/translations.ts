@@ -140,15 +140,18 @@ export const translations = {
     "topic.notFound": "No se encontró el tema",
 
     // Filters
-    "filters.advanced": "Filtros Avanzados",
-    "filters.keywords": "Palabras Clave",
-    "filters.keywordsPlaceholder": "Buscar en preguntas...",
-    "filters.learningStatus": "Estado de Aprendizaje",
-    "filters.apply": "Aplicar Filtros",
-    "filters.exactCount": "Número exacto",
-    "filters.minCount": "Mín",
-    "filters.maxCount": "Máx",
-    "filters.or": "o",
+    filters: {
+      advanced: "Filtros Avanzados",
+      keywords: "Palabras Clave",
+      keywordsPlaceholder: "Buscar en preguntas...",
+      learningStatus: "Estado de Aprendizaje",
+      apply: "Aplicar Filtros",
+      reset: "Resetear",
+      or: "o",
+      exactCount: "Número exacto",
+      minCount: "Mín",
+      maxCount: "Máx",
+    },
 
     // Stats
     "stats.completedExams": "Simulacros completados",
@@ -304,15 +307,18 @@ export const translations = {
     "topic.notFound": "Topic not found",
 
     // Filters
-    "filters.advanced": "Advanced Filters",
-    "filters.keywords": "Keywords",
-    "filters.keywordsPlaceholder": "Search in questions...",
-    "filters.learningStatus": "Learning Status",
-    "filters.apply": "Apply Filters",
-    "filters.exactCount": "Exact count",
-    "filters.minCount": "Min",
-    "filters.maxCount": "Max",
-    "filters.or": "or",
+    filters: {
+      advanced: "Advanced Filters",
+      keywords: "Keywords",
+      keywordsPlaceholder: "Search in question, answer or explanation...",
+      learningStatus: "Learning Status",
+      apply: "Apply Filters",
+      reset: "Reset",
+      or: "or",
+      exactCount: "Exact count",
+      minCount": "Minimum",
+      maxCount": "Maximum",
+    },
 
     // Stats
     "stats.completedExams": "Completed exams",
