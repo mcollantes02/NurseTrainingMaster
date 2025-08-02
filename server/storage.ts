@@ -2,136 +2,35 @@ import { firestore } from './firebase';
 import { Timestamp } from 'firebase-admin/firestore';
 import { 
   COLLECTIONS,
-  FirestoreUser,
   FirestoreMockExam,
   FirestoreSubject,
   FirestoreTopic,
   FirestoreQuestion,
   FirestoreTrashedQuestion
 } from './firestore-schema';
-import bcrypt from 'bcrypt';
 
 export class Storage {
-  // User methods
-  async getUserByEmail(email: string): Promise<FirestoreUser | null> {
-    const snapshot = await firestore.collection(COLLECTIONS.USERS)
-      .where('email', '==', email)
-      .limit(1)
-      .get();
-
-    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreUser;
-  }
-
-  async getUserByFirebaseUid(firebaseUid: string): Promise<FirestoreUser | null> {
-    const snapshot = await firestore.collection(COLLECTIONS.USERS)
-      .where('firebaseUid', '==', firebaseUid)
-      .limit(1)
-      .get();
-
-    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreUser;
-  }
-
-  async getUser(id: number): Promise<FirestoreUser | null> {
-    const snapshot = await firestore.collection(COLLECTIONS.USERS)
-      .where('id', '==', id)
-      .limit(1)
-      .get();
-
-    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreUser;
-  }
-
-  async createUser(userData: Omit<FirestoreUser, 'id' | 'createdAt'>): Promise<FirestoreUser> {
-    const docRef = firestore.collection(COLLECTIONS.USERS).doc();
-
-    // Generate numeric ID from Firestore doc ID
-    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
-
-    const user: FirestoreUser = {
-      ...userData,
-      id: numericId,
-      createdAt: Timestamp.now(),
-    };
-
-    await docRef.set(user);
-    return user;
-  }
-
-  async createUserFromFirebase(userData: {
-    email: string;
-    firstName: string;
-    lastName: string;
-    firebaseUid: string;
-    role: string;
-  }): Promise<FirestoreUser> {
-    const docRef = firestore.collection(COLLECTIONS.USERS).doc();
-
-    // Generate numeric ID from Firestore doc ID
-    const numericId = parseInt(docRef.id.slice(-9), 36) % 1000000;
-
-    const user: FirestoreUser = {
-      id: numericId,
-      email: userData.email,
-      password: '', // No password needed for Firebase users
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      role: userData.role,
-      firebaseUid: userData.firebaseUid,
-      createdAt: Timestamp.now(),
-    };
-
-    await docRef.set(user);
-    return user;
-  }
-
-  async updateUserFirebaseUid(userId: number, firebaseUid: string): Promise<FirestoreUser | null> {
-    const snapshot = await firestore.collection(COLLECTIONS.USERS)
-      .where('id', '==', userId)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) return null;
-
-    const doc = snapshot.docs[0];
-    await doc.ref.update({ firebaseUid, password: '' }); // Clear password when linking to Firebase
-
-    const updatedDoc = await doc.ref.get();
-    return updatedDoc.data() as FirestoreUser;
-  }
-
-  async updateUserRole(id: number, role: string): Promise<FirestoreUser | null> {
-    const snapshot = await firestore.collection(COLLECTIONS.USERS)
-      .where('id', '==', id)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) return null;
-
-    const doc = snapshot.docs[0];
-    await doc.ref.update({ role });
-
-    const updatedDoc = await doc.ref.get();
-    return updatedDoc.data() as FirestoreUser;
-  }
-
   // Subject methods
-  async getSubjects(): Promise<FirestoreSubject[]> {
+  async getSubjects(firebaseUid: string): Promise<FirestoreSubject[]> {
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
+      .where('createdBy', '==', firebaseUid)
       .get();
     const subjects = snapshot.docs.map(doc => doc.data() as FirestoreSubject);
     // Sort in memory to avoid Firestore index requirement
     return subjects.sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async getSubjectByName(name: string): Promise<FirestoreSubject | null> {
+  async getSubjectByName(name: string, firebaseUid: string): Promise<FirestoreSubject | null> {
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
       .where('name', '==', name)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
     return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreSubject;
   }
 
-  async createSubject(subjectData: { name: string }): Promise<FirestoreSubject> {
+  async createSubject(subjectData: { name: string; createdBy: string }): Promise<FirestoreSubject> {
     const docRef = firestore.collection(COLLECTIONS.SUBJECTS).doc();
     const numericId = Math.abs(docRef.id.split('').reduce((a, b) => {
       a = ((a << 5) - a) + b.charCodeAt(0);
@@ -148,9 +47,10 @@ export class Storage {
     return subject;
   }
 
-  async updateSubject(id: number, updates: { name: string }): Promise<FirestoreSubject | null> {
+  async updateSubject(id: number, updates: { name: string }, firebaseUid: string): Promise<FirestoreSubject | null> {
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
       .where('id', '==', id)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -163,11 +63,11 @@ export class Storage {
     return updatedDoc.data() as FirestoreSubject;
   }
 
-  async deleteSubject(id: number, userId: number): Promise<boolean> {
+  async deleteSubject(id: number, firebaseUid: string): Promise<boolean> {
     // Check if subject has associated questions
     const questionsSnapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
       .where('subjectId', '==', id)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -177,7 +77,7 @@ export class Storage {
 
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
       .where('id', '==', id)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -188,24 +88,26 @@ export class Storage {
   }
 
   // Topic methods
-  async getTopics(): Promise<FirestoreTopic[]> {
+  async getTopics(firebaseUid: string): Promise<FirestoreTopic[]> {
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
+      .where('createdBy', '==', firebaseUid)
       .get();
     const topics = snapshot.docs.map(doc => doc.data() as FirestoreTopic);
     // Sort in memory to avoid Firestore index requirement
     return topics.sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async getTopicByName(name: string): Promise<FirestoreTopic | null> {
+  async getTopicByName(name: string, firebaseUid: string): Promise<FirestoreTopic | null> {
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
       .where('name', '==', name)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
     return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreTopic;
   }
 
-  async createTopic(topicData: { name: string }): Promise<FirestoreTopic> {
+  async createTopic(topicData: { name: string; createdBy: string }): Promise<FirestoreTopic> {
     const docRef = firestore.collection(COLLECTIONS.TOPICS).doc();
     const numericId = Math.abs(docRef.id.split('').reduce((a, b) => {
       a = ((a << 5) - a) + b.charCodeAt(0);
@@ -222,9 +124,10 @@ export class Storage {
     return topic;
   }
 
-  async updateTopic(id: number, updates: { name: string }): Promise<FirestoreTopic | null> {
+  async updateTopic(id: number, updates: { name: string }, firebaseUid: string): Promise<FirestoreTopic | null> {
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
       .where('id', '==', id)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -237,11 +140,11 @@ export class Storage {
     return updatedDoc.data() as FirestoreTopic;
   }
 
-  async deleteTopic(id: number, userId: number): Promise<boolean> {
+  async deleteTopic(id: number, firebaseUid: string): Promise<boolean> {
     // Check if topic has associated questions
     const questionsSnapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
       .where('topicId', '==', id)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -251,7 +154,7 @@ export class Storage {
 
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
       .where('id', '==', id)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -262,9 +165,9 @@ export class Storage {
   }
 
   // Mock Exam methods
-  async getMockExams(userId: number): Promise<FirestoreMockExam[]> {
+  async getMockExams(firebaseUid: string): Promise<FirestoreMockExam[]> {
     const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .get();
     const mockExams = snapshot.docs.map(doc => doc.data() as FirestoreMockExam);
     // Sort in memory to avoid Firestore composite index requirement
@@ -288,10 +191,10 @@ export class Storage {
     return mockExam;
   }
 
-  async updateMockExam(id: number, updates: { title: string }, userId: number): Promise<FirestoreMockExam | null> {
+  async updateMockExam(id: number, updates: { title: string }, firebaseUid: string): Promise<FirestoreMockExam | null> {
     const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
       .where('id', '==', id)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -304,10 +207,11 @@ export class Storage {
     return updatedDoc.data() as FirestoreMockExam;
   }
 
-  async deleteMockExam(id: number, userId: number): Promise<boolean> {
+  async deleteMockExam(id: number, firebaseUid: string): Promise<boolean> {
     // Check if mock exam has associated questions
     const questionsSnapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
       .where('mockExamId', '==', id)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -315,7 +219,7 @@ export class Storage {
 
     const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
       .where('id', '==', id)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -327,7 +231,7 @@ export class Storage {
 
   // Question methods
   async getQuestions(filters: {
-    userId: number;
+    firebaseUid: string;
     mockExamIds?: number[];
     subjectIds?: number[];
     topicIds?: number[];
@@ -338,7 +242,7 @@ export class Storage {
     failureCountMax?: number;
   }): Promise<FirestoreQuestion[]> {
     let query = firestore.collection(COLLECTIONS.QUESTIONS)
-      .where('createdBy', '==', filters.userId);
+      .where('createdBy', '==', filters.firebaseUid);
 
     // Apply filters
     if (filters.mockExamIds?.length) {
@@ -402,11 +306,11 @@ export class Storage {
   async updateQuestion(
     id: number, 
     updates: Partial<FirestoreQuestion>, 
-    userId: number
+    firebaseUid: string
   ): Promise<FirestoreQuestion | null> {
     const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
       .where('id', '==', id)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -419,18 +323,18 @@ export class Storage {
     return updatedDoc.data() as FirestoreQuestion;
   }
 
-  async updateQuestionLearned(id: number, isLearned: boolean, userId: number): Promise<FirestoreQuestion | null> {
-    return this.updateQuestion(id, { isLearned }, userId);
+  async updateQuestionLearned(id: number, isLearned: boolean, firebaseUid: string): Promise<FirestoreQuestion | null> {
+    return this.updateQuestion(id, { isLearned }, firebaseUid);
   }
 
-  async updateQuestionFailureCount(id: number, failureCount: number, userId: number): Promise<FirestoreQuestion | null> {
-    return this.updateQuestion(id, { failureCount }, userId);
+  async updateQuestionFailureCount(id: number, failureCount: number, firebaseUid: string): Promise<FirestoreQuestion | null> {
+    return this.updateQuestion(id, { failureCount }, firebaseUid);
   }
 
-  async deleteQuestion(id: number, userId: number): Promise<boolean> {
+  async deleteQuestion(id: number, firebaseUid: string): Promise<boolean> {
     const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
       .where('id', '==', id)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -449,9 +353,18 @@ export class Storage {
   private async moveQuestionToTrash(question: FirestoreQuestion): Promise<void> {
     // Get related data for trash
     const [mockExamSnapshot, subjectSnapshot, topicSnapshot] = await Promise.all([
-      firestore.collection(COLLECTIONS.MOCK_EXAMS).where('id', '==', question.mockExamId).limit(1).get(),
-      firestore.collection(COLLECTIONS.SUBJECTS).where('id', '==', question.subjectId).limit(1).get(),
-      firestore.collection(COLLECTIONS.TOPICS).where('id', '==', question.topicId).limit(1).get()
+      firestore.collection(COLLECTIONS.MOCK_EXAMS)
+        .where('id', '==', question.mockExamId)
+        .where('createdBy', '==', question.createdBy)
+        .limit(1).get(),
+      firestore.collection(COLLECTIONS.SUBJECTS)
+        .where('id', '==', question.subjectId)
+        .where('createdBy', '==', question.createdBy)
+        .limit(1).get(),
+      firestore.collection(COLLECTIONS.TOPICS)
+        .where('id', '==', question.topicId)
+        .where('createdBy', '==', question.createdBy)
+        .limit(1).get()
     ]);
 
     const mockExam = !mockExamSnapshot.empty ? mockExamSnapshot.docs[0].data() as FirestoreMockExam : null;
@@ -486,19 +399,19 @@ export class Storage {
   }
 
   // Trash methods
-  async getTrashedQuestions(userId: number): Promise<FirestoreTrashedQuestion[]> {
+  async getTrashedQuestions(firebaseUid: string): Promise<FirestoreTrashedQuestion[]> {
     const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .get();
     const trashedQuestions = snapshot.docs.map(doc => doc.data() as FirestoreTrashedQuestion);
     // Sort in memory to avoid Firestore composite index requirement
     return trashedQuestions.sort((a, b) => b.deletedAt.seconds - a.deletedAt.seconds);
   }
 
-  async restoreQuestion(trashedId: number, userId: number): Promise<boolean> {
+  async restoreQuestion(trashedId: number, firebaseUid: string): Promise<boolean> {
     const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
       .where('id', '==', trashedId)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -533,10 +446,10 @@ export class Storage {
     return true;
   }
 
-  async permanentlyDeleteQuestion(trashedId: number, userId: number): Promise<boolean> {
+  async permanentlyDeleteQuestion(trashedId: number, firebaseUid: string): Promise<boolean> {
     const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
       .where('id', '==', trashedId)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
@@ -546,9 +459,9 @@ export class Storage {
     return true;
   }
 
-  async emptyTrash(userId: number): Promise<void> {
+  async emptyTrash(firebaseUid: string): Promise<void> {
     const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .get();
 
     const batch = firestore.batch();
@@ -560,14 +473,14 @@ export class Storage {
   }
 
   // User stats
-  async getUserStats(userId: number): Promise<{
+  async getUserStats(firebaseUid: string): Promise<{
     totalQuestions: number;
     learnedQuestions: number;
     failedQuestions: number;
     averageFailureCount: number;
   }> {
     const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
-      .where('createdBy', '==', userId)
+      .where('createdBy', '==', firebaseUid)
       .get();
 
     const questions = snapshot.docs.map(doc => doc.data() as FirestoreQuestion);

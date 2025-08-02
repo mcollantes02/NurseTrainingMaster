@@ -1,9 +1,9 @@
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertMockExamSchema, insertQuestionSchema } from "@shared/schema";
+import { insertMockExamSchema, insertQuestionSchema } from "@shared/schema";
 import { auth } from "./firebase";
-import { Timestamp } from 'firebase-admin/firestore';
 
 // Helper function to convert Firestore timestamp to Date
 function convertFirestoreToDate(firestoreData: any): any {
@@ -39,14 +39,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const idToken = authHeader.split('Bearer ')[1];
       const decodedToken = await auth.verifyIdToken(idToken);
       
-      // Get user from database using Firebase UID
-      const user = await storage.getUserByFirebaseUid(decodedToken.uid);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-
-      req.user = user;
-      req.userId = user.id;
+      req.firebaseUid = decodedToken.uid;
+      req.user = {
+        uid: decodedToken.uid,
+        email: decodedToken.email,
+        name: decodedToken.name,
+        picture: decodedToken.picture
+      };
       next();
     } catch (error) {
       console.error("Auth verification error:", error);
@@ -57,41 +56,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Firebase auth route
   app.post("/api/auth/firebase", async (req, res) => {
     try {
-      const { idToken, email, displayName, uid } = req.body;
+      const { idToken } = req.body;
 
       // Verify the Firebase ID token
       const decodedToken = await auth.verifyIdToken(idToken);
       
-      if (decodedToken.uid !== uid) {
-        return res.status(401).json({ message: "Invalid token" });
-      }
-
-      // Check if user exists by Firebase UID
-      let user = await storage.getUserByFirebaseUid(uid);
-      
-      if (!user) {
-        // Check if user exists by email (for migration purposes)
-        const existingUser = await storage.getUserByEmail(email);
-        if (existingUser) {
-          // Update existing user with Firebase UID
-          user = await storage.updateUserFirebaseUid(existingUser.id, uid);
-        } else {
-          // Create new user
-          const names = displayName ? displayName.split(' ') : ['', ''];
-          const firstName = names[0] || email.split('@')[0];
-          const lastName = names.slice(1).join(' ') || '';
-          
-          user = await storage.createUserFromFirebase({
-            email,
-            firstName,
-            lastName,
-            firebaseUid: uid,
-            role: 'student'
-          });
-        }
-      }
-
-      res.json({ user: { ...user, password: undefined } });
+      res.json({ 
+        user: {
+          uid: decodedToken.uid,
+          email: decodedToken.email,
+          name: decodedToken.name,
+          picture: decodedToken.picture
+        } 
+      });
     } catch (error) {
       console.error("Firebase auth error:", error);
       res.status(500).json({ message: "Authentication failed" });
@@ -107,8 +84,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/mock-exams", requireAuth, async (req, res) => {
     try {
       const [mockExams, questions] = await Promise.all([
-        storage.getMockExams(req.userId),
-        storage.getQuestions({ userId: req.userId })
+        storage.getMockExams(req.firebaseUid),
+        storage.getQuestions({ firebaseUid: req.firebaseUid })
       ]);
 
       // Count questions for each mock exam
@@ -134,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const mockExamData = insertMockExamSchema.parse({
         ...req.body,
-        createdBy: req.userId,
+        createdBy: req.firebaseUid,
       });
 
       const mockExam = await storage.createMockExam(mockExamData);
@@ -150,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { title } = req.body;
 
-      const mockExam = await storage.updateMockExam(id, { title }, req.userId);
+      const mockExam = await storage.updateMockExam(id, { title }, req.firebaseUid);
       if (!mockExam) {
         return res.status(404).json({ message: "Mock exam not found" });
       }
@@ -166,7 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
 
-      const success = await storage.deleteMockExam(id, req.userId);
+      const success = await storage.deleteMockExam(id, req.firebaseUid);
       if (!success) {
         return res.status(404).json({ message: "Mock exam not found or has associated questions" });
       }
@@ -181,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subject routes
   app.get("/api/subjects", requireAuth, async (req, res) => {
     try {
-      const subjects = await storage.getSubjects(req.userId);
+      const subjects = await storage.getSubjects(req.firebaseUid);
       res.json(convertFirestoreArrayToDate(subjects));
     } catch (error) {
       console.error("Get subjects error:", error);
@@ -194,12 +171,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name } = req.body;
 
       // Check if subject already exists for this user
-      const existing = await storage.getSubjectByName(name, req.userId);
+      const existing = await storage.getSubjectByName(name, req.firebaseUid);
       if (existing) {
         return res.json(convertFirestoreToDate(existing));
       }
 
-      const subject = await storage.createSubject({ name, createdBy: req.userId });
+      const subject = await storage.createSubject({ name, createdBy: req.firebaseUid });
       res.json(convertFirestoreToDate(subject));
     } catch (error) {
       console.error("Create subject error:", error);
@@ -212,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { name } = req.body;
 
-      const subject = await storage.updateSubject(id, { name }, req.userId);
+      const subject = await storage.updateSubject(id, { name }, req.firebaseUid);
       if (!subject) {
         return res.status(404).json({ message: "Subject not found" });
       }
@@ -228,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
 
-      const success = await storage.deleteSubject(id, req.userId);
+      const success = await storage.deleteSubject(id, req.firebaseUid);
       if (!success) {
         return res.status(404).json({ message: "Subject not found or has associated questions" });
       }
@@ -243,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Topic routes
   app.get("/api/topics", requireAuth, async (req, res) => {
     try {
-      const topics = await storage.getTopics(req.userId);
+      const topics = await storage.getTopics(req.firebaseUid);
       res.json(convertFirestoreArrayToDate(topics));
     } catch (error) {
       console.error("Get topics error:", error);
@@ -256,12 +233,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name } = req.body;
 
       // Check if topic already exists for this user
-      const existing = await storage.getTopicByName(name, req.userId);
+      const existing = await storage.getTopicByName(name, req.firebaseUid);
       if (existing) {
         return res.json(convertFirestoreToDate(existing));
       }
 
-      const topic = await storage.createTopic({ name, createdBy: req.userId });
+      const topic = await storage.createTopic({ name, createdBy: req.firebaseUid });
       res.json(convertFirestoreToDate(topic));
     } catch (error) {
       console.error("Create topic error:", error);
@@ -274,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { name } = req.body;
 
-      const topic = await storage.updateTopic(id, { name }, req.userId);
+      const topic = await storage.updateTopic(id, { name }, req.firebaseUid);
       if (!topic) {
         return res.status(404).json({ message: "Topic not found" });
       }
@@ -290,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
 
-      const success = await storage.deleteTopic(id, req.userId);
+      const success = await storage.deleteTopic(id, req.firebaseUid);
       if (!success) {
         return res.status(404).json({ message: "Topic not found or has associated questions" });
       }
@@ -306,7 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/questions", requireAuth, async (req, res) => {
     try {
       const filters = {
-        userId: req.userId,
+        firebaseUid: req.firebaseUid,
         mockExamIds: req.query.mockExamIds ? (Array.isArray(req.query.mockExamIds) ? req.query.mockExamIds.map(id => parseInt(id as string)) : [parseInt(req.query.mockExamIds as string)]) : undefined,
         subjectIds: req.query.subjectIds ? (Array.isArray(req.query.subjectIds) ? req.query.subjectIds.map(id => parseInt(id as string)) : [parseInt(req.query.subjectIds as string)]) : undefined,
         topicIds: req.query.topicIds ? (Array.isArray(req.query.topicIds) ? req.query.topicIds.map(id => parseInt(id as string)) : [parseInt(req.query.topicIds as string)]) : undefined,
@@ -320,11 +297,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const questions = await storage.getQuestions(filters);
 
       // Get all related data for this user
-      const [mockExams, subjects, topics, user] = await Promise.all([
-        storage.getMockExams(req.userId),
-        storage.getSubjects(req.userId),
-        storage.getTopics(req.userId),
-        storage.getUser(req.userId)
+      const [mockExams, subjects, topics] = await Promise.all([
+        storage.getMockExams(req.firebaseUid),
+        storage.getSubjects(req.firebaseUid),
+        storage.getTopics(req.firebaseUid)
       ]);
 
       // Create lookup maps for better performance
@@ -335,10 +311,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add relations to questions
       const questionsWithRelations = questions.map(question => ({
         ...convertFirestoreToDate(question),
-        mockExam: convertFirestoreToDate(mockExamMap.get(question.mockExamId)) || { id: question.mockExamId, title: 'Unknown', createdBy: req.userId, createdAt: new Date() },
+        mockExam: convertFirestoreToDate(mockExamMap.get(question.mockExamId)) || { id: question.mockExamId, title: 'Unknown', createdBy: req.firebaseUid, createdAt: new Date() },
         subject: convertFirestoreToDate(subjectMap.get(question.subjectId)) || { id: question.subjectId, name: 'Unknown', createdAt: new Date() },
         topic: convertFirestoreToDate(topicMap.get(question.topicId)) || { id: question.topicId, name: 'Unknown', createdAt: new Date() },
-        createdBy: convertFirestoreToDate(user) || { id: req.userId, email: 'unknown', name: 'Unknown', role: 'user', createdAt: new Date() }
+        createdBy: req.user
       }));
 
       res.json(questionsWithRelations);
@@ -352,7 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const questionData = insertQuestionSchema.parse({
         ...req.body,
-        createdBy: req.userId,
+        createdBy: req.firebaseUid,
       });
 
       const question = await storage.createQuestion(questionData);
@@ -376,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         theory,
         failureCount,
         isLearned,
-      }, req.userId);
+      }, req.firebaseUid);
 
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
@@ -394,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { isLearned } = req.body;
 
-      const question = await storage.updateQuestionLearned(id, isLearned, req.userId);
+      const question = await storage.updateQuestionLearned(id, isLearned, req.firebaseUid);
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
       }
@@ -415,7 +391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (change !== undefined) {
         // Handle incremental change
-        const questions = await storage.getQuestions({ userId: req.userId });
+        const questions = await storage.getQuestions({ firebaseUid: req.firebaseUid });
         const currentQuestion = questions.find(q => q.id === id);
         if (!currentQuestion) {
           return res.status(404).json({ message: "Question not found" });
@@ -428,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Either failureCount or change must be provided" });
       }
 
-      const question = await storage.updateQuestionFailureCount(id, newFailureCount, req.userId);
+      const question = await storage.updateQuestionFailureCount(id, newFailureCount, req.firebaseUid);
       if (!question) {
         return res.status(404).json({ message: "Question not found" });
       }
@@ -444,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
 
-      const success = await storage.deleteQuestion(id, req.userId);
+      const success = await storage.deleteQuestion(id, req.firebaseUid);
       if (!success) {
         return res.status(404).json({ message: "Question not found" });
       }
@@ -459,7 +435,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User stats route
   app.get("/api/user/stats", requireAuth, async (req, res) => {
     try {
-      const stats = await storage.getUserStats(req.userId);
+      const stats = await storage.getUserStats(req.firebaseUid);
       res.json(stats);
     } catch (error) {
       console.error("Get user stats error:", error);
@@ -467,21 +443,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin route to promote user to admin (temporary for setup)
-  app.post("/api/admin/promote", requireAuth, async (req, res) => {
-    try {
-      const user = await storage.updateUserRole(req.userId, 'admin');
-      res.json({ ...user, password: undefined });
-    } catch (error) {
-      console.error("Promote user error:", error);
-      res.status(500).json({ message: "Failed to promote user" });
-    }
-  });
-
   // Trash routes
   app.get("/api/trash", requireAuth, async (req, res) => {
     try {
-      const trashedQuestions = await storage.getTrashedQuestions(req.userId);
+      const trashedQuestions = await storage.getTrashedQuestions(req.firebaseUid);
       res.json(convertFirestoreArrayToDate(trashedQuestions));
     } catch (error) {
       console.error("Get trashed questions error:", error);
@@ -492,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/trash/:id/restore", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.restoreQuestion(id, req.userId);
+      const success = await storage.restoreQuestion(id, req.firebaseUid);
 
       if (!success) {
         return res.status(404).json({ message: "Question not found or cannot be restored" });
@@ -508,7 +473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/trash/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const success = await storage.permanentlyDeleteQuestion(id, req.userId);
+      const success = await storage.permanentlyDeleteQuestion(id, req.firebaseUid);
 
       if (!success) {
         return res.status(404).json({ message: "Question not found" });
@@ -523,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/trash", requireAuth, async (req, res) => {
     try {
-      await storage.emptyTrash(req.userId);
+      await storage.emptyTrash(req.firebaseUid);
       res.json({ message: "Trash emptied successfully" });
     } catch (error) {
       console.error("Empty trash error:", error);
