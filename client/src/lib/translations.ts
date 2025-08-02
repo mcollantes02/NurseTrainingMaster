@@ -90,6 +90,9 @@ export const translations = {
     "questions.found": "preguntas encontradas",
     "questions.label": "preguntas",
     "questions.noResults": "No se encontraron preguntas",
+    "questions.learned": "Preguntas aprendidas",
+    "questions.doubt": "Preguntas con duda",
+    "questions.error": "Preguntas con error",
     "question.added": "Pregunta Agregada",
     "question.addedDescription": "La pregunta ha sido agregada exitosamente.",
     "question.updated": "Pregunta Actualizada",
@@ -97,6 +100,10 @@ export const translations = {
     "question.deleteDescription": "Esta acción no se puede deshacer.",
     "question.deleted": "Pregunta eliminada",
     "question.deletedDescription": "La pregunta ha sido eliminada exitosamente.",
+    
+    "questions.learned": "Learned questions",
+    "questions.doubt": "Doubt questions", 
+    "questions.error": "Error questions",
 
     // Success messages
     "success.title": "Éxito",
@@ -312,6 +319,14 @@ export const translations = {
     "question.addedDescription": "The question has been successfully added.",
     "question.updated": "Question Updated",
     "question.updatedDescription": "The question has been successfully updated.",
+    "question.deleteDescription": "This action cannot be undone.",
+    "question.deleted": "Question deleted",
+    "question.deletedDescription": "The question has been successfully deleted.",
+    "question.failureCount": "Failure/doubt count",
+    
+    "questions.learned": "Learned questions",
+    "questions.doubt": "Doubt questions", 
+    "questions.error": "Error questions",
 
     // Subjects
     "subject.title": "Subject",

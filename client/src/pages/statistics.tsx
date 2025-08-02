@@ -82,15 +82,15 @@ export default function Statistics() {
 
   const chartConfig = {
     learned: {
-      label: t("questions.learned"),
+      label: t("question.learned"),
       color: COLORS.learned,
     },
     doubt: {
-      label: t("questions.doubt"),
+      label: t("question.doubt"),
       color: COLORS.doubt,
     },
     error: {
-      label: t("questions.error"),
+      label: t("question.error"),
       color: COLORS.error,
     },
   };
@@ -98,9 +98,9 @@ export default function Statistics() {
   const pieData = useMemo(() => {
     if (!stats) return [];
     return [
-      { name: t("questions.learned"), value: stats.learnedQuestions, color: COLORS.learned },
-      { name: t("questions.doubt"), value: stats.doubtQuestions, color: COLORS.doubt },
-      { name: t("questions.error"), value: stats.errorQuestions, color: COLORS.error },
+      { name: t("question.learned"), value: stats.learnedQuestions, color: COLORS.learned },
+      { name: t("question.doubt"), value: stats.doubtQuestions, color: COLORS.doubt },
+      { name: t("question.error"), value: stats.errorQuestions, color: COLORS.error },
     ];
   }, [stats, t]);
 
@@ -308,9 +308,9 @@ export default function Statistics() {
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar dataKey="learned" stackId="a" fill={COLORS.learned} name={t("questions.learned")} />
-                    <Bar dataKey="doubt" stackId="a" fill={COLORS.doubt} name={t("questions.doubt")} />
-                    <Bar dataKey="error" stackId="a" fill={COLORS.error} name={t("questions.error")} />
+                    <Bar dataKey="learned" stackId="a" fill={COLORS.learned} name={t("question.learned")} />
+                    <Bar dataKey="doubt" stackId="a" fill={COLORS.doubt} name={t("question.doubt")} />
+                    <Bar dataKey="error" stackId="a" fill={COLORS.error} name={t("question.error")} />
                   </BarChart>
                 </ChartContainer>
               </CardContent>
@@ -330,15 +330,15 @@ export default function Statistics() {
                         <span className="font-medium">{subject.total}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-green-600">{t("questions.learned")}</span>
+                        <span className="text-sm text-green-600">{t("question.learned")}</span>
                         <span className="font-medium text-green-600">{subject.learned}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-orange-600">{t("questions.doubt")}</span>
+                        <span className="text-sm text-orange-600">{t("question.doubt")}</span>
                         <span className="font-medium text-orange-600">{subject.doubt}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-red-600">{t("questions.error")}</span>
+                        <span className="text-sm text-red-600">{t("question.error")}</span>
                         <span className="font-medium text-red-600">{subject.error}</span>
                       </div>
                       <Progress 
@@ -363,20 +363,20 @@ export default function Statistics() {
                     <div key={topic.topic} className="border rounded-lg p-4">
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="font-medium">{topic.topic}</h3>
-                        <Badge variant="outline">{topic.total} preguntas</Badge>
+                        <Badge variant="outline">{topic.total} {t("questions.label")}</Badge>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-sm">
                         <div className="text-center">
                           <div className="font-medium text-green-600">{topic.learned}</div>
-                          <div className="text-gray-600">{t("questions.learned")}</div>
+                          <div className="text-gray-600">{t("question.learned")}</div>
                         </div>
                         <div className="text-center">
                           <div className="font-medium text-orange-600">{topic.doubt}</div>
-                          <div className="text-gray-600">{t("questions.doubt")}</div>
+                          <div className="text-gray-600">{t("question.doubt")}</div>
                         </div>
                         <div className="text-center">
                           <div className="font-medium text-red-600">{topic.error}</div>
-                          <div className="text-gray-600">{t("questions.error")}</div>
+                          <div className="text-gray-600">{t("question.error")}</div>
                         </div>
                       </div>
                       <Progress 
@@ -408,7 +408,7 @@ export default function Statistics() {
                       dataKey="learned" 
                       stroke={COLORS.learned} 
                       strokeWidth={2}
-                      name={t("questions.learned")}
+                      name={t("question.learned")}
                     />
                     <Line 
                       type="monotone" 
