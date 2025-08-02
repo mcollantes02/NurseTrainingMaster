@@ -317,8 +317,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .filter(Boolean)
           .map(exam => convertFirestoreToDate(exam));
 
+        // For backward compatibility, include mockExam (first one) and mockExams (all)
+        const firstMockExam = questionMockExams[0] || null;
+
         return {
           ...convertFirestoreToDate(question),
+          mockExam: firstMockExam, // For backward compatibility
           mockExams: questionMockExams,
           subject: convertFirestoreToDate(subjectMap.get(question.subjectId)) || { id: question.subjectId, name: 'Unknown', createdAt: new Date() },
           topic: convertFirestoreToDate(topicMap.get(question.topicId)) || { id: question.topicId, name: 'Unknown', createdAt: new Date() },

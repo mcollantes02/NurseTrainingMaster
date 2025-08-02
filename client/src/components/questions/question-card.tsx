@@ -208,7 +208,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       <CardContent className="p-4">
         {/* Main Row - Metadata and Theory side by side */}
         <div className="flex items-start gap-4">
-          {/* Left Section - Status and Metadata */}
+          
           <div className="flex items-center gap-2 min-w-0 flex-shrink-0 flex-wrap">
             <Badge
               className={cn(
@@ -232,7 +232,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             </Badge>
           </div>
 
-          {/* Center Section - Theory Text */}
+          
           <div className="flex-1 min-w-0 overflow-hidden">
             <div className={cn(
               "text-sm text-gray-700 leading-relaxed break-all",
@@ -242,9 +242,9 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
             </div>
           </div>
 
-          {/* Right Section - Actions and Date */}
+          
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Failure Counter */}
+            
             <div className="flex items-center gap-1 bg-gray-50 rounded-md px-2 py-1">
               <Button
                 variant="ghost"
@@ -331,7 +331,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
           </div>
         </div>
 
-        {/* Mobile-only metadata row */}
+        
         <div className="flex items-center gap-2 text-xs text-gray-600 mt-3 sm:hidden">
           <span>{question.topic.name}</span>
           <span className="text-gray-400">•</span>
@@ -341,7 +341,20 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
           </div>
         </div>
 
-
+        <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+            <div className="flex flex-wrap gap-1">
+              {question.mockExams && question.mockExams.length > 0 ? (
+                question.mockExams.map((exam, index) => (
+                  <span key={exam.id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                    {exam.title}
+                  </span>
+                ))
+              ) : (
+                <span>Unknown Exam</span>
+              )}
+            </div>
+            <span>{new Date(question.createdAt).toLocaleDateString()}</span>
+          </div>
       </CardContent>
     </Card>
   );

@@ -38,7 +38,7 @@ import { Combobox } from "@/components/ui/combobox";
 import type { MockExam, Subject, Topic } from "@shared/schema";
 
 const formSchema = z.object({
-  mockExamId: z.number().min(1, "Mock exam is required"),
+  mockExamIds: z.array(z.number()).min(1, "At least one mock exam is required"),
   subjectName: z.string().min(1, "Subject is required"),
   topicName: z.string().min(1, "Topic is required"),
   type: z.enum(["error", "doubt"], { required_error: "Type is required" }),
@@ -75,7 +75,7 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      mockExamId: 0,
+      mockExamIds: [],
       subjectName: "",
       topicName: "",
       type: "error",
@@ -89,7 +89,7 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
   useEffect(() => {
     if (isOpen) {
       form.reset({
-        mockExamId: 0,
+        mockExamIds: [],
         subjectName: "",
         topicName: "",
         type: "error",
@@ -145,12 +145,13 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
       ]);
 
       const response = await apiRequest("POST", "/api/questions", {
-        mockExamId: data.mockExamId,
+        mockExamIds: data.mockExamIds,
         subjectId: subjectResult.id,
         topicId: topicResult.id,
         type: data.type,
         theory: data.theory,
         isLearned: data.isLearned,
+        failureCount: data.failureCount,
       });
       return response.json();
     },
@@ -204,23 +205,40 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Mock Exam */}
+            {/* Mock Exams */}
             <FormField
               control={form.control}
-              name="mockExamId"
+              name="mockExamIds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("mockExam.title")} *</FormLabel>
+                  <FormLabel>{t("mockExam.selectMultiple")} *</FormLabel>
                   <FormControl>
-                    <Combobox
-                      options={mockExams.map(exam => ({ label: exam.title, value: exam.id.toString() }))}
-                      value={field.value?.toString() || ""}
-                      onSelect={(value) => field.onChange(Number(value))}
-                      placeholder={t("mockExam.select")}
-                      searchPlaceholder="Buscar simulacro..."
-                      emptyText="No se encontró el simulacro"
-                      allowCustom={false}
-                    />
+                    <div className="space-y-2">
+                      {mockExams.length > 0 ? (
+                        <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                          {mockExams.map((exam) => (
+                            <div key={exam.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`exam-${exam.id}`}
+                                checked={field.value.includes(exam.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    field.onChange([...field.value, exam.id]);
+                                  } else {
+                                    field.onChange(field.value.filter(id => id !== exam.id));
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`exam-${exam.id}`} className="text-sm">
+                                {exam.title}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-sm">No hay simulacros disponibles</p>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -118,16 +118,22 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
   if (groupByExam) {
     // Group questions by mock exam
     const questionsByExam = questions.reduce((acc, question) => {
-      // Safety check: ensure mockExam exists and has a title
-      if (!question.mockExam || !question.mockExam.title) {
+      // Safety check: ensure mockExams exists and has items
+      if (!question.mockExams || question.mockExams.length === 0) {
         return acc;
       }
       
-      const examTitle = question.mockExam.title;
-      if (!acc[examTitle]) {
-        acc[examTitle] = [];
-      }
-      acc[examTitle].push(question);
+      // A question can belong to multiple exams, so add it to each one
+      question.mockExams.forEach(exam => {
+        if (exam && exam.title) {
+          const examTitle = exam.title;
+          if (!acc[examTitle]) {
+            acc[examTitle] = [];
+          }
+          acc[examTitle].push(question);
+        }
+      });
+      
       return acc;
     }, {} as Record<string, typeof questions>);
 
@@ -138,9 +144,9 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
 
       if (questionsA.length === 0 || questionsB.length === 0) return 0;
 
-      // Use the first question's mockExam data to compare
-      const examA = questionsA[0]?.mockExam;
-      const examB = questionsB[0]?.mockExam;
+      // Use the first question's first mockExam data to compare
+      const examA = questionsA[0]?.mockExams?.[0];
+      const examB = questionsB[0]?.mockExams?.[0];
 
       // Safety check: ensure both exams exist
       if (!examA || !examB) return 0;
