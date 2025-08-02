@@ -155,14 +155,55 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
       });
       return response.json();
     },
-    onSuccess: async (serverQuestion, data) => {
-      // Invalidate all questions queries to ensure fresh data
-      await queryClient.invalidateQueries({ 
-        queryKey: ["/api/questions"],
-        exact: false 
+    onMutate: async (data: FormData) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
+      await queryClient.cancelQueries({ queryKey: ["/api/mock-exams"] });
+
+      // Snapshot the previous values
+      const previousQuestions = queryClient.getQueryData(["/api/questions"]);
+      const previousMockExams = queryClient.getQueryData(["/api/mock-exams"]);
+
+      // Get or use existing subject/topic for optimistic update
+      const subjectResult = subjects.find(s => s.name === data.subjectName) || {
+        id: Date.now(), // Temporary ID
+        name: data.subjectName,
+        createdAt: new Date(),
+        createdBy: 'temp'
+      };
+
+      const topicResult = topics.find(t => t.name === data.topicName) || {
+        id: Date.now() + 1, // Temporary ID
+        name: data.topicName,
+        createdAt: new Date(),
+        createdBy: 'temp'
+      };
+
+      const selectedMockExams = mockExams.filter(exam => data.mockExamIds.includes(exam.id));
+
+      // Create optimistic question
+      const optimisticQuestion = {
+        id: Date.now() + 2, // Temporary ID
+        subjectId: subjectResult.id,
+        topicId: topicResult.id,
+        type: data.type,
+        theory: data.theory,
+        isLearned: data.isLearned,
+        failureCount: data.failureCount,
+        createdAt: new Date(),
+        createdBy: { uid: 'temp', email: '', name: '', picture: '' },
+        mockExam: selectedMockExams[0] || null,
+        mockExams: selectedMockExams,
+        subject: subjectResult,
+        topic: topicResult
+      };
+
+      // Optimistically update questions cache
+      queryClient.setQueryData(["/api/questions"], (old: any[] = []) => {
+        return [optimisticQuestion, ...old];
       });
 
-      // Update mock exam question counts for all associated mock exams
+      // Optimistically update mock exam counts
       queryClient.setQueryData(["/api/mock-exams"], (old: any[] = []) => {
         return old.map(exam => 
           data.mockExamIds.includes(exam.id)
@@ -171,19 +212,38 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
         );
       });
 
-      toast({
-        title: t("question.added"),
-        description: t("question.addedDescription"),
-      });
-
+      // Close modal immediately for instant feedback
       onClose();
       form.reset();
+
+      return { previousQuestions, previousMockExams };
     },
-    onError: (error) => {
+    onError: (err, variables, context) => {
+      // Rollback optimistic updates on error
+      if (context?.previousQuestions) {
+        queryClient.setQueryData(["/api/questions"], context.previousQuestions);
+      }
+      if (context?.previousMockExams) {
+        queryClient.setQueryData(["/api/mock-exams"], context.previousMockExams);
+      }
+
       toast({
         title: t("error.title"),
         description: t("error.createQuestion"),
         variant: "destructive",
+      });
+    },
+    onSuccess: (serverQuestion) => {
+      // Invalidate to get the real data from server
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/questions"],
+        exact: false 
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+
+      toast({
+        title: t("question.added"),
+        description: t("question.addedDescription"),
       });
     },
   });

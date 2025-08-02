@@ -341,20 +341,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-            <div className="flex flex-wrap gap-1">
-              {question.mockExams && question.mockExams.length > 0 ? (
-                question.mockExams.map((exam, index) => (
-                  <span key={exam.id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                    {exam.title}
-                  </span>
-                ))
-              ) : (
-                <span>Unknown Exam</span>
-              )}
-            </div>
-            <span>{new Date(question.createdAt).toLocaleDateString()}</span>
-          </div>
+        
       </CardContent>
     </Card>
   );
