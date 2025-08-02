@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
 import NotFound from "@/pages/not-found";
+import Statistics from "@/pages/statistics"; // Assuming this component exists
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/dashboard" component={isAuthenticated ? Dashboard : Login} />
       <Route path="/login" component={isAuthenticated ? Dashboard : Login} />
       <Route path="/register" component={isAuthenticated ? Dashboard : Register} />
+      <Route path="/statistics" component={isAuthenticated ? Statistics : Login} /> {/* Added statistics route */}
       <Route component={NotFound} />
     </Switch>
   );

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/hooks/useLanguage";
 import { apiRequest } from "@/lib/queryClient";
 import { Header } from "@/components/navigation/header";
+import { UserProfileModal } from "@/components/modals/user-profile-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -461,6 +462,12 @@ export default function Statistics() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={isUserProfileModalOpen}
+        onClose={() => setIsUserProfileModalOpen(false)}
+      />
     </div>
   );
 }
