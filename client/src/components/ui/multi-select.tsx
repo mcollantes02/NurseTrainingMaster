@@ -54,7 +54,7 @@ export function MultiSelect({
 
   return (
     <div className="space-y-2">
-      <div className="p-2">
+      <div>
         <Input
           placeholder={searchPlaceholder}
           value={search}
@@ -93,56 +93,57 @@ export function MultiSelect({
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
           <div className="max-h-60 overflow-auto">
-          {filteredOptions.length === 0 ? (
-            <div className="p-2 text-sm text-muted-foreground">
-              No options found.
-            </div>
-          ) : (
-            <>
-              {/* Select All Option */}
-              <div
-                className={cn(
-                  "flex items-center px-2 py-2 cursor-pointer hover:bg-muted border-b",
-                  value.length === options.length && "bg-muted"
-                )}
-                onClick={() => {
-                  if (value.length === options.length) {
-                    onChange([]);
-                  } else {
-                    onChange(options.map(option => option.value));
-                  }
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value.length === options.length ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <span className="font-medium">{t("multiSelect.selectAll")}</span>
+            {filteredOptions.length === 0 ? (
+              <div className="p-2 text-sm text-muted-foreground">
+                No options found.
               </div>
-              {filteredOptions.map((option) => (
+            ) : (
+              <>
+                {/* Select All Option */}
                 <div
-                  key={option.value}
                   className={cn(
-                    "flex items-center px-2 py-2 cursor-pointer hover:bg-muted",
-                    value.includes(option.value) && "bg-muted"
+                    "flex items-center px-2 py-2 cursor-pointer hover:bg-muted border-b",
+                    value.length === options.length && "bg-muted"
                   )}
-                  onClick={() => handleSelect(option.value)}
+                  onClick={() => {
+                    if (value.length === options.length) {
+                      onChange([]);
+                    } else {
+                      onChange(options.map(option => option.value));
+                    }
+                  }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value.includes(option.value) ? "opacity-100" : "opacity-0"
+                      value.length === options.length ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {option.label}
+                  <span className="font-medium">{t("multiSelect.selectAll")}</span>
                 </div>
-              ))}
-            </>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
+                {filteredOptions.map((option) => (
+                  <div
+                    key={option.value}
+                    className={cn(
+                      "flex items-center px-2 py-2 cursor-pointer hover:bg-muted",
+                      value.includes(option.value) && "bg-muted"
+                    )}
+                    onClick={() => handleSelect(option.value)}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value.includes(option.value) ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.label}
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
