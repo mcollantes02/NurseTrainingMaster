@@ -36,6 +36,7 @@ export interface FirestoreMockExam {
 export interface FirestoreSubject {
   id: number;
   name: string;
+  createdBy: number;
   createdAt: Timestamp;
 }
 
@@ -43,6 +44,7 @@ export interface FirestoreSubject {
 export interface FirestoreTopic {
   id: number;
   name: string;
+  createdBy: number;
   createdAt: Timestamp;
 }
 
@@ -100,20 +102,24 @@ export class FirestoreStorage {
     return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreUser;
   }
 
-  // Get subjects
-  static async getSubjects() {
+  // Get subjects by user
+  static async getSubjects(userId: number) {
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
-      .orderBy('name')
+      .where('createdBy', '==', userId)
       .get();
-    return snapshot.docs.map(doc => doc.data() as FirestoreSubject);
+    const subjects = snapshot.docs.map(doc => doc.data() as FirestoreSubject);
+    // Sort in memory to avoid Firestore index requirement
+    return subjects.sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  // Get topics
-  static async getTopics() {
+  // Get topics by user
+  static async getTopics(userId: number) {
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
-      .orderBy('name')
+      .where('createdBy', '==', userId)
       .get();
-    return snapshot.docs.map(doc => doc.data() as FirestoreTopic);
+    const topics = snapshot.docs.map(doc => doc.data() as FirestoreTopic);
+    // Sort in memory to avoid Firestore index requirement
+    return topics.sort((a, b) => a.name.localeCompare(b.name));
   }
 
   // Get mock exams by user

@@ -181,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subject routes
   app.get("/api/subjects", requireAuth, async (req, res) => {
     try {
-      const subjects = await storage.getSubjects();
+      const subjects = await storage.getSubjects(req.userId);
       res.json(convertFirestoreArrayToDate(subjects));
     } catch (error) {
       console.error("Get subjects error:", error);
@@ -193,14 +193,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { name } = req.body;
 
-      // Check if subject already exists
-      const existing = await storage.getSubjectByName(name);
+      // Check if subject already exists for this user
+      const existing = await storage.getSubjectByName(name, req.userId);
       if (existing) {
-        return res.json(existing);
+        return res.json(convertFirestoreToDate(existing));
       }
 
-      const subject = await storage.createSubject({ name });
-      res.json(subject);
+      const subject = await storage.createSubject({ name, createdBy: req.userId });
+      res.json(convertFirestoreToDate(subject));
     } catch (error) {
       console.error("Create subject error:", error);
       res.status(400).json({ message: "Failed to create subject" });
@@ -212,12 +212,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { name } = req.body;
 
-      const subject = await storage.updateSubject(id, { name });
+      const subject = await storage.updateSubject(id, { name }, req.userId);
       if (!subject) {
         return res.status(404).json({ message: "Subject not found" });
       }
 
-      res.json(subject);
+      res.json(convertFirestoreToDate(subject));
     } catch (error) {
       console.error("Update subject error:", error);
       res.status(500).json({ message: "Failed to update subject" });
@@ -228,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
 
-      const success = await storage.deleteSubject(id);
+      const success = await storage.deleteSubject(id, req.userId);
       if (!success) {
         return res.status(404).json({ message: "Subject not found or has associated questions" });
       }
@@ -243,7 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Topic routes
   app.get("/api/topics", requireAuth, async (req, res) => {
     try {
-      const topics = await storage.getTopics();
+      const topics = await storage.getTopics(req.userId);
       res.json(convertFirestoreArrayToDate(topics));
     } catch (error) {
       console.error("Get topics error:", error);
@@ -255,14 +255,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { name } = req.body;
 
-      // Check if topic already exists
-      const existing = await storage.getTopicByName(name);
+      // Check if topic already exists for this user
+      const existing = await storage.getTopicByName(name, req.userId);
       if (existing) {
-        return res.json(existing);
+        return res.json(convertFirestoreToDate(existing));
       }
 
-      const topic = await storage.createTopic({ name });
-      res.json(topic);
+      const topic = await storage.createTopic({ name, createdBy: req.userId });
+      res.json(convertFirestoreToDate(topic));
     } catch (error) {
       console.error("Create topic error:", error);
       res.status(400).json({ message: "Failed to create topic" });
@@ -274,12 +274,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const { name } = req.body;
 
-      const topic = await storage.updateTopic(id, { name });
+      const topic = await storage.updateTopic(id, { name }, req.userId);
       if (!topic) {
         return res.status(404).json({ message: "Topic not found" });
       }
 
-      res.json(topic);
+      res.json(convertFirestoreToDate(topic));
     } catch (error) {
       console.error("Update topic error:", error);
       res.status(500).json({ message: "Failed to update topic" });
@@ -290,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
 
-      const success = await storage.deleteTopic(id);
+      const success = await storage.deleteTopic(id, req.userId);
       if (!success) {
         return res.status(404).json({ message: "Topic not found or has associated questions" });
       }
@@ -319,11 +319,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const questions = await storage.getQuestions(filters);
 
-      // Get all related data
+      // Get all related data for this user
       const [mockExams, subjects, topics, user] = await Promise.all([
         storage.getMockExams(req.userId),
-        storage.getSubjects(),
-        storage.getTopics(),
+        storage.getSubjects(req.userId),
+        storage.getTopics(req.userId),
         storage.getUser(req.userId)
       ]);
 
