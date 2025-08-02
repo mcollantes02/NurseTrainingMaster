@@ -164,18 +164,25 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
       });
       return response.json();
     },
-    onSuccess: (newQuestion) => {
-      // Show success message
-      toast({
-        title: t("question.created"),
-        description: t("question.createdDescription"),
-      });
+    onSuccess: (newQuestion, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
 
-      // Close modal and reset form
-      onClose();
-      const defaultMockExamIds = preSelectedMockExamId ? [preSelectedMockExamId] : [];
+      // Invalidate specific mock exam queries for each selected exam
+      if (variables.mockExamIds && Array.isArray(variables.mockExamIds)) {
+        variables.mockExamIds.forEach(mockExamId => {
+          queryClient.invalidateQueries({ 
+            queryKey: ["/api/questions"],
+            predicate: (query) => {
+              const queryString = query.queryKey[1] as string;
+              return queryString && queryString.includes(`mockExamIds=${mockExamId}`);
+            }
+          });
+        });
+      }
+
       form.reset({
-        mockExamIds: defaultMockExamIds,
+        mockExamIds: preSelectedMockExamId ? [preSelectedMockExamId] : [],
         subjectName: "",
         topicName: "",
         type: "error",
@@ -183,10 +190,11 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
         isLearned: false,
         failureCount: 0,
       });
-
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      onClose();
+      toast({
+        title: t("question.created"),
+        description: t("question.createdDescription"),
+      });
     },
     onError: (error) => {
       console.error("Create question error:", error);

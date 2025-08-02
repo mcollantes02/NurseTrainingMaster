@@ -59,7 +59,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
 
   const { data: mockExams = [] } = useQuery<MockExam[]>({
     queryKey: ["/api/mock-exams"],
@@ -191,15 +191,41 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
 
       return { previousQuestions };
     },
-    onSuccess: () => {
-      // Close modal immediately for better UX
+    onSuccess: (updatedQuestion, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+
+      // Invalidate specific mock exam queries for each selected exam
+      if (variables.mockExamIds && Array.isArray(variables.mockExamIds)) {
+        variables.mockExamIds.forEach(mockExamId => {
+          queryClient.invalidateQueries({ 
+            queryKey: ["/api/questions"],
+            predicate: (query) => {
+              const queryString = query.queryKey[1] as string;
+              return queryString && queryString.includes(`mockExamIds=${mockExamId}`);
+            }
+          });
+        });
+      }
+
+      // Also invalidate queries for the original mock exams if they changed
+      if (question?.mockExams) {
+        question.mockExams.forEach(mockExam => {
+          queryClient.invalidateQueries({ 
+            queryKey: ["/api/questions"],
+            predicate: (query) => {
+              const queryString = query.queryKey[1] as string;
+              return queryString && queryString.includes(`mockExamIds=${mockExam.id}`);
+            }
+          });
+        });
+      }
+
       onClose();
       toast({
         title: t("question.updated"),
         description: t("question.updatedDescription"),
       });
-      // Only invalidate questions query in background
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
     },
     onError: (error, variables, context) => {
       // Rollback on error
@@ -223,7 +249,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
     updateQuestionMutation.mutate(data);
   };
 
-  
+
 
   if (!question) return null;
 
