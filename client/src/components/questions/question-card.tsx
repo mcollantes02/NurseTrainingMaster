@@ -32,14 +32,14 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       return response.json();
     },
     onMutate: async (isLearned: boolean) => {
-      // Cancel any outgoing refetches
+      // Cancel any outgoing refetches for all question queries
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
 
-      // Snapshot the previous value
-      const previousQuestions = queryClient.getQueryData(["/api/questions"]);
+      // Snapshot all current question queries
+      const previousQueries = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
 
-      // Optimistically update the cache
-      queryClient.setQueryData(["/api/questions"], (old: any) => {
+      // Optimistically update ALL question queries
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
           q.id === question.id 
@@ -48,13 +48,14 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         );
       });
 
-      // Return a context object with the snapshotted value
-      return { previousQuestions };
+      return { previousQueries, isLearned };
     },
     onError: (err, isLearned, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousQuestions) {
-        queryClient.setQueryData(["/api/questions"], context.previousQuestions);
+      // Rollback all optimistic updates
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
 
       toast({
@@ -63,12 +64,18 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         variant: "destructive",
       });
     },
-    onSettled: () => {
-      // Invalidate all question queries with any parameters
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/questions"],
-        exact: false // This ensures all queries starting with ["/api/questions"] are invalidated
+    onSuccess: (updatedQuestion, isLearned) => {
+      // Immediately update all question queries with the server response
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return old;
+        return old.map((q: any) => 
+          q.id === question.id 
+            ? { ...q, ...updatedQuestion, isLearned } 
+            : q
+        );
       });
+
+      // Invalidate related queries for fresh data
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
     },
@@ -90,7 +97,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       // Snapshot all question queries
       const previousData = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
 
-      // Optimistically update all question queries
+      // Optimistically update all question queries instantly
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return old;
         return old.map((q: any) => 
@@ -115,11 +122,15 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         variant: "destructive",
       });
     },
-    onSuccess: (data) => {
-      // Invalidate all question queries to ensure all tabs are updated
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/questions"],
-        exact: false // This ensures all queries starting with ["/api/questions"] are invalidated
+    onSuccess: (updatedQuestion, newCount) => {
+      // Immediately update all question queries with server response
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return old;
+        return old.map((q: any) => 
+          q.id === question.id 
+            ? { ...q, ...updatedQuestion, failureCount: newCount } 
+            : q
+        );
       });
     },
   });
@@ -129,23 +140,40 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       const response = await apiRequest("DELETE", `/api/questions/${id}`);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/questions"],
-        exact: false // This ensures all queries starting with ["/api/questions"] are invalidated
+    onMutate: async (id: number) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
+
+      // Snapshot all question queries
+      const previousData = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
+
+      // Optimistically remove the question from all queries
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return old;
+        return old.filter((q: any) => q.id !== id);
       });
+
+      return { previousData };
+    },
+    onError: (err, id, context) => {
+      // Rollback optimistic updates on error
+      if (context?.previousData) {
+        context.previousData.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      toast({
+        title: t("error.title"),
+        description: t("error.deleteQuestion"),
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
       toast({
         title: t("question.deleted"),
         description: t("question.deletedDescription"),
-      });
-    },
-    onError: () => {
-      toast({
-        title: t("error.title"),
-        description: t("error.deleteQuestion"),
-        variant: "destructive",
       });
     },
   });
