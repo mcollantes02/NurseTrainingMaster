@@ -71,7 +71,18 @@ export function Header({ onUserProfileClick }: HeaderProps) {
           </div>
 
           <div className="flex items-center space-x-4">
-               {/* Statistics button */}
+            {/* Dashboard button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/'}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <Stethoscope className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">Dashboard</span>
+            </Button>
+
+            {/* Statistics button */}
             <Button
               variant="ghost"
               size="sm"
