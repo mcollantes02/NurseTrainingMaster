@@ -126,16 +126,26 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
   if (groupByExam) {
     // Group questions by mock exam
     const questionsByExam = questions.reduce((acc, question) => {
-      // Safety check: ensure mockExam exists and has a title
-      if (!question.mockExam || !question.mockExam.title) {
-        return acc;
+      // Check if question has mockExams array (for questions belonging to multiple exams)
+      if (question.mockExams && Array.isArray(question.mockExams) && question.mockExams.length > 0) {
+        // Add question to each mock exam it belongs to
+        question.mockExams.forEach(mockExam => {
+          if (mockExam && mockExam.title) {
+            const examTitle = mockExam.title;
+            if (!acc[examTitle]) {
+              acc[examTitle] = [];
+            }
+            acc[examTitle].push(question);
+          }
+        });
+      } else if (question.mockExam && question.mockExam.title) {
+        // Fallback to single mockExam if mockExams array is not available
+        const examTitle = question.mockExam.title;
+        if (!acc[examTitle]) {
+          acc[examTitle] = [];
+        }
+        acc[examTitle].push(question);
       }
-
-      const examTitle = question.mockExam.title;
-      if (!acc[examTitle]) {
-        acc[examTitle] = [];
-      }
-      acc[examTitle].push(question);
 
       return acc;
     }, {} as Record<string, typeof questions>);
