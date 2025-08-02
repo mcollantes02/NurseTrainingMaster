@@ -550,6 +550,15 @@ export class Storage {
     return snapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).mockExamId);
   }
 
+  async getQuestionsForMockExam(mockExamId: number, firebaseUid: string): Promise<number[]> {
+    const snapshot = await firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS)
+      .where('mockExamId', '==', mockExamId)
+      .where('createdBy', '==', firebaseUid)
+      .get();
+
+    return snapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).questionId);
+  }
+
   // User stats
   async getUserStats(firebaseUid: string) {
     const [mockExams, subjects, topics, questions, trashedQuestions] = await Promise.all([

@@ -83,22 +83,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/mock-exams", requireAuth, async (req, res) => {
     try {
       console.log("Getting mock exams for user:", req.firebaseUid);
-      const [mockExams, questions] = await Promise.all([
-        storage.getMockExams(req.firebaseUid),
-        storage.getQuestions({ firebaseUid: req.firebaseUid })
-      ]);
+      const mockExams = await storage.getMockExams(req.firebaseUid);
 
-      // Count questions for each mock exam
-      const questionCounts = questions.reduce((counts, question) => {
-        counts[question.mockExamId] = (counts[question.mockExamId] || 0) + 1;
-        return counts;
-      }, {} as Record<number, number>);
-
-      // Add question count to each mock exam
-      const mockExamsWithCounts = mockExams.map(exam => ({
-        ...convertFirestoreToDate(exam),
-        questionCount: questionCounts[exam.id] || 0
+      // Count questions for each mock exam by checking question-mockexam relations
+      const mockExamsWithCounts = await Promise.all(mockExams.map(async exam => {
+        const questionIds = await storage.getQuestionsForMockExam(exam.id, req.firebaseUid);
+        return {
+          ...convertFirestoreToDate(exam),
+          questionCount: questionIds.length
+        };
       }));
+
       console.log("Mock exams with counts:", mockExamsWithCounts.map(e => ({ id: e.id, title: e.title, questionCount: e.questionCount })));
 
       res.json(mockExamsWithCounts);
