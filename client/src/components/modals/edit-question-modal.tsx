@@ -183,35 +183,22 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
 
       return { previousQueries };
     },
-    onSuccess: (updatedQuestion, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-
-      // Invalidate specific mock exam queries for each selected exam
-      if (variables.mockExamIds && Array.isArray(variables.mockExamIds)) {
-        variables.mockExamIds.forEach(mockExamId => {
-          queryClient.invalidateQueries({ 
-            queryKey: ["/api/questions"],
-            predicate: (query) => {
-              const queryString = query.queryKey[1] as string;
-              return queryString && queryString.includes(`mockExamIds=${mockExamId}`);
-            }
-          });
-        });
-      }
-
-      // Also invalidate queries for the original mock exams if they changed
-      if (question?.mockExams) {
-        question.mockExams.forEach(mockExam => {
-          queryClient.invalidateQueries({ 
-            queryKey: ["/api/questions"],
-            predicate: (query) => {
-              const queryString = query.queryKey[1] as string;
-              return queryString && queryString.includes(`mockExamIds=${mockExam.id}`);
-            }
-          });
-        });
-      }
+    onSuccess: async (updatedQuestion, variables) => {
+      // Clear all question-related queries immediately to ensure fresh data
+      await queryClient.removeQueries({ queryKey: ["/api/questions"] });
+      await queryClient.removeQueries({ queryKey: ["/api/mock-exams"] });
+      
+      // Force refetch all data to ensure consistency across all tabs
+      await queryClient.refetchQueries({ queryKey: ["/api/mock-exams"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/questions"] });
+      
+      // Also invalidate any potential cached queries with specific parameters
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          const queryKey = query.queryKey;
+          return queryKey[0] === "/api/questions" || queryKey[0] === "/api/mock-exams";
+        }
+      });
 
       onClose();
       toast({
