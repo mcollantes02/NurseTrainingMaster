@@ -341,7 +341,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
           </div>
         </div>
 
-        
+
       </CardContent>
     </Card>
   );

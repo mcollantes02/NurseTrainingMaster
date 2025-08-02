@@ -74,7 +74,10 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
     },
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: true, // Ensure query is always enabled
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    enabled: true,
+    keepPreviousData: true, // Keep previous data while fetching new data
+    refetchOnMount: false, // Don't refetch on component mount if data is fresh
   });
 
   const totalPages = Math.ceil(questions.length / itemsPerPage);
