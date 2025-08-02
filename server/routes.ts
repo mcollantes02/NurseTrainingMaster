@@ -82,6 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mock exam routes
   app.get("/api/mock-exams", requireAuth, async (req, res) => {
     try {
+      console.log("Getting mock exams for user:", req.firebaseUid);
       const [mockExams, questions] = await Promise.all([
         storage.getMockExams(req.firebaseUid),
         storage.getQuestions({ firebaseUid: req.firebaseUid })
@@ -98,6 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...convertFirestoreToDate(exam),
         questionCount: questionCounts[exam.id] || 0
       }));
+      console.log("Mock exams with counts:", mockExamsWithCounts.map(e => ({ id: e.id, title: e.title, questionCount: e.questionCount })));
 
       res.json(mockExamsWithCounts);
     } catch (error) {
