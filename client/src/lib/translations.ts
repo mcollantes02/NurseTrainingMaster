@@ -378,4 +378,47 @@ export const translations = {
     "error.permanentDelete": "Failed to permanently delete question",
     "error.emptyTrash": "Failed to empty trash",
   },
+// Trash translations
+  trash: {
+    title: "Trash",
+    description: "Manage deleted items",
+    empty: "Trash is empty",
+    restore: "Restore",
+    deleteForever: "Delete forever",
+    confirmDelete: "Are you sure you want to permanently delete this item?",
+    restored: "Item restored",
+    deletedForever: "Item permanently deleted"
+  },
+
+  // Statistics translations
+  statistics: {
+    title: "Statistics",
+    subtitle: "Detailed analysis of your learning progress",
+    overview: "Overview",
+    subjects: "Subjects",
+    topics: "Topics",
+    trends: "Trends",
+    totalQuestions: "Total Questions",
+    learnedQuestions: "Learned Questions",
+    progress: "Progress",
+    failureRate: "Failure Rate",
+    examsCompleted: "exams completed",
+    errorQuestions: "error questions",
+    ofTotal: "of total",
+    questionsDistribution: "Questions Distribution",
+    questionTypes: "Question Types",
+    theorySources: "Theory Sources",
+    subjectBreakdown: "Subject Breakdown",
+    topicBreakdown: "Topic Breakdown",
+    learningProgress: "Learning Progress",
+    weeklyActivity: "Weekly Activity",
+    failureDistribution: "Failure Distribution",
+    total: "Total",
+    noData: "No statistical data available"
+  },
+
+  // Navigation translations
+  navigation: {
+    back: "Back"
+  }
 };

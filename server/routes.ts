@@ -512,6 +512,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user statistics
+  app.get("/api/user/stats", async (req, res) => {
+    try {
+      const userId = (req as any).user?.uid;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      console.log("Getting user stats for:", userId);
+
+      // Get all questions for the user
+      // Assuming 'db' is your Firestore instance
+      const questionsSnapshot = await storage.db
+        .collection("questions")
+        .where("createdBy", "==", userId)
+        .get();
+
+      const questions = questionsSnapshot.docs.map((doc) => doc.data());
+
+      // Calculate statistics
+      const totalQuestions = questions.length;
+      const learnedQuestions = questions.filter((q) => q.isLearned).length;
+      const progressPercentage =
+        totalQuestions > 0 ? Math.round((learnedQuestions / totalQuestions) * 100) : 0;
+
+      // Get completed exams (exams with at least one question)
+      const mockExamsSnapshot = await storage.db
+        .collection("mockExams")
+        .where("createdBy", "==", userId)
+        .get();
+
+      const completedExams = mockExamsSnapshot.docs.length;
+
+      res.json({
+        totalQuestions,
+        learnedQuestions,
+        progressPercentage,
+        completedExams,
+      });
+    } catch (error) {
+      console.error("Error getting user stats:", error);
+      res.status(500).json({ error: "Failed to get user stats" });
+    }
+  });
+
+  // Get detailed user statistics
+  app.get("/api/user/detailed-stats", requireAuth, async (req, res) => {
+    try {
+      const userId = req.firebaseUid;
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      // Get all questions for the user
+      const questions = await storage.getQuestions({ firebaseUid: userId });
+
+      // Get subjects and topics
+      const subjects = await storage.getSubjects(userId);
+      const topics = await storage.getTopics(userId);
+
+      // Basic stats
+      const totalQuestions = questions.length;
+      const learnedQuestions = questions.filter((q) => q.isLearned).length;
+      const doubtQuestions = questions.filter((q) => !q.isLearned && (q.failureCount === undefined || q.failureCount === 0)).length;
+      const errorQuestions = questions.filter((q) => !q.isLearned && (q.failureCount !== undefined && q.failureCount > 0)).length;
+      const progressPercentage = totalQuestions > 0 ? Math.round((learnedQuestions / totalQuestions) * 100) : 0;
+
+      // Get mock exams
+      const mockExams = await storage.getMockExams(userId);
+      const completedExams = mockExams.length;
+
+      // Calculate average failure rate
+      const totalFailures = questions.reduce((sum, q) => sum + (q.failureCount || 0), 0);
+      const averageFailureRate = totalQuestions > 0 ? (totalFailures / totalQuestions) : 0;
+
+      // Questions by type
+      const typeGroups = questions.reduce((acc, q) => {
+        const type = q.type || 'unknown';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {});
+      const questionsByType = Object.entries(typeGroups).map(([type, count]) => ({ type, count }));
+
+      // Questions by subject
+      const subjectGroups = subjects.map(subject => {
+        const subjectQuestions = questions.filter(q => q.subjectId === subject.id);
+        return {
+          subject: subject.name,
+          total: subjectQuestions.length,
+          learned: subjectQuestions.filter(q => q.isLearned).length,
+          doubt: subjectQuestions.filter(q => !q.isLearned && (q.failureCount === undefined || q.failureCount === 0)).length,
+          error: subjectQuestions.filter(q => !q.isLearned && (q.failureCount !== undefined && q.failureCount > 0)).length
+        };
+      }).filter(s => s.total > 0);
+
+      // Questions by topic
+      const topicGroups = topics.map(topic => {
+        const topicQuestions = questions.filter(q => q.topicId === topic.id);
+        return {
+          topic: topic.name,
+          total: topicQuestions.length,
+          learned: topicQuestions.filter(q => q.isLearned).length,
+          doubt: topicQuestions.filter(q => !q.isLearned && (q.failureCount === undefined || q.failureCount === 0)).length,
+          error: topicQuestions.filter(q => !q.isLearned && (q.failureCount !== undefined && q.failureCount > 0)).length
+        };
+      }).filter(t => t.total > 0);
+
+      // Theory distribution
+      const theoryGroups = questions.reduce((acc, q) => {
+        const theory = q.theory || 'Unknown';
+        acc[theory] = (acc[theory] || 0) + 1;
+        return acc;
+      }, {});
+      const theoryDistribution = Object.entries(theoryGroups).map(([theory, count]) => ({ theory, count }));
+
+      // Learning progress (mock data for now - in real app you'd track this over time)
+      const learningProgress = [
+        { date: '2024-01-01', learned: Math.floor(learnedQuestions * 0.2), total: Math.floor(totalQuestions * 0.3) },
+        { date: '2024-02-01', learned: Math.floor(learnedQuestions * 0.4), total: Math.floor(totalQuestions * 0.5) },
+        { date: '2024-03-01', learned: Math.floor(learnedQuestions * 0.6), total: Math.floor(totalQuestions * 0.7) },
+        { date: '2024-04-01', learned: Math.floor(learnedQuestions * 0.8), total: Math.floor(totalQuestions * 0.9) },
+        { date: '2024-05-01', learned: learnedQuestions, total: totalQuestions },
+      ];
+
+      // Failure distribution
+      const failureRanges = { '0': 0, '1-2': 0, '3-5': 0, '6+': 0 };
+      questions.forEach(q => {
+        const failures = q.failureCount || 0;
+        if (failures === 0) failureRanges['0']++;
+        else if (failures <= 2) failureRanges['1-2']++;
+        else if (failures <= 5) failureRanges['3-5']++;
+        else failureRanges['6+']++;
+      });
+      const failureDistribution = Object.entries(failureRanges).map(([range, count]) => ({ range, count }));
+
+      // Weekly activity (mock data)
+      const weeklyActivity = [
+        { day: 'Lun', questions: Math.floor(Math.random() * 20) + 5 },
+        { day: 'Mar', questions: Math.floor(Math.random() * 20) + 5 },
+        { day: 'Mié', questions: Math.floor(Math.random() * 20) + 5 },
+        { day: 'Jue', questions: Math.floor(Math.random() * 20) + 5 },
+        { day: 'Vie', questions: Math.floor(Math.random() * 20) + 5 },
+        { day: 'Sáb', questions: Math.floor(Math.random() * 15) + 2 },
+        { day: 'Dom', questions: Math.floor(Math.random() * 15) + 2 },
+      ];
+
+      res.json({
+        totalQuestions,
+        learnedQuestions,
+        doubtQuestions,
+        errorQuestions,
+        progressPercentage,
+        completedExams,
+        totalSubjects: subjects.length,
+        totalTopics: topics.length,
+        averageFailureRate,
+        questionsByType,
+        questionsBySubject: subjectGroups,
+        questionsByTopic: topicGroups,
+        learningProgress,
+        failureDistribution,
+        weeklyActivity,
+        theoryDistribution
+      });
+    } catch (error) {
+      console.error("Error getting detailed user stats:", error);
+      res.status(500).json({ error: "Failed to get detailed user stats" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
