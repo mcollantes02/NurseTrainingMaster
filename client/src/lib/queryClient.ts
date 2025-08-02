@@ -92,9 +92,14 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-      retry: false,
+      staleTime: 10 * 60 * 1000, // 10 minutes - longer cache time
+      gcTime: 15 * 60 * 1000, // 15 minutes
+      retry: (failureCount, error) => {
+        // Don't retry auth errors
+        if (error.message.includes('401')) return false;
+        return failureCount < 1; // Only retry once
+      },
+      retryDelay: 1000,
     },
     mutations: {
       retry: false,

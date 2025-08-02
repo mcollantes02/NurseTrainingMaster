@@ -75,7 +75,13 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      mockExamId: 0,
+      subjectName: "",
+      topicName: "",
+      type: "error",
+      theory: "",
       isLearned: false,
+      failureCount: 0,
     },
   });
 
@@ -83,12 +89,13 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
   useEffect(() => {
     if (isOpen) {
       form.reset({
-        mockExamId: undefined,
+        mockExamId: 0,
         subjectName: "",
         topicName: "",
-        type: undefined,
+        type: "error",
         theory: "",
         isLearned: false,
+        failureCount: 0,
       });
     }
   }, [isOpen, form]);
@@ -98,8 +105,12 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
       const response = await apiRequest("POST", "/api/subjects", { name });
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+    onSuccess: (newSubject) => {
+      // Optimistically update cache instead of invalidating
+      queryClient.setQueryData(["/api/subjects"], (old: Subject[] = []) => {
+        const exists = old.find(s => s.name === newSubject.name);
+        return exists ? old : [...old, newSubject];
+      });
     },
   });
 
@@ -108,66 +119,48 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
       const response = await apiRequest("POST", "/api/topics", { name });
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/topics"] });
+    onSuccess: (newTopic) => {
+      // Optimistically update cache instead of invalidating
+      queryClient.setQueryData(["/api/topics"], (old: Topic[] = []) => {
+        const exists = old.find(t => t.name === newTopic.name);
+        return exists ? old : [...old, newTopic];
+      });
     },
   });
 
   const createQuestionMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      // Find subject and topic IDs
-      const subjectId = subjects.find(s => s.name === data.subjectName)?.id;
-      const topicId = topics.find(t => t.name === data.topicName)?.id;
-
-      if (!subjectId || !topicId) {
-        throw new Error("Subject or topic not found");
-      }
+      // Get or create subject and topic in parallel
+      const [subjectResult, topicResult] = await Promise.all([
+        (async () => {
+          const existing = subjects.find(s => s.name === data.subjectName);
+          if (existing) return existing;
+          return await createSubjectMutation.mutateAsync(data.subjectName);
+        })(),
+        (async () => {
+          const existing = topics.find(t => t.name === data.topicName);
+          if (existing) return existing;
+          return await createTopicMutation.mutateAsync(data.topicName);
+        })()
+      ]);
 
       const response = await apiRequest("POST", "/api/questions", {
         mockExamId: data.mockExamId,
-        subjectId,
-        topicId,
+        subjectId: subjectResult.id,
+        topicId: topicResult.id,
         type: data.type,
         theory: data.theory,
         isLearned: data.isLearned,
       });
       return response.json();
     },
-    onMutate: async (data) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
-
-      // Snapshot the previous value
-      const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
-
-      // Create optimistic question
-      const optimisticQuestion = {
-        id: Date.now(), // temporary ID
-        mockExamId: data.mockExamId,
-        subjectId: subjects.find(s => s.name === data.subjectName)?.id || 0,
-        topicId: topics.find(t => t.name === data.topicName)?.id || 0,
-        type: data.type,
-        theory: data.theory,
-        isLearned: data.isLearned,
-        failureCount: data.failureCount,
-        createdAt: new Date().toISOString(),
-        subject: subjects.find(s => s.name === data.subjectName) || { name: data.subjectName },
-        topic: topics.find(t => t.name === data.topicName) || { name: data.topicName },
-        mockExam: mockExams.find(m => m.id === data.mockExamId)
-      };
-
-      // Optimistically update
-      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
-        if (!old) return [optimisticQuestion];
-        return [optimisticQuestion, ...old];
-      });
-
-      return { previousQuestions };
-    },
-    onSuccess: async (serverQuestion) => {
-      // Get related data to create the complete question object
-      const subject = subjects.find(s => s.id === serverQuestion.subjectId) || subjects.find(s => s.name === data.subjectName);
-      const topic = topics.find(t => t.id === serverQuestion.topicId) || topics.find(t => t.name === data.topicName);
+    onSuccess: async (serverQuestion, data) => {
+      // Get the subject and topic from current cache
+      const currentSubjects = queryClient.getQueryData<Subject[]>(["/api/subjects"]) || [];
+      const currentTopics = queryClient.getQueryData<Topic[]>(["/api/topics"]) || [];
+      
+      const subject = currentSubjects.find(s => s.id === serverQuestion.subjectId);
+      const topic = currentTopics.find(t => t.id === serverQuestion.topicId);
       const mockExam = mockExams.find(m => m.id === serverQuestion.mockExamId);
 
       const completeQuestion = {
@@ -177,15 +170,19 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
         mockExam: mockExam || { id: serverQuestion.mockExamId, title: 'Unknown', createdBy: serverQuestion.createdBy, createdAt: new Date() }
       };
 
-      // Add the real question from server
-      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
-        if (!old) return [completeQuestion];
+      // Optimistically update questions cache
+      queryClient.setQueryData(["/api/questions"], (old: any[] = []) => {
         return [completeQuestion, ...old];
       });
 
-      // Invalidate to ensure we have the latest data
-      await queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      // Update mock exam question count
+      queryClient.setQueryData(["/api/mock-exams"], (old: any[] = []) => {
+        return old.map(exam => 
+          exam.id === serverQuestion.mockExamId 
+            ? { ...exam, questionCount: (exam.questionCount || 0) + 1 }
+            : exam
+        );
+      });
 
       toast({
         title: t("success.title"),
@@ -201,10 +198,6 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
         description: t("error.createQuestion"),
         variant: "destructive",
       });
-    },
-    onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
     },
   });
 

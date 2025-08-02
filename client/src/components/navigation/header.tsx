@@ -41,7 +41,7 @@ export function Header({ onUserProfileClick }: HeaderProps) {
 
   const getUserInitials = () => {
     if (!user) return "U";
-    
+
     // For Firebase users, use displayName or email as fallback
     if (user.displayName) {
       const names = user.displayName.split(' ');
@@ -50,12 +50,12 @@ export function Header({ onUserProfileClick }: HeaderProps) {
       }
       return names[0].charAt(0).toUpperCase();
     }
-    
+
     // Fallback to email first letter
     if (user.email) {
       return user.email.charAt(0).toUpperCase();
     }
-    
+
     return "U";
   };
 
@@ -81,7 +81,7 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               <Trash2 className="h-4 w-4" />
               <span className="ml-2 hidden sm:inline">{t("trash.title")}</span>
             </Button>
-            
+
             {/* Manage button */}
             <Button
               variant="ghost"
@@ -92,7 +92,7 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               <Settings className="h-4 w-4" />
               <span className="ml-2 hidden sm:inline">Administrar</span>
             </Button>
-            
+
             {/* Language Switcher */}
             <Select value={language} onValueChange={changeLanguage}>
               <SelectTrigger className="w-auto border-gray-300">
