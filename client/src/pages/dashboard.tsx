@@ -437,6 +437,7 @@ export default function Dashboard() {
       <AddQuestionModal
         isOpen={isAddQuestionModalOpen}
         onClose={() => setIsAddQuestionModalOpen(false)}
+        preSelectedMockExamId={activeTab !== "all" ? parseInt(activeTab) : undefined}
       />
 
       <UserProfileModal
