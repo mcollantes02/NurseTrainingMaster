@@ -32,6 +32,8 @@ export const translations = {
     "auth.welcomeMessage": "¡Bienvenido a EIR Mock Exam Manager!",
     "auth.loginError": "Error al iniciar sesión",
     "auth.registerError": "Error al registrarse",
+    "auth.orContinueWith": "O continúa con",
+    "auth.continueWithGoogle": "Continuar con Google",
 
     // User
     "user.profile": "Perfil de Usuario",
@@ -211,8 +213,10 @@ export const translations = {
     "auth.registerSuccess": "Registration successful",
     "auth.welcomeBack": "Welcome back!",
     "auth.welcomeMessage": "Welcome to EIR Mock Exam Manager!",
-    "auth.loginError": "Login error",
-    "auth.registerError": "Registration error",
+    "auth.loginError": "Login failed",
+    "auth.registerError": "Registration failed",
+    "auth.orContinueWith": "Or continue with",
+    "auth.continueWithGoogle": "Continue with Google",
 
     // User
     "user.profile": "User Profile",
