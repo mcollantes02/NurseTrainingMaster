@@ -253,7 +253,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       )}
       onClick={handleCardClick}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-3">
         {/* Main Row - Metadata and Theory side by side */}
         <div className="flex items-start gap-4">
 
