@@ -20,7 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Trash2, Settings, BarChart3 } from "lucide-react"; // Added Trash2 and BarChart3 icons
 import { TrashModal } from "@/components/modals/trash-modal"; // Added TrashModal component
 import { AdminModal } from "@/components/modals/admin-modal";
-import { useLocation } from 'react-router-dom';
+import { useLocation } from 'wouter';
 
 interface HeaderProps {
   onUserProfileClick: () => void;
