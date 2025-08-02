@@ -91,26 +91,21 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: true,
-      staleTime: 0, // Always consider data stale to ensure fresh data
-      gcTime: 300000, // Keep unused data in cache for 5 minutes
+      refetchOnWindowFocus: false, // Disable auto-refetch on focus
+      staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+      gcTime: 30 * 60 * 1000, // Keep unused data in cache for 30 minutes
       retry: (failureCount, error) => {
         // Don't retry auth errors
         if (error.message.includes('401')) return false;
         return failureCount < 1; // Only retry once
       },
-      retryDelay: 200, // Faster retry
+      retryDelay: 200,
       networkMode: 'online',
-      refetchOnMount: false, // Prevent unnecessary refetches
+      refetchOnMount: 'always', // Always refetch on mount but use cache if fresh
     },
     mutations: {
       retry: false,
       networkMode: 'online',
-      // Add global mutation settings for better performance
-      onMutate: () => {
-        // Cancel outgoing queries when mutations start
-        queryClient.cancelQueries();
-      },
     },
   },
 });
