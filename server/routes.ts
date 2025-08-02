@@ -1,4 +1,3 @@
-
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
@@ -38,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const idToken = authHeader.split('Bearer ')[1];
       const decodedToken = await auth.verifyIdToken(idToken);
-      
+
       req.firebaseUid = decodedToken.uid;
       req.user = {
         uid: decodedToken.uid,
@@ -60,7 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify the Firebase ID token
       const decodedToken = await auth.verifyIdToken(idToken);
-      
+
       res.json({ 
         user: {
           uid: decodedToken.uid,
@@ -282,6 +281,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Question routes
   app.get("/api/questions", requireAuth, async (req, res) => {
     try {
+      console.log("Getting questions for user:", req.firebaseUid); // Added debugging
+      console.log("Query params:", req.query); // Added debugging
       const filters = {
         firebaseUid: req.firebaseUid,
         mockExamIds: req.query.mockExamIds ? (Array.isArray(req.query.mockExamIds) ? req.query.mockExamIds.map(id => parseInt(id as string)) : [parseInt(req.query.mockExamIds as string)]) : undefined,
@@ -329,7 +330,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdBy: req.user
         };
       }));
-
+      console.log("Found questions:", questions.length); // Added debugging
+      if (questions.length > 0) {
+        console.log("First question:", questions[0]); // Added debugging
+      }
       res.json(questionsWithRelations);
     } catch (error) {
       console.error("Get questions error:", error);
@@ -403,7 +407,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { failureCount, change } = req.body;
 
       let newFailureCount: number;
-      
+
       if (change !== undefined) {
         // Handle incremental change
         const questions = await storage.getQuestions({ firebaseUid: req.firebaseUid });
