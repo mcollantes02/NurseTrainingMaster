@@ -647,15 +647,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       const failureDistribution = Object.entries(failureRanges).map(([range, count]) => ({ range, count }));
 
-      // Weekly activity (mock data)
+      // Weekly activity (real data based on question creation dates)
+      const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      const weeklyActivityMap = { 'Lun': 0, 'Mar': 0, 'Mié': 0, 'Jue': 0, 'Vie': 0, 'Sáb': 0, 'Dom': 0 };
+      
+      questions.forEach(question => {
+        if (question.createdAt) {
+          const date = question.createdAt instanceof Date ? question.createdAt : 
+                      (question.createdAt.seconds ? new Date(question.createdAt.seconds * 1000) : new Date(question.createdAt));
+          const dayOfWeek = weekDays[date.getDay()];
+          weeklyActivityMap[dayOfWeek]++;
+        }
+      });
+
       const weeklyActivity = [
-        { day: 'Lun', questions: Math.floor(Math.random() * 20) + 5 },
-        { day: 'Mar', questions: Math.floor(Math.random() * 20) + 5 },
-        { day: 'Mié', questions: Math.floor(Math.random() * 20) + 5 },
-        { day: 'Jue', questions: Math.floor(Math.random() * 20) + 5 },
-        { day: 'Vie', questions: Math.floor(Math.random() * 20) + 5 },
-        { day: 'Sáb', questions: Math.floor(Math.random() * 15) + 2 },
-        { day: 'Dom', questions: Math.floor(Math.random() * 15) + 2 },
+        { day: 'Lun', questions: weeklyActivityMap['Lun'] },
+        { day: 'Mar', questions: weeklyActivityMap['Mar'] },
+        { day: 'Mié', questions: weeklyActivityMap['Mié'] },
+        { day: 'Jue', questions: weeklyActivityMap['Jue'] },
+        { day: 'Vie', questions: weeklyActivityMap['Vie'] },
+        { day: 'Sáb', questions: weeklyActivityMap['Sáb'] },
+        { day: 'Dom', questions: weeklyActivityMap['Dom'] },
       ];
 
       res.json({
