@@ -250,30 +250,52 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="w-full"
                         />
-                        <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-                          {filteredExams.length > 0 ? (
-                            filteredExams.map((exam) => (
-                              <div key={exam.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`exam-${exam.id}`}
-                                  checked={field.value.includes(exam.id)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      field.onChange([...field.value, exam.id]);
-                                    } else {
-                                      field.onChange(field.value.filter(id => id !== exam.id));
-                                    }
-                                  }}
-                                />
-                                <Label htmlFor={`exam-${exam.id}`} className="text-sm font-normal">
+                        {searchTerm.trim() && (
+                          <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                            {filteredExams.length > 0 ? (
+                              filteredExams.map((exam) => (
+                                <div key={exam.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`exam-${exam.id}`}
+                                    checked={field.value.includes(exam.id)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        field.onChange([...field.value, exam.id]);
+                                      } else {
+                                        field.onChange(field.value.filter(id => id !== exam.id));
+                                      }
+                                    }}
+                                  />
+                                  <Label htmlFor={`exam-${exam.id}`} className="text-sm font-normal">
+                                    {exam.title}
+                                  </Label>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-sm text-gray-500">No se encontraron simulacros</p>
+                            )}
+                          </div>
+                        )}
+                        {/* Show selected exams */}
+                        {field.value.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {field.value.map(examId => {
+                              const exam = mockExams.find(e => e.id === examId);
+                              return exam ? (
+                                <div key={examId} className="flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm">
                                   {exam.title}
-                                </Label>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-sm text-gray-500">No se encontraron simulacros</p>
-                          )}
-                        </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => field.onChange(field.value.filter(id => id !== examId))}
+                                    className="ml-2 hover:text-blue-600"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+                        )}
                       </div>
                     </FormControl>
                     <FormMessage />
