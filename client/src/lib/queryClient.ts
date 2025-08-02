@@ -56,7 +56,25 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    // Add Firebase auth token if user is authenticated
+    if (auth.currentUser) {
+      try {
+        const token = await auth.currentUser.getIdToken(true);
+        headers.Authorization = `Bearer ${token}`;
+      } catch (error) {
+        console.error('Error getting auth token for query:', error);
+        if (unauthorizedBehavior === "throw") {
+          throw new Error('Authentication failed');
+        }
+      }
+    }
+
     const res = await fetch(queryKey[0] as string, {
+      headers,
       credentials: "include",
     });
 
