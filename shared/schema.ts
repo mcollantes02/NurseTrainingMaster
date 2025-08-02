@@ -16,10 +16,12 @@ export const insertMockExamSchema = z.object({
 
 export const insertSubjectSchema = z.object({
   name: z.string().min(1),
+  createdBy: z.number(),
 });
 
 export const insertTopicSchema = z.object({
   name: z.string().min(1),
+  createdBy: z.number(),
 });
 
 export const insertQuestionSchema = z.object({
@@ -60,12 +62,14 @@ export type MockExam = {
 export type Subject = {
   id: number;
   name: string;
+  createdBy: number;
   createdAt: Date;
 };
 
 export type Topic = {
   id: number;
   name: string;
+  createdBy: number;
   createdAt: Date;
 };
 

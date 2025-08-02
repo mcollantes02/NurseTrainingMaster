@@ -163,17 +163,21 @@ export class Storage {
     return updatedDoc.data() as FirestoreSubject;
   }
 
-  async deleteSubject(id: number): Promise<boolean> {
+  async deleteSubject(id: number, userId: number): Promise<boolean> {
     // Check if subject has associated questions
     const questionsSnapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
       .where('subjectId', '==', id)
+      .where('createdBy', '==', userId)
       .limit(1)
       .get();
 
-    if (!questionsSnapshot.empty) return false;
+    if (!questionsSnapshot.empty) {
+      return false; // Cannot delete subject with associated questions
+    }
 
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
       .where('id', '==', id)
+      .where('createdBy', '==', userId)
       .limit(1)
       .get();
 
@@ -233,17 +237,21 @@ export class Storage {
     return updatedDoc.data() as FirestoreTopic;
   }
 
-  async deleteTopic(id: number): Promise<boolean> {
+  async deleteTopic(id: number, userId: number): Promise<boolean> {
     // Check if topic has associated questions
     const questionsSnapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
       .where('topicId', '==', id)
+      .where('createdBy', '==', userId)
       .limit(1)
       .get();
 
-    if (!questionsSnapshot.empty) return false;
+    if (!questionsSnapshot.empty) {
+      return false; // Cannot delete topic with associated questions
+    }
 
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
       .where('id', '==', id)
+      .where('createdBy', '==', userId)
       .limit(1)
       .get();
 
@@ -351,7 +359,7 @@ export class Storage {
 
     const snapshot = await query.get();
     let questions = snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
-    
+
     // Sort in memory to avoid Firestore composite index requirement
     questions = questions.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
 
