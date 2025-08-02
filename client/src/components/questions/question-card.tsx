@@ -64,8 +64,11 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       });
     },
     onSettled: () => {
-      // Always refetch after error or success to ensure we have the correct data
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      // Invalidate all question queries with any parameters
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/questions"],
+        exact: false // This ensures all queries starting with ["/api/questions"] are invalidated
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
     },
@@ -114,7 +117,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     },
     onSuccess: (data) => {
       // Invalidate all question queries to ensure all tabs are updated
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/questions"],
+        exact: false // This ensures all queries starting with ["/api/questions"] are invalidated
+      });
     },
   });
 
@@ -124,7 +130,10 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/questions"],
+        exact: false // This ensures all queries starting with ["/api/questions"] are invalidated
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
       queryClient.invalidateQueries({ queryKey: ["/api/trash"] });
       toast({
