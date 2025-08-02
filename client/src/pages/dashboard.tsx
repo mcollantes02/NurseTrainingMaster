@@ -155,23 +155,23 @@ export default function Dashboard() {
       appliedFilters.topicIds.forEach(id => params.append('topicIds', id.toString()));
     }
 
-    if (appliedFilters.keywords) {
-      params.append('keywords', appliedFilters.keywords);
+    if (appliedFilters.keywords.trim()) {
+      params.append('keywords', appliedFilters.keywords.trim());
     }
 
     if (appliedFilters.learningStatus.length > 0) {
       appliedFilters.learningStatus.forEach(status => params.append('learningStatus', status.toString()));
     }
 
-    if (appliedFilters.failureCount.exact !== undefined && appliedFilters.failureCount.exact !== null) {
+    if (appliedFilters.failureCount.exact !== undefined && appliedFilters.failureCount.exact !== null && appliedFilters.failureCount.exact >= 0) {
       params.append('failureCountExact', appliedFilters.failureCount.exact.toString());
     }
 
-    if (appliedFilters.failureCount.min !== undefined && appliedFilters.failureCount.min !== null) {
+    if (appliedFilters.failureCount.min !== undefined && appliedFilters.failureCount.min !== null && appliedFilters.failureCount.min >= 0) {
       params.append('failureCountMin', appliedFilters.failureCount.min.toString());
     }
 
-    if (appliedFilters.failureCount.max !== undefined && appliedFilters.failureCount.max !== null) {
+    if (appliedFilters.failureCount.max !== undefined && appliedFilters.failureCount.max !== null && appliedFilters.failureCount.max >= 0) {
       params.append('failureCountMax', appliedFilters.failureCount.max.toString());
     }
 

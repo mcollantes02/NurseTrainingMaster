@@ -170,9 +170,10 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
         mockExam: mockExam || { id: serverQuestion.mockExamId, title: 'Unknown', createdBy: serverQuestion.createdBy, createdAt: new Date() }
       };
 
-      // Optimistically update questions cache
-      queryClient.setQueryData(["/api/questions"], (old: any[] = []) => {
-        return [completeQuestion, ...old];
+      // Invalidate all questions queries to ensure fresh data
+      await queryClient.invalidateQueries({ 
+        queryKey: ["/api/questions"],
+        exact: false 
       });
 
       // Update mock exam question count

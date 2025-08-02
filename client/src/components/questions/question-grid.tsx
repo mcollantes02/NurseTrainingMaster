@@ -65,12 +65,16 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
     queryParams.append('failureCountMax', filters.failureCount.max.toString());
   }
 
-  const { data: questions = [], isLoading } = useQuery<QuestionWithRelations[]>({
+  const { data: questions = [], isLoading } = useQuery({
     queryKey: ["/api/questions", queryParams.toString()],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/questions?${queryParams.toString()}`);
+      const url = `/api/questions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const response = await apiRequest("GET", url);
       return response.json();
     },
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: true, // Ensure query is always enabled
   });
 
   const totalPages = Math.ceil(questions.length / itemsPerPage);
