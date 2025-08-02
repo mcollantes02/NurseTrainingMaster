@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Trash2, Settings } from "lucide-react"; // Added Trash2 icon
+import { Trash2, Settings, BarChart3 } from "lucide-react"; // Added Trash2 and BarChart3 icons
 import { TrashModal } from "@/components/modals/trash-modal"; // Added TrashModal component
 import { AdminModal } from "@/components/modals/admin-modal";
 
@@ -71,7 +71,18 @@ export function Header({ onUserProfileClick }: HeaderProps) {
           </div>
 
           <div className="flex items-center space-x-4">
-               {/* Trash button */}
+               {/* Statistics button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/statistics'}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="ml-2 hidden sm:inline">{t("statistics.title")}</span>
+            </Button>
+
+            {/* Trash button */}
             <Button
               variant="ghost"
               size="sm"
