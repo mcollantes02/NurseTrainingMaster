@@ -64,15 +64,22 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         variant: "destructive",
       });
     },
-    onSuccess: async () => {
-      // Clear all question-related queries and force fresh data
-      await queryClient.removeQueries({ queryKey: ["/api/questions"] });
+    onSuccess: (updatedQuestion) => {
+      // Silently update the question in all queries with server response
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return old;
+        return old.map((q: any) => 
+          q.id === question.id 
+            ? { ...q, ...updatedQuestion } 
+            : q
+        );
+      });
 
-      // Force refetch to ensure all tabs get updated data
-      await queryClient.refetchQueries({ queryKey: ["/api/questions"] });
-
-      // Invalidate mock exams to update counts
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      // Silently invalidate mock exams to update counts (no refetch)
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/mock-exams"],
+        refetchType: "none" // Don't refetch, just mark as stale
+      });
     },
   });
 

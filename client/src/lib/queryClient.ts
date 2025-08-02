@@ -106,11 +106,6 @@ export const queryClient = new QueryClient({
     mutations: {
       retry: false,
       networkMode: 'online',
-      // Add global mutation settings for better performance
-      onMutate: () => {
-        // Cancel outgoing queries when mutations start
-        queryClient.cancelQueries();
-      },
     },
   },
 });
