@@ -53,45 +53,46 @@ export function MultiSelect({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn("justify-between h-auto min-h-[40px] p-2", className)}
-        >
-          <div className="flex flex-wrap gap-1 flex-1">
-            {selectedOptions.length === 0 ? (
-              <span className="text-muted-foreground">{placeholder}</span>
-            ) : (
-              selectedOptions.map((option) => (
-                <div
-                  key={option.value}
-                  className="bg-primary/10 text-primary px-2 py-1 rounded text-sm flex items-center gap-1"
-                >
-                  {option.label}
-                  <X
-                    className="h-3 w-3 cursor-pointer hover:text-destructive"
-                    onClick={(e) => handleRemove(option.value, e)}
-                  />
-                </div>
-              ))
-            )}
-          </div>
-          <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
-        <div className="p-2">
-          <Input
-            placeholder={searchPlaceholder}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-8"
-          />
-        </div>
-        <div className="max-h-60 overflow-auto">
+    <div className="space-y-2">
+      <div className="p-2">
+        <Input
+          placeholder={searchPlaceholder}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-8"
+        />
+      </div>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn("justify-between h-auto min-h-[40px] p-2 w-full", className)}
+          >
+            <div className="flex flex-wrap gap-1 flex-1">
+              {selectedOptions.length === 0 ? (
+                <span className="text-muted-foreground">{placeholder}</span>
+              ) : (
+                selectedOptions.map((option) => (
+                  <div
+                    key={option.value}
+                    className="bg-primary/10 text-primary px-2 py-1 rounded text-sm flex items-center gap-1"
+                  >
+                    {option.label}
+                    <X
+                      className="h-3 w-3 cursor-pointer hover:text-destructive"
+                      onClick={(e) => handleRemove(option.value, e)}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+            <ChevronDown className="h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <div className="max-h-60 overflow-auto">
           {filteredOptions.length === 0 ? (
             <div className="p-2 text-sm text-muted-foreground">
               No options found.
