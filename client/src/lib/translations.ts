@@ -47,7 +47,7 @@ export const translations = {
     "mockExam.all": "Todos los simulacros",
     "mockExam.new": "Nuevo Simulacro",
     "mockExam.create": "Crear Simulacro",
-    "mockExam.select": "Seleccionar simulacro",
+    "mockExam.select": "Seleccionar simulacros",
     "mockExam.selectMultiple": "Seleccionar simulacros",
     "mockExam.selected": "Simulacros Seleccionados",
     "mockExam.mockExamIds": "IDs de Simulacros",

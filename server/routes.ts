@@ -309,12 +309,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const topicMap = new Map(topics.map(topic => [topic.id, topic]));
 
       // Add relations to questions
-      const questionsWithRelations = questions.map(question => ({
-        ...convertFirestoreToDate(question),
-        mockExam: convertFirestoreToDate(mockExamMap.get(question.mockExamId)) || { id: question.mockExamId, title: 'Unknown', createdBy: req.firebaseUid, createdAt: new Date() },
-        subject: convertFirestoreToDate(subjectMap.get(question.subjectId)) || { id: question.subjectId, name: 'Unknown', createdAt: new Date() },
-        topic: convertFirestoreToDate(topicMap.get(question.topicId)) || { id: question.topicId, name: 'Unknown', createdAt: new Date() },
-        createdBy: req.user
+      const questionsWithRelations = await Promise.all(questions.map(async question => {
+        // Get mock exams for this question
+        const questionMockExamIds = await storage.getQuestionMockExams(question.id, req.firebaseUid);
+        const questionMockExams = questionMockExamIds
+          .map(id => mockExamMap.get(id))
+          .filter(Boolean)
+          .map(exam => convertFirestoreToDate(exam));
+
+        return {
+          ...convertFirestoreToDate(question),
+          mockExams: questionMockExams,
+          subject: convertFirestoreToDate(subjectMap.get(question.subjectId)) || { id: question.subjectId, name: 'Unknown', createdAt: new Date() },
+          topic: convertFirestoreToDate(topicMap.get(question.topicId)) || { id: question.topicId, name: 'Unknown', createdAt: new Date() },
+          createdBy: req.user
+        };
       }));
 
       res.json(questionsWithRelations);
@@ -326,12 +335,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/questions", requireAuth, async (req, res) => {
     try {
+      const { mockExamIds, ...questionBody } = req.body;
       const questionData = insertQuestionSchema.parse({
-        ...req.body,
+        mockExamIds,
+        ...questionBody,
         createdBy: req.firebaseUid,
       });
 
-      const question = await storage.createQuestion(questionData);
+      const { mockExamIds: parsedMockExamIds, ...questionWithoutMockExams } = questionData;
+      const question = await storage.createQuestion(questionWithoutMockExams, parsedMockExamIds);
       res.json(convertFirestoreToDate(question));
     } catch (error) {
       console.error("Create question error:", error);
@@ -342,17 +354,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/questions/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { mockExamId, subjectId, topicId, type, theory, failureCount, isLearned } = req.body;
+      const { mockExamIds, subjectId, topicId, type, theory, failureCount, isLearned } = req.body;
 
       const question = await storage.updateQuestion(id, {
-        mockExamId,
         subjectId,
         topicId,
         type,
         theory,
         failureCount,
         isLearned,
-      }, req.firebaseUid);
+      }, req.firebaseUid, mockExamIds);
 
       if (!question) {
         return res.status(404).json({ message: "Question not found" });

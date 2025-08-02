@@ -155,31 +155,16 @@ export function AddQuestionModal({ isOpen, onClose }: AddQuestionModalProps) {
       return response.json();
     },
     onSuccess: async (serverQuestion, data) => {
-      // Get the subject and topic from current cache
-      const currentSubjects = queryClient.getQueryData<Subject[]>(["/api/subjects"]) || [];
-      const currentTopics = queryClient.getQueryData<Topic[]>(["/api/topics"]) || [];
-      
-      const subject = currentSubjects.find(s => s.id === serverQuestion.subjectId);
-      const topic = currentTopics.find(t => t.id === serverQuestion.topicId);
-      const mockExam = mockExams.find(m => m.id === serverQuestion.mockExamId);
-
-      const completeQuestion = {
-        ...serverQuestion,
-        subject: subject || { id: serverQuestion.subjectId, name: data.subjectName, createdAt: new Date() },
-        topic: topic || { id: serverQuestion.topicId, name: data.topicName, createdAt: new Date() },
-        mockExam: mockExam || { id: serverQuestion.mockExamId, title: 'Unknown', createdBy: serverQuestion.createdBy, createdAt: new Date() }
-      };
-
       // Invalidate all questions queries to ensure fresh data
       await queryClient.invalidateQueries({ 
         queryKey: ["/api/questions"],
         exact: false 
       });
 
-      // Update mock exam question count
+      // Update mock exam question counts for all associated mock exams
       queryClient.setQueryData(["/api/mock-exams"], (old: any[] = []) => {
         return old.map(exam => 
-          exam.id === serverQuestion.mockExamId 
+          data.mockExamIds.includes(exam.id)
             ? { ...exam, questionCount: (exam.questionCount || 0) + 1 }
             : exam
         );
