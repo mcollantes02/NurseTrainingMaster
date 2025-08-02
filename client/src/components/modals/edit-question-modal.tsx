@@ -152,25 +152,17 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
       return response.json();
     },
     onMutate: async (data) => {
-      // Cancel any outgoing refetches
+      // Cancel any outgoing refetches for all question queries
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
 
-      // Snapshot the previous value
-      const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
+      // Snapshot all question queries
+      const previousQueries = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
 
-      // Create optimistic subject and topic objects
-      const optimisticSubject = subjects.find(s => s.name === data.subjectName) || { 
-        id: 0, 
-        name: data.subjectName, 
-        createdAt: new Date().toISOString() 
-      };
-      const optimisticTopic = topics.find(t => t.name === data.topicName) || { 
-        id: 0, 
-        name: data.topicName, 
-        createdAt: new Date().toISOString() 
-      };
+      // Find the optimistic subject and topic data
+      const optimisticSubject = subjects?.find(s => s.id === data.subjectId) || question?.subject;
+      const optimisticTopic = topics?.find(t => t.id === data.topicId) || question?.topic;
 
-      // Optimistically update to the new value
+      // Optimistically update ALL question queries instantly
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old || !question) return old;
         return old.map((q: any) => 
@@ -189,7 +181,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
         );
       });
 
-      return { previousQuestions };
+      return { previousQueries };
     },
     onSuccess: (updatedQuestion, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
@@ -227,13 +219,14 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
         description: t("question.updatedDescription"),
       });
     },
-    onError: (error, variables, context) => {
-      // Rollback on error
-      if (context?.previousQuestions) {
-        context.previousQuestions.forEach(([queryKey, data]) => {
+    onError: (err, variables, context) => {
+      // Rollback all optimistic updates on error
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
           queryClient.setQueryData(queryKey, data);
         });
       }
+
       toast({
         title: t("error.title"),
         description: t("error.updateQuestion"),
