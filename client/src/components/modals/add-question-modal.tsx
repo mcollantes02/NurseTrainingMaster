@@ -233,24 +233,53 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
             <FormField
               control={form.control}
               name="mockExamIds"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("mockExam.selectMultiple")} *</FormLabel>
-                  <FormControl>
-                    <MultiSelect
-                      options={mockExams.map(exam => ({
-                        value: exam.id.toString(),
-                        label: exam.title
-                      }))}
-                      value={field.value.map(id => id.toString())}
-                      onChange={(values) => field.onChange(values.map(v => parseInt(v)))}
-                      placeholder="Seleccionar simulacros"
-                      searchPlaceholder="Buscar simulacros..."
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const [searchTerm, setSearchTerm] = useState("");
+                const filteredExams = mockExams.filter(exam =>
+                  exam.title.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+
+                return (
+                  <FormItem>
+                    <FormLabel>{t("mockExam.selectMultiple")} *</FormLabel>
+                    <FormControl>
+                      <div className="space-y-3">
+                        <Input
+                          placeholder="Buscar simulacros..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="w-full"
+                        />
+                        <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                          {filteredExams.length > 0 ? (
+                            filteredExams.map((exam) => (
+                              <div key={exam.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`exam-${exam.id}`}
+                                  checked={field.value.includes(exam.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      field.onChange([...field.value, exam.id]);
+                                    } else {
+                                      field.onChange(field.value.filter(id => id !== exam.id));
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={`exam-${exam.id}`} className="text-sm font-normal">
+                                  {exam.title}
+                                </Label>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-gray-500">No se encontraron simulacros</p>
+                          )}
+                        </div>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             {/* Subject */}
