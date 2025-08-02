@@ -34,7 +34,7 @@ export function useAuth() {
       if (firebaseUser) {
         try {
           // Get the ID token
-          const idToken = await firebaseUser.getIdToken();
+          const idToken = await firebaseUser.getIdToken(true);
           
           // Send the token to your backend to verify and get/create user
           const response = await apiRequest("POST", "/api/auth/firebase", {
@@ -46,19 +46,24 @@ export function useAuth() {
           
           const userData = await response.json();
           setUser(userData.user);
+          
+          // Invalidate all queries when user changes to refresh data
+          queryClient.invalidateQueries();
         } catch (error) {
           console.error('Error verifying Firebase token:', error);
           setUser(null);
+          queryClient.clear();
         }
       } else {
         setUser(null);
+        queryClient.clear();
       }
       
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [queryClient]);
 
   const login = async (credentials: { email: string; password: string }) => {
     setIsLoginPending(true);
