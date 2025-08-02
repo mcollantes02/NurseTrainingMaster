@@ -47,8 +47,10 @@ export function useAuth() {
           const userData = await response.json();
           setUser(userData.user);
           
-          // Invalidate all queries when user changes to refresh data
-          queryClient.invalidateQueries();
+          // Wait a bit to ensure token is ready, then invalidate queries
+          setTimeout(() => {
+            queryClient.invalidateQueries();
+          }, 100);
         } catch (error) {
           console.error('Error verifying Firebase token:', error);
           setUser(null);
