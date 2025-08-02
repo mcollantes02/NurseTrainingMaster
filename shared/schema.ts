@@ -17,7 +17,7 @@ export const insertTopicSchema = z.object({
 });
 
 export const insertQuestionSchema = z.object({
-  mockExamId: z.number(),
+  mockExamIds: z.array(z.number()).min(1, "At least one mock exam is required"),
   subjectId: z.number(),
   topicId: z.number(),
   type: z.string(),
@@ -64,7 +64,6 @@ export type Topic = {
 
 export type Question = {
   id: number;
-  mockExamId: number;
   subjectId: number;
   topicId: number;
   type: string;
@@ -75,11 +74,19 @@ export type Question = {
   createdAt: Date;
 };
 
+export type QuestionMockExam = {
+  id: number;
+  questionId: number;
+  mockExamId: number;
+  createdBy: string; // Firebase UID
+  createdAt: Date;
+};
+
 export type TrashedQuestion = {
   id: number;
   originalId: number;
-  mockExamId: number;
-  mockExamTitle: string;
+  mockExamIds: number[];
+  mockExamTitles: string[];
   subjectId: number;
   subjectName: string;
   topicId: number;
@@ -106,6 +113,10 @@ export type FirestoreTopic = Omit<Topic, 'createdAt'> & {
 };
 
 export type FirestoreQuestion = Omit<Question, 'createdAt'> & {
+  createdAt: FirestoreTimestamp;
+};
+
+export type FirestoreQuestionMockExam = Omit<QuestionMockExam, 'createdAt'> & {
   createdAt: FirestoreTimestamp;
 };
 

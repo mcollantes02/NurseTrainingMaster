@@ -7,6 +7,7 @@ export const COLLECTIONS = {
   SUBJECTS: 'subjects',
   TOPICS: 'topics',
   QUESTIONS: 'questions',
+  QUESTION_MOCK_EXAMS: 'question_mock_exams',
   TRASHED_QUESTIONS: 'trashed_questions',
 } as const;
 
@@ -37,7 +38,6 @@ export interface FirestoreTopic {
 // Question document structure
 export interface FirestoreQuestion {
   id: number;
-  mockExamId: number;
   subjectId: number;
   topicId: number;
   type: string;
@@ -48,12 +48,21 @@ export interface FirestoreQuestion {
   createdAt: Timestamp;
 }
 
+// QuestionMockExam relation document structure
+export interface FirestoreQuestionMockExam {
+  id: number;
+  questionId: number;
+  mockExamId: number;
+  createdBy: string; // Firebase UID
+  createdAt: Timestamp;
+}
+
 // TrashedQuestion document structure
 export interface FirestoreTrashedQuestion {
   id: number;
   originalId: number;
-  mockExamId: number;
-  mockExamTitle: string;
+  mockExamIds: number[];
+  mockExamTitles: string[];
   subjectId: number;
   subjectName: string;
   topicId: number;
