@@ -52,8 +52,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
   const { t } = useLanguage();
   const { toast } = useToast();
 
-  const [firstName, setFirstName] = useState(user?.firstName || "");
-  const [lastName, setLastName] = useState(user?.lastName || "");
+  const [displayName, setDisplayName] = useState(user?.displayName || "");
 
   const { data: stats } = useQuery({
     queryKey: ["/api/user/stats"],
@@ -71,12 +70,28 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
 
   const getUserInitials = () => {
     if (!user) return "U";
-    return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    
+    // For Firebase users, use displayName or email as fallback
+    if (user.displayName) {
+      const names = user.displayName.split(' ');
+      if (names.length >= 2) {
+        return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+      }
+      return names[0].charAt(0).toUpperCase();
+    }
+    
+    // Fallback to email first letter
+    if (user.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    
+    return "U";
   };
 
   const getRoleDisplay = () => {
     if (!user) return "";
-    return user.role === "admin" ? t("user.admin") : t("user.student");
+    // Firebase users don't have roles by default, can be "User" or determined by custom claims
+    return t("user.student"); // Default to student, can be enhanced with custom claims later
   };
 
   return (
@@ -114,7 +129,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
               </Avatar>
               <div className="flex-1">
                 <h3 className="text-lg font-medium text-gray-900">
-                  {user ? `${user.firstName} ${user.lastName}` : ""}
+                  {user ? (user.displayName || user.email || "") : ""}
                 </h3>
                 <p className="text-sm text-gray-600">{user?.email}</p>
                 <Badge className="mt-1 bg-blue-600">

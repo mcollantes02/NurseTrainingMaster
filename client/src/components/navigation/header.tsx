@@ -41,7 +41,22 @@ export function Header({ onUserProfileClick }: HeaderProps) {
 
   const getUserInitials = () => {
     if (!user) return "U";
-    return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+    
+    // For Firebase users, use displayName or email as fallback
+    if (user.displayName) {
+      const names = user.displayName.split(' ');
+      if (names.length >= 2) {
+        return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+      }
+      return names[0].charAt(0).toUpperCase();
+    }
+    
+    // Fallback to email first letter
+    if (user.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    
+    return "U";
   };
 
   return (
@@ -103,7 +118,7 @@ export function Header({ onUserProfileClick }: HeaderProps) {
                     </AvatarFallback>
                   </Avatar>
                   <span className="text-sm font-medium">
-                    {user ? `${user.firstName} ${user.lastName}` : "User"}
+                    {user ? (user.displayName || user.email || "User") : "User"}
                   </span>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
