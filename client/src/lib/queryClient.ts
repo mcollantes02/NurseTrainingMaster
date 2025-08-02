@@ -20,10 +20,13 @@ export async function apiRequest(
   // Add Firebase auth token if user is authenticated
   if (auth.currentUser) {
     try {
-      const token = await auth.currentUser.getIdToken();
+      // Force refresh the token to ensure it's valid
+      const token = await auth.currentUser.getIdToken(true);
       headers.Authorization = `Bearer ${token}`;
     } catch (error) {
       console.error('Error getting auth token:', error);
+      // If token fails, try to refresh the auth state
+      throw new Error('Authentication failed');
     }
   }
 
