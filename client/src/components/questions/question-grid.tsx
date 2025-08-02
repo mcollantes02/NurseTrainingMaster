@@ -118,6 +118,11 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
   if (groupByExam) {
     // Group questions by mock exam
     const questionsByExam = questions.reduce((acc, question) => {
+      // Safety check: ensure mockExam exists and has a title
+      if (!question.mockExam || !question.mockExam.title) {
+        return acc;
+      }
+      
       const examTitle = question.mockExam.title;
       if (!acc[examTitle]) {
         acc[examTitle] = [];
@@ -134,8 +139,11 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
       if (questionsA.length === 0 || questionsB.length === 0) return 0;
 
       // Use the first question's mockExam data to compare
-      const examA = questionsA[0].mockExam;
-      const examB = questionsB[0].mockExam;
+      const examA = questionsA[0]?.mockExam;
+      const examB = questionsB[0]?.mockExam;
+
+      // Safety check: ensure both exams exist
+      if (!examA || !examB) return 0;
 
       if (sortBy === "newest") {
         return new Date(examB.createdAt).getTime() - new Date(examA.createdAt).getTime();
