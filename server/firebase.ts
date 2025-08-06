@@ -1,7 +1,7 @@
-
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
+import './firestore-schema.js';
 
 // Initialize Firebase Admin SDK
 if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
