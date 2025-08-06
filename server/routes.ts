@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage.js";
-import { insertMockExamSchema, insertQuestionSchema } from "@shared/schema";
+import { insertMockExamSchema, insertQuestionSchema } from "../shared/schema.js";
 import { auth } from "./firebase.js";
 import { Timestamp } from "firebase-admin/firestore";
 import "./types.js";
