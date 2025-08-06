@@ -66,7 +66,8 @@ export function Header({ onUserProfileClick }: HeaderProps) {
           <div className="flex items-center">
             <Stethoscope className="text-blue-600 text-2xl mr-3" />
             <h1 className="text-xl font-semibold text-gray-900">
-              {t("app.title")}
+              <span className="hidden sm:inline">{t("app.title")}</span>
+              <span className="sm:hidden">EIR</span>
             </h1>
           </div>
 

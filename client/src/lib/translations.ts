@@ -216,10 +216,49 @@ export const translations = {
     "statistics.learningProgress": "Progreso de aprendizaje",
     "statistics.weeklyActivity": "Actividad semanal",
     "statistics.failureDistribution": "Distribución de fallos",
+    "statistics.bySubject": "Por asignatura",
+    "statistics.byTopic": "Por tema",
+    "statistics.byType": "Por tipo",
+    "statistics.learningStatus": "Estado de aprendizaje",
+    "statistics.progressOverTime": "Progreso en el tiempo",
+    "statistics.activityChart": "Gráfico de actividad",
+    "statistics.distributionChart": "Gráfico de distribución",
 
     // Navigation
     "navigation.dashboard": "Panel Principal",
     "navigation.back": "Volver",
+
+    // Success notifications
+    "success.questionAdded": "La pregunta ha sido agregada exitosamente.",
+    "success.questionUpdated": "La pregunta ha sido actualizada exitosamente.",
+    "success.questionDeleted": "La pregunta ha sido eliminada exitosamente.",
+
+    // Chart labels and statistics
+    "chart.learned": "Aprendidas",
+    "chart.doubt": "Dudas", 
+    "chart.error": "Errores",
+    "chart.unlearned": "Sin aprender",
+    "chart.questions": "Preguntas",
+    "chart.subjects": "Asignaturas",
+    "chart.topics": "Temas",
+    "chart.count": "Cantidad",
+    "chart.percentage": "Porcentaje",
+    "chart.total": "Total",
+    "chart.noData": "Sin datos",
+    "chart.activity": "Actividad",
+    "chart.progress": "Progreso",
+    "chart.week": "Semana",
+    "chart.day": "Día",
+    "chart.month": "Mes",
+    "chart.year": "Año",
+
+    // Additional missing translations
+    "manage": "Administrar",
+    "administration": "Administración",
+    "settings": "Configuración",
+    "options": "Opciones",
+    "view": "Ver",
+    "overview": "Resumen",
   },
   en: {
     // App
