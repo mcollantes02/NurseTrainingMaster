@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { QuestionWithRelations } from "@shared/schema";
 
@@ -21,6 +22,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showDuplicateConfirm, setShowDuplicateConfirm] = useState(false);
 
   const toggleLearnedMutation = useMutation({
     mutationFn: async (isLearned: boolean) => {
@@ -224,7 +226,12 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
 
   const handleDuplicate = (e: React.MouseEvent) => {
     e.stopPropagation();
+    setShowDuplicateConfirm(true);
+  };
+
+  const confirmDuplicate = () => {
     duplicateQuestionMutation.mutate(question.id);
+    setShowDuplicateConfirm(false);
   };
 
   const handleFailureCountChange = (change: 1 | -1) => {
@@ -429,5 +436,30 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
 
       </CardContent>
     </Card>
+
+    {/* Duplicate Confirmation Dialog */}
+    <AlertDialog open={showDuplicateConfirm} onOpenChange={setShowDuplicateConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Copy className="h-5 w-5 text-blue-500" />
+            {t("question.duplicateConfirm")}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("question.duplicateDescription")}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={confirmDuplicate}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            {t("question.duplicate")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

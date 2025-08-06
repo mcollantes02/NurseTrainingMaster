@@ -103,6 +103,9 @@ export const translations = {
     "questions.error": "Preguntas con error",
     "question.duplicated": "Pregunta duplicada",
     "question.duplicatedDescription": "La pregunta se ha duplicado correctamente",
+    "question.duplicateConfirm": "¿Duplicar pregunta?",
+    "question.duplicateDescription": "Se creará una copia de esta pregunta con el texto '- copiada' al final",
+    "question.duplicate": "Duplicar",
 
     // Success messages
     "success.title": "Éxito",
@@ -376,7 +379,10 @@ export const translations = {
     "questions.doubt": "Doubt questions",
     "questions.error": "Error questions",
     "question.duplicated": "Question duplicated",
-    "question.duplicatedDescription": "The question has been successfully duplicated",
+    "question.duplicatedDescription": "The question has been duplicated successfully",
+    "question.duplicateConfirm": "Duplicate question?",
+    "question.duplicateDescription": "A copy of this question will be created with '- copiada' at the end of the text",
+    "question.duplicate": "Duplicate",
 
     // Subjects
     "subject.title": "Subject",
