@@ -23,11 +23,21 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/" component={isAuthenticated ? Dashboard : Login} />
-      <Route path="/dashboard" component={isAuthenticated ? Dashboard : Login} />
-      <Route path="/login" component={isAuthenticated ? Dashboard : Login} />
-      <Route path="/register" component={isAuthenticated ? Dashboard : Register} />
-      <Route path="/statistics" component={isAuthenticated ? Statistics : Login} /> {/* Added statistics route */}
+      <Route path="/login">
+        {isAuthenticated ? <Dashboard /> : <Login />}
+      </Route>
+      <Route path="/register">
+        {isAuthenticated ? <Dashboard /> : <Register />}
+      </Route>
+      <Route path="/dashboard">
+        {isAuthenticated ? <Dashboard /> : <Login />}
+      </Route>
+      <Route path="/statistics">
+        {isAuthenticated ? <Statistics /> : <Login />}
+      </Route>
+      <Route path="/">
+        {isAuthenticated ? <Dashboard /> : <Login />}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
