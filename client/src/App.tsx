@@ -21,23 +21,28 @@ function Router() {
     );
   }
 
+  // If user is authenticated and trying to access auth pages, redirect to dashboard
+  if (isAuthenticated) {
+    return (
+      <Switch>
+        <Route path="/login" component={Dashboard} />
+        <Route path="/register" component={Dashboard} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/statistics" component={Statistics} />
+        <Route path="/" component={Dashboard} />
+        <Route component={NotFound} />
+      </Switch>
+    );
+  }
+
+  // If user is not authenticated, show auth pages or redirect to login
   return (
     <Switch>
-      <Route path="/login">
-        {isAuthenticated ? <Dashboard /> : <Login />}
-      </Route>
-      <Route path="/register">
-        {isAuthenticated ? <Dashboard /> : <Register />}
-      </Route>
-      <Route path="/dashboard">
-        {isAuthenticated ? <Dashboard /> : <Login />}
-      </Route>
-      <Route path="/statistics">
-        {isAuthenticated ? <Statistics /> : <Login />}
-      </Route>
-      <Route path="/">
-        {isAuthenticated ? <Dashboard /> : <Login />}
-      </Route>
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
+      <Route path="/dashboard" component={Login} />
+      <Route path="/statistics" component={Login} />
+      <Route path="/" component={Login} />
       <Route component={NotFound} />
     </Switch>
   );
