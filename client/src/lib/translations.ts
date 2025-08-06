@@ -100,10 +100,6 @@ export const translations = {
     "question.deleteDescription": "Esta acción no se puede deshacer.",
     "question.deleted": "Pregunta eliminada",
     "question.deletedDescription": "La pregunta ha sido eliminada exitosamente.",
-    
-    "questions.learned": "Learned questions",
-    "questions.doubt": "Doubt questions", 
-    "questions.error": "Error questions",
 
     // Success messages
     "success.title": "Éxito",
