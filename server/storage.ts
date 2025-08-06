@@ -23,6 +23,8 @@ interface QuestionFilters {
 }
 
 export class Storage {
+  public db = firestore;
+
   // Mock Exam methods
   async getMockExams(firebaseUid: string): Promise<FirestoreMockExam[]> {
     const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
