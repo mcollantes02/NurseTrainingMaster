@@ -1,3 +1,4 @@
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -36,9 +37,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Export app for Vercel
-export default app;
-
 (async () => {
   // Only run server in development
   if (process.env.NODE_ENV === "development") {
@@ -52,7 +50,18 @@ export default app;
       throw err;
     });
 
-    await setupVite(app, server);
+    const { createServer } = await import("http");
+    const httpServer = createServer(app);
+    
+    await setupVite(app, httpServer);
+
+    // ALWAYS serve the app on port 5000
+    // this serves both the API and the client.
+    // It is the only port that is not firewalled.
+    const port = 5000;
+    httpServer.listen(port, "0.0.0.0", () => {
+      log(`serving on port ${port}`);
+    });
   } else {
     // For production (Vercel), just register routes
     await registerRoutes(app);
@@ -64,17 +73,7 @@ export default app;
       res.status(status).json({ message });
     });
   }
-  }
-
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
 })();
+
+// Export app for Vercel
+export default app;
