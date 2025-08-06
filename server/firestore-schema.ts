@@ -46,6 +46,8 @@ export interface FirestoreQuestion {
   failureCount: number;
   createdBy: string; // Firebase UID
   createdAt: Timestamp;
+  mockExamId?: number; // This field seems to be used inconsistently, assuming it might be optional or handled differently
+  mockExamIds?: number[]; // This seems to be the intended field for multiple mock exams
 }
 
 // QuestionMockExam relation document structure
@@ -78,7 +80,7 @@ export interface FirestoreTrashedQuestion {
 
 // Firestore query utilities (equivalent to the current storage.ts functionality)
 export class FirestoreStorage {
-  
+
   // Get subjects by user
   static async getSubjects(firebaseUid: string) {
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
@@ -110,8 +112,8 @@ export class FirestoreStorage {
 
   // Get questions by user with pagination
   static async getQuestionsByUser(
-    firebaseUid: string, 
-    limit: number = 20, 
+    firebaseUid: string,
+    limit: number = 20,
     offset: number = 0,
     filters?: {
       mockExamIds?: number[];
@@ -126,7 +128,7 @@ export class FirestoreStorage {
 
     // Apply filters
     if (filters?.mockExamIds?.length) {
-      query = query.where('mockExamId', 'in', filters.mockExamIds);
+      query = query.where('mockExamIds', 'in', filters.mockExamIds); // Changed from 'mockExamId' to 'mockExamIds'
     }
     if (filters?.subjectIds?.length) {
       query = query.where('subjectId', 'in', filters.subjectIds);
@@ -146,7 +148,7 @@ export class FirestoreStorage {
       .offset(offset)
       .limit(limit)
       .get();
-    
+
     return snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
   }
 
@@ -158,7 +160,7 @@ export class FirestoreStorage {
       id: parseInt(docRef.id.slice(0, 9), 36), // Generate numeric ID from Firestore ID
       createdAt: Timestamp.now(),
     };
-    
+
     await docRef.set(questionData);
     return questionData;
   }
@@ -169,14 +171,14 @@ export class FirestoreStorage {
       .where('id', '==', questionId)
       .limit(1)
       .get();
-    
+
     if (querySnapshot.empty) {
       return null;
     }
-    
+
     const doc = querySnapshot.docs[0];
     await doc.ref.update(updates);
-    
+
     const updatedDoc = await doc.ref.get();
     return updatedDoc.data() as FirestoreQuestion;
   }
@@ -188,28 +190,33 @@ export class FirestoreStorage {
       .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
-    
+
     if (querySnapshot.empty) {
       return false;
     }
-    
+
     const doc = querySnapshot.docs[0];
     const questionData = doc.data() as FirestoreQuestion;
-    
+
     // Get related data for trashed question
-    const [mockExamDoc, subjectDoc, topicDoc] = await Promise.all([
-      firestore.collection(COLLECTIONS.MOCK_EXAMS).doc(questionData.mockExamId.toString()).get(),
+    // Assuming mockExamIds is the correct field to fetch related mock exam data
+    const mockExamPromises = (questionData.mockExamIds || []).map(mockExamId =>
+      firestore.collection(COLLECTIONS.MOCK_EXAMS).doc(mockExamId.toString()).get()
+    );
+
+    const [subjectDoc, topicDoc, ...mockExamDocs] = await Promise.all([
       firestore.collection(COLLECTIONS.SUBJECTS).doc(questionData.subjectId.toString()).get(),
       firestore.collection(COLLECTIONS.TOPICS).doc(questionData.topicId.toString()).get(),
+      ...mockExamPromises,
     ]);
-    
+
     // Create trashed question
     const trashedQuestionRef = firestore.collection(COLLECTIONS.TRASHED_QUESTIONS).doc();
     const trashedQuestion: FirestoreTrashedQuestion = {
       id: parseInt(trashedQuestionRef.id.slice(0, 9), 36),
       originalId: questionData.id,
-      mockExamId: questionData.mockExamId,
-      mockExamTitle: mockExamDoc.data()?.title || '',
+      mockExamIds: questionData.mockExamIds || [], // Use mockExamIds here
+      mockExamTitles: mockExamDocs.map(doc => doc.data()?.title || ''), // Map titles from fetched mock exams
       subjectId: questionData.subjectId,
       subjectName: subjectDoc.data()?.name || '',
       topicId: questionData.topicId,
@@ -222,12 +229,12 @@ export class FirestoreStorage {
       createdAt: questionData.createdAt,
       deletedAt: Timestamp.now(),
     };
-    
+
     // Batch operation: create trashed question and delete original
     const batch = firestore.batch();
     batch.set(trashedQuestionRef, trashedQuestion);
     batch.delete(doc.ref);
-    
+
     await batch.commit();
     return true;
   }

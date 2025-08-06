@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertMockExamSchema, insertQuestionSchema } from "@shared/schema";
 import { auth } from "./firebase";
+import { Timestamp } from "firebase-admin/firestore";
 
 // Helper function to convert Firestore timestamp to Date
 function convertFirestoreToDate(firestoreData: any): any {
@@ -588,11 +589,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const averageFailureRate = totalQuestions > 0 ? (totalFailures / totalQuestions) : 0;
 
       // Questions by type
-      const typeGroups = questions.reduce((acc, q) => {
+      const typeGroups: Record<string, number> = {};
+      questions.forEach(q => {
         const type = q.type || 'unknown';
-        acc[type] = (acc[type] || 0) + 1;
-        return acc;
-      }, {});
+        typeGroups[type] = (typeGroups[type] || 0) + 1;
+      });
       const questionsByType = Object.entries(typeGroups).map(([type, count]) => ({ type, count }));
 
       // Questions by subject
@@ -620,11 +621,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).filter(t => t.total > 0);
 
       // Theory distribution
-      const theoryGroups = questions.reduce((acc, q) => {
+      const theoryGroups: Record<string, number> = {};
+      questions.forEach(q => {
         const theory = q.theory || 'Unknown';
-        acc[theory] = (acc[theory] || 0) + 1;
-        return acc;
-      }, {});
+        theoryGroups[theory] = (theoryGroups[theory] || 0) + 1;
+      });
       const theoryDistribution = Object.entries(theoryGroups).map(([theory, count]) => ({ theory, count }));
 
       // Learning progress (mock data for now - in real app you'd track this over time)
@@ -648,27 +649,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const failureDistribution = Object.entries(failureRanges).map(([range, count]) => ({ range, count }));
 
       // Weekly activity (real data based on question creation dates)
-      const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-      const weeklyActivityMap = { 'Lun': 0, 'Mar': 0, 'Mié': 0, 'Jue': 0, 'Vie': 0, 'Sáb': 0, 'Dom': 0 };
-      
+      const weekDays: (keyof typeof weeklyActivityMap)[] = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+      const weeklyActivityMap: Record<string, number> = { 'Lun': 0, 'Mar': 0, 'Mié': 0, 'Jue': 0, 'Vie': 0, 'Sáb': 0, 'Dom': 0 };
+
       questions.forEach(question => {
         if (question.createdAt) {
-          const date = question.createdAt instanceof Date ? question.createdAt : 
-                      (question.createdAt.seconds ? new Date(question.createdAt.seconds * 1000) : new Date(question.createdAt));
-          const dayOfWeek = weekDays[date.getDay()];
-          weeklyActivityMap[dayOfWeek]++;
+          const createdAt = question.createdAt as Timestamp; // Assert type to Timestamp
+          const date = createdAt.toDate(); // Use toDate() to get a JavaScript Date object
+          const dayName = date.toLocaleDateString('es-ES', { weekday: 'short' }) as keyof typeof weeklyActivityMap;
+          weeklyActivityMap[dayName] = (weeklyActivityMap[dayName] || 0) + 1;
         }
       });
 
-      const weeklyActivity = [
-        { day: 'Lun', questions: weeklyActivityMap['Lun'] },
-        { day: 'Mar', questions: weeklyActivityMap['Mar'] },
-        { day: 'Mié', questions: weeklyActivityMap['Mié'] },
-        { day: 'Jue', questions: weeklyActivityMap['Jue'] },
-        { day: 'Vie', questions: weeklyActivityMap['Vie'] },
-        { day: 'Sáb', questions: weeklyActivityMap['Sáb'] },
-        { day: 'Dom', questions: weeklyActivityMap['Dom'] },
-      ];
+      const weeklyActivity = weekDays.map(day => ({
+        day: day,
+        questions: weeklyActivityMap[day] || 0
+      }));
 
       res.json({
         totalQuestions,
