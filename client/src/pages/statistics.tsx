@@ -78,6 +78,7 @@ export default function Statistics() {
 
   const { data: stats, isLoading } = useQuery<DetailedStats>({
     queryKey: ["/api/user/detailed-stats"],
+    queryFn: () => apiRequest("GET", "/api/user/detailed-stats").then(res => res.json()),
   });
 
   const chartConfig = {
