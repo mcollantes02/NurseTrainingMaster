@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   loginWithEmail, 
   registerWithEmail, 
-  loginWithGoogle, 
+  loginWithGoogle as googleAuth, 
   logout as firebaseLogout, 
   onAuthChange 
 } from "@/lib/firebase";
@@ -30,12 +29,12 @@ export function useAuth() {
   useEffect(() => {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
       setIsLoading(true);
-      
+
       if (firebaseUser) {
         try {
           // Get the ID token
           const idToken = await firebaseUser.getIdToken(true);
-          
+
           // Send the token to your backend to verify and get/create user
           const response = await apiRequest("POST", "/api/auth/firebase", {
             idToken,
@@ -43,10 +42,10 @@ export function useAuth() {
             displayName: firebaseUser.displayName,
             uid: firebaseUser.uid
           });
-          
+
           const userData = await response.json();
           setUser(userData.user);
-          
+
           // Wait a bit to ensure token is ready, then invalidate queries
           setTimeout(() => {
             queryClient.invalidateQueries();
@@ -60,7 +59,7 @@ export function useAuth() {
         setUser(null);
         queryClient.clear();
       }
-      
+
       setIsLoading(false);
     });
 
@@ -82,9 +81,12 @@ export function useAuth() {
   const loginWithGoogleProvider = async () => {
     setIsLoginPending(true);
     try {
-      await loginWithGoogle();
+      console.log("Starting Google login...");
+      const result = await googleAuth();
+      console.log("Google login successful:", result.user.email);
       // User state will be updated by onAuthChange
     } catch (error: any) {
+      console.error("Google login error:", error);
       throw new Error(error.message || 'Google login failed');
     } finally {
       setIsLoginPending(false);
@@ -101,7 +103,7 @@ export function useAuth() {
     setIsRegisterPending(true);
     try {
       const userCredential = await registerWithEmail(userData.email, userData.password);
-      
+
       // Update the user profile with additional information
       await userCredential.user.updateProfile({
         displayName: `${userData.firstName} ${userData.lastName}`
