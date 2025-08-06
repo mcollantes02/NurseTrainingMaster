@@ -10,6 +10,12 @@ import {
   type FirestoreTrashedQuestion
 } from './firestore-schema.js';
 
+// Define QuestionWithRelations type for clarity
+interface QuestionWithRelations {
+  question: FirestoreQuestion;
+  mockExamIds: number[];
+}
+
 interface QuestionFilters {
   firebaseUid: string;
   mockExamIds?: number[];
@@ -444,8 +450,92 @@ export class Storage {
     return updatedDoc.data() as FirestoreQuestion;
   }
 
-  async updateQuestionLearned(id: number, isLearned: boolean, firebaseUid: string): Promise<FirestoreQuestion | null> {
-    return this.updateQuestion(id, { isLearned }, firebaseUid);
+  async updateQuestionLearned(questionId: number, isLearned: boolean, firebaseUid: string): Promise<QuestionWithRelations | null> {
+    const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+      .where('id', '==', questionId)
+      .where('createdBy', '==', firebaseUid)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const questionDoc = snapshot.docs[0];
+    await questionDoc.ref.update({ isLearned });
+
+    // Return the updated question with relations
+    return this.getQuestionWithRelations(questionId, firebaseUid);
+  }
+
+  async duplicateQuestion(questionId: number, firebaseUid: string): Promise<QuestionWithRelations | null> {
+    // Get the original question
+    const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+      .where('id', '==', questionId)
+      .where('createdBy', '==', firebaseUid)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const originalQuestion = snapshot.docs[0].data() as FirestoreQuestion;
+
+    // Get the mock exam relations for this question
+    const relationsSnapshot = await firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS)
+      .where('questionId', '==', questionId)
+      .where('createdBy', '==', firebaseUid)
+      .get();
+
+    const mockExamIds = relationsSnapshot.docs.map(doc => 
+      (doc.data() as FirestoreQuestionMockExam).mockExamId
+    );
+
+    // Generate new ID for the duplicated question
+    const newQuestionRef = firestore.collection(COLLECTIONS.QUESTIONS).doc();
+    const newQuestionId = Math.abs(newQuestionRef.id.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0)) % 1000000;
+
+    // Create the duplicated question with "- copiada" suffix
+    const duplicatedQuestion: FirestoreQuestion = {
+      ...originalQuestion,
+      id: newQuestionId,
+      theory: originalQuestion.theory + " - copiada",
+      isLearned: false,
+      failureCount: 0,
+      createdAt: Timestamp.now(),
+    };
+
+    // Use batch to create question and relations atomically
+    const batch = firestore.batch();
+    batch.set(newQuestionRef, duplicatedQuestion);
+
+    // Create new question-mock exam relations
+    for (const mockExamId of mockExamIds) {
+      const relationRef = firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS).doc();
+      const relationId = Math.abs(relationRef.id.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+      }, 0)) % 1000000;
+
+      const relation: FirestoreQuestionMockExam = {
+        id: relationId,
+        questionId: newQuestionId,
+        mockExamId,
+        createdBy: firebaseUid,
+        createdAt: Timestamp.now(),
+      };
+
+      batch.set(relationRef, relation);
+    }
+
+    await batch.commit();
+
+    // Return the duplicated question with relations
+    return this.getQuestionWithRelations(newQuestionId, firebaseUid);
   }
 
   async updateQuestionFailureCount(id: number, failureCount: number, firebaseUid: string): Promise<FirestoreQuestion | null> {
@@ -559,6 +649,24 @@ export class Storage {
       .get();
 
     return snapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).questionId);
+  }
+
+  // Helper to get question with its mock exam relations
+  async getQuestionWithRelations(questionId: number, firebaseUid: string): Promise<QuestionWithRelations | null> {
+    const questionSnapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+      .where('id', '==', questionId)
+      .where('createdBy', '==', firebaseUid)
+      .limit(1)
+      .get();
+
+    if (questionSnapshot.empty) {
+      return null;
+    }
+
+    const question = questionSnapshot.docs[0].data() as FirestoreQuestion;
+    const mockExamIds = await this.getQuestionMockExams(questionId, firebaseUid);
+
+    return { question, mockExamIds };
   }
 
   // User stats

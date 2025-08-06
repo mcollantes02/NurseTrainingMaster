@@ -401,19 +401,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/questions/:id/learned", requireAuth, async (req, res) => {
     try {
-      const firebaseUid = req.firebaseUid!;
-      const id = parseInt(req.params.id);
+      const questionId = parseInt(req.params.id);
       const { isLearned } = req.body;
+      const firebaseUid = req.user!.uid;
 
-      const question = await storage.updateQuestionLearned(id, isLearned, firebaseUid);
-      if (!question) {
-        return res.status(404).json({ message: "Question not found" });
+      const updatedQuestion = await storage.updateQuestionLearned(questionId, isLearned, firebaseUid);
+      if (!updatedQuestion) {
+        return res.status(404).json({ error: "Question not found" });
       }
 
-      res.json(question);
+      res.json(updatedQuestion);
     } catch (error) {
-      console.error("Update question learned error:", error);
-      res.status(500).json({ message: "Failed to update question" });
+      console.error("Error updating question learned status:", error);
+      res.status(500).json({ error: "Failed to update question" });
+    }
+  });
+
+  // Duplicate question
+  app.post("/api/questions/:id/duplicate", requireAuth, async (req, res) => {
+    try {
+      const questionId = parseInt(req.params.id);
+      const firebaseUid = req.user!.uid;
+
+      const duplicatedQuestion = await storage.duplicateQuestion(questionId, firebaseUid);
+      if (!duplicatedQuestion) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+
+      res.json(duplicatedQuestion);
+    } catch (error) {
+      console.error("Error duplicating question:", error);
+      res.status(500).json({ error: "Failed to duplicate question" });
     }
   });
 

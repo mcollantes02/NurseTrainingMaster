@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle, Circle, Calendar, Edit, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { CheckCircle, Circle, Calendar, Edit, ChevronDown, ChevronUp, Trash2, Copy } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -181,6 +181,28 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     },
   });
 
+  const duplicateQuestionMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("POST", `/api/questions/${id}/duplicate`);
+      return response.json();
+    },
+    onSuccess: (duplicatedQuestion) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+      toast({
+        title: t("question.duplicated"),
+        description: t("question.duplicatedDescription"),
+      });
+    },
+    onError: () => {
+      toast({
+        title: t("error.title"),
+        description: t("error.duplicateQuestion"),
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleToggleLearned = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleLearnedMutation.mutate(!question.isLearned);
@@ -198,6 +220,11 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
     if (window.confirm(t("question.deleteConfirm"))) {
       deleteQuestionMutation.mutate(question.id);
     }
+  };
+
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    duplicateQuestionMutation.mutate(question.id);
   };
 
   const handleFailureCountChange = (change: 1 | -1) => {
@@ -338,6 +365,16 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
               onClick={handleEdit}
             >
               <Edit className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1 h-auto text-gray-400 hover:text-green-600"
+              onClick={handleDuplicate}
+              disabled={duplicateQuestionMutation.isPending}
+            >
+              <Copy className="h-4 w-4" />
             </Button>
 
             <Button
