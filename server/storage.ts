@@ -1,4 +1,4 @@
-import { firestore } from './firebase';
+import { firestore } from './firebase.js';
 import { Timestamp } from 'firebase-admin/firestore';
 import { 
   COLLECTIONS,
@@ -8,7 +8,7 @@ import {
   type FirestoreQuestion,
   type FirestoreQuestionMockExam,
   type FirestoreTrashedQuestion
-} from './firestore-schema';
+} from './firestore-schema.js';
 
 interface QuestionFilters {
   firebaseUid: string;
