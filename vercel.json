@@ -5,6 +5,13 @@
     {
       "src": "api/[...route].ts",
       "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
     }
   ],
   "routes": [
@@ -13,16 +20,16 @@
       "dest": "/api/[...route].ts"
     },
     {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
-      "dest": "/dist/public/$1"
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|map))",
+      "dest": "/dist/$1"
     },
     {
       "src": "/",
-      "dest": "/dist/public/index.html"
+      "dest": "/dist/index.html"
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/public/index.html"
+      "dest": "/dist/index.html"
     }
   ]
 }
