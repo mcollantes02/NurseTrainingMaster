@@ -1,0 +1,160 @@
+Skip to content
+rruisan's projects
+rruisan's projects
+
+Hobby
+
+nurse-training-master
+
+FeMDfXaQS
+
+
+Find…
+F
+
+Deployment Details
+Created
+github/mcollantes02
+mcollantes02
+6m ago
+Status
+Ready
+Latest
+Time to Ready
+45s
+5m ago
+Environment
+Preview
+Domains
+nurse-training-master-git-verceldeploy-rruisans-projects.vercel.app
+nurse-training-master-ownb8i5bz-rruisans-projects.vercel.app
+Source
+vercel_deploy
+448df4d
+Assistant checkpoint: Fix TypeScript typing errors
+
+Deployment Configuration
+Fluid Compute
+Deployment Protection
+Skew Protection
+Build Logs
+1m 34s
+
+All Logs (147)
+
+Errors (29)
+
+Warnings (3)
+Find in logs
+CtrlF
+server/routes.ts(206,55): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(221,46): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(234,59): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(239,55): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(252,61): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(268,53): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(297,52): error TS2345: Argument of type '{ firebaseUid: string | undefined; mockExamIds: number[] | undefined; subjectIds: number[] | undefined; topicIds: number[] | undefined; keywords: string | undefined; learningStatus: boolean[] | undefined; failureCountExact: number | undefined; failureCountMin: number | undefined; failureCountMax: number | undefined; }' is not assignable to parameter of type 'QuestionFilters'.
+  Types of property 'firebaseUid' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(301,30): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(302,29): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(303,27): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(314,85): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(373,10): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(391,75): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(412,56): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+server/routes.ts(425,86): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+Deployment Summary
+No framework detected
+
+
+Static Assets
+
+
+All (3)
+
+
+HTML (1)
+
+
+JS (1)
+
+
+CSS (1)
+
+
+/public/assets/index-B8QY4-56.js
+1.18 MB
+
+
+/public/assets/index-BwALbWa8.css
+66 kB
+
+
+/public/index.html
+625 B 
+
+
+Functions
+
+
+All (1)
+
+
+/api/[...route].ts
+Node.js 22.x
+2.7 MB
+iad1
+
+Assigning Custom Domains
+Skipped
+No custom domains have been assigned. This will happen if there are none defined in Project Settings or a Vercel CLI deploy was made with vercel deploy --skip-domain. Learn More
+Runtime Logs
+
+View and debug runtime logs & errors
+
+Observability
+
+Monitor app health & performance
+
+Web Analytics
+
+Not Enabled
+Analyze visitors & traffic in real-time
+
+Speed Insights
+
+Not Enabled
+Performance metrics from real users
+
+Home
+Docs
+Guides
+Help
+Contact
+All systems normal
+
+Select a display theme:
+
+system
+
+light
+
+dark
+© 2025, Vercel Inc.
+
+nurse-training-master – Deployment Overview
