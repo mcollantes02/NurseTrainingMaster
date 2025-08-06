@@ -61,27 +61,28 @@ export function Header({ onUserProfileClick }: HeaderProps) {
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 gap-2">
-          <div className="flex items-center min-w-0 flex-shrink-0">
-            <Stethoscope className="text-blue-600 text-2xl mr-2 sm:mr-3 flex-shrink-0" />
-            <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate">
-              <span className="hidden lg:inline">{t("app.title")}</span>
-              <span className="hidden sm:inline lg:hidden">EIR Mock Exam</span>
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+        <div className="flex justify-between items-center h-16 gap-1 sm:gap-2">
+          <div className="flex items-center min-w-0 flex-shrink">
+            <Stethoscope className="text-blue-600 text-xl sm:text-2xl mr-1 sm:mr-2 flex-shrink-0" />
+            <h1 className="text-sm sm:text-base lg:text-xl font-semibold text-gray-900 truncate">
+              <span className="hidden xl:inline">{t("app.title")}</span>
+              <span className="hidden md:inline xl:hidden">EIR Mock Exam Manager</span>
+              <span className="hidden sm:inline md:hidden">EIR Mock Exam</span>
               <span className="sm:hidden">EIR</span>
             </h1>
           </div>
 
-          <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4 flex-shrink-0">
+          <div className="flex items-center space-x-0.5 sm:space-x-1 lg:space-x-2 flex-shrink-0 overflow-hidden">
             {/* Dashboard button */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => window.location.href = '/'}
-              className="text-gray-600 hover:text-gray-900 p-2 sm:px-4"
+              className="text-gray-600 hover:text-gray-900 p-1.5 sm:p-2 lg:px-3"
             >
               <Stethoscope className="h-4 w-4" />
-              <span className="ml-1 sm:ml-2 hidden md:inline">Dashboard</span>
+              <span className="ml-1 hidden lg:inline">Dashboard</span>
             </Button>
 
             {/* Statistics button */}
@@ -89,10 +90,10 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               variant="ghost"
               size="sm"
               onClick={() => window.location.href = '/statistics'}
-              className="text-gray-600 hover:text-gray-900 p-2 sm:px-4"
+              className="text-gray-600 hover:text-gray-900 p-1.5 sm:p-2 lg:px-3"
             >
               <BarChart3 className="h-4 w-4" />
-              <span className="ml-1 sm:ml-2 hidden md:inline">{t("statistics.title")}</span>
+              <span className="ml-1 hidden lg:inline">{t("statistics.title")}</span>
             </Button>
 
             {/* Trash button */}
@@ -100,10 +101,10 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               variant="ghost"
               size="sm"
               onClick={() => setIsTrashModalOpen(true)}
-              className="text-gray-600 hover:text-gray-900 p-2 sm:px-4"
+              className="text-gray-600 hover:text-gray-900 p-1.5 sm:p-2 lg:px-3"
             >
               <Trash2 className="h-4 w-4" />
-              <span className="ml-1 sm:ml-2 hidden md:inline">{t("trash.title")}</span>
+              <span className="ml-1 hidden lg:inline">{t("trash.title")}</span>
             </Button>
 
             {/* Manage button */}
@@ -111,15 +112,15 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               variant="ghost"
               size="sm"
               onClick={() => setShowAdmin(true)}
-              className="text-gray-600 hover:text-gray-900 p-2 sm:px-4"
+              className="text-gray-600 hover:text-gray-900 p-1.5 sm:p-2 lg:px-3"
             >
               <Settings className="h-4 w-4" />
-              <span className="ml-1 sm:ml-2 hidden md:inline">{t("manage")}</span>
+              <span className="ml-1 hidden lg:inline">{t("manage")}</span>
             </Button>
 
             {/* Language Switcher */}
             <Select value={language} onValueChange={changeLanguage}>
-              <SelectTrigger className="w-auto border-gray-300">
+              <SelectTrigger className="w-auto min-w-0 border-gray-300 px-2 sm:px-3">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -133,18 +134,18 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="flex items-center space-x-2 text-gray-700 hover:text-gray-900"
+                  className="flex items-center space-x-1 sm:space-x-2 text-gray-700 hover:text-gray-900 min-w-0 px-1 sm:px-2"
                 >
-                  <Avatar className="w-8 h-8">
+                  <Avatar className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0">
                     <AvatarImage src="" />
                     <AvatarFallback className="text-xs">
                       {getUserInitials()}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="text-sm font-medium">
+                  <span className="text-xs sm:text-sm font-medium truncate max-w-20 sm:max-w-none hidden sm:inline">
                     {user ? (user.displayName || user.email || "User") : "User"}
                   </span>
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
