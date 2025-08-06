@@ -62,25 +62,26 @@ export function Header({ onUserProfileClick }: HeaderProps) {
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <Stethoscope className="text-blue-600 text-2xl mr-3" />
-            <h1 className="text-xl font-semibold text-gray-900">
-              <span className="hidden sm:inline">{t("app.title")}</span>
+        <div className="flex justify-between items-center h-16 gap-2">
+          <div className="flex items-center min-w-0 flex-shrink-0">
+            <Stethoscope className="text-blue-600 text-2xl mr-2 sm:mr-3 flex-shrink-0" />
+            <h1 className="text-base sm:text-xl font-semibold text-gray-900 truncate">
+              <span className="hidden lg:inline">{t("app.title")}</span>
+              <span className="hidden sm:inline lg:hidden">EIR Mock Exam</span>
               <span className="sm:hidden">EIR</span>
             </h1>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4 flex-shrink-0">
             {/* Dashboard button */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => window.location.href = '/'}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 p-2 sm:px-4"
             >
               <Stethoscope className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">Dashboard</span>
+              <span className="ml-1 sm:ml-2 hidden md:inline">Dashboard</span>
             </Button>
 
             {/* Statistics button */}
@@ -88,10 +89,10 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               variant="ghost"
               size="sm"
               onClick={() => window.location.href = '/statistics'}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 p-2 sm:px-4"
             >
               <BarChart3 className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">{t("statistics.title")}</span>
+              <span className="ml-1 sm:ml-2 hidden md:inline">{t("statistics.title")}</span>
             </Button>
 
             {/* Trash button */}
@@ -99,10 +100,10 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               variant="ghost"
               size="sm"
               onClick={() => setIsTrashModalOpen(true)}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 p-2 sm:px-4"
             >
               <Trash2 className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">{t("trash.title")}</span>
+              <span className="ml-1 sm:ml-2 hidden md:inline">{t("trash.title")}</span>
             </Button>
 
             {/* Manage button */}
@@ -110,10 +111,10 @@ export function Header({ onUserProfileClick }: HeaderProps) {
               variant="ghost"
               size="sm"
               onClick={() => setShowAdmin(true)}
-              className="text-gray-600 hover:text-gray-900"
+              className="text-gray-600 hover:text-gray-900 p-2 sm:px-4"
             >
               <Settings className="h-4 w-4" />
-              <span className="ml-2 hidden sm:inline">Administrar</span>
+              <span className="ml-1 sm:ml-2 hidden md:inline">{t("manage")}</span>
             </Button>
 
             {/* Language Switcher */}

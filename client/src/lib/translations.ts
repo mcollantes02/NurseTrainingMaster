@@ -229,9 +229,8 @@ export const translations = {
     "navigation.back": "Volver",
 
     // Success notifications
-    "success.questionAdded": "La pregunta ha sido agregada exitosamente.",
-    "success.questionUpdated": "La pregunta ha sido actualizada exitosamente.",
-    "success.questionDeleted": "La pregunta ha sido eliminada exitosamente.",
+    "success.questionCreated": "Pregunta Creada",
+    "success.questionCreatedDescription": "La pregunta ha sido agregada exitosamente.",
 
     // Chart labels and statistics
     "chart.learned": "Aprendidas",
