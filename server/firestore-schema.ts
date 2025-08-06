@@ -1,4 +1,4 @@
-import { firestore } from './firebase';
+import { firestore } from './firebase.js';
 import { Timestamp } from 'firebase-admin/firestore';
 
 // Firestore collection names
