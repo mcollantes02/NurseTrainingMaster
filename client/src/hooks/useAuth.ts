@@ -71,6 +71,8 @@ export function useAuth() {
     try {
       await loginWithEmail(credentials.email, credentials.password);
       // User state will be updated by onAuthChange
+      // Force a small delay to ensure state updates properly
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error: any) {
       throw new Error(error.message || 'Login failed');
     } finally {
@@ -85,6 +87,8 @@ export function useAuth() {
       const result = await googleAuth();
       console.log("Google login successful:", result.user.email);
       // User state will be updated by onAuthChange
+      // Force a small delay to ensure state updates properly
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (error: any) {
       console.error("Google login error:", error);
       throw new Error(error.message || 'Google login failed');
