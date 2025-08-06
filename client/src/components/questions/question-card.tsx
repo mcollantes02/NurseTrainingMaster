@@ -278,6 +278,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
   };
 
   return (
+    <>
     <Card
       className={cn(
         "cursor-pointer hover:shadow-md transition-all duration-200 w-full overflow-hidden",
@@ -461,5 +462,7 @@ export function QuestionCard({ question, onClick, onEdit }: QuestionCardProps) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    </>
+  );
   );
 }
