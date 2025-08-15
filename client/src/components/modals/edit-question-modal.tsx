@@ -159,25 +159,29 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
       const previousQueries = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
 
       // Find the optimistic subject and topic data
-      const optimisticSubject = subjects?.find(s => s.id === data.subjectId) || question?.subject;
-      const optimisticTopic = topics?.find(t => t.id === data.topicId) || question?.topic;
+      const optimisticSubject = subjects?.find(s => s.name === data.subjectName) || question?.subject;
+      const optimisticTopic = topics?.find(t => t.name === data.topicName) || question?.topic;
+
+      // Create the updated question with relations for optimistic display
+      const updatedQuestion = {
+        ...question,
+        mockExamIds: data.mockExamIds,
+        type: data.type,
+        theory: data.theory,
+        failureCount: data.failureCount,
+        isLearned: data.isLearned,
+        subject: optimisticSubject,
+        topic: optimisticTopic,
+        // Update both mockExam and mockExams for compatibility
+        mockExam: mockExams?.find(exam => data.mockExamIds.includes(exam.id)) || question?.mockExam,
+        mockExams: mockExams?.filter(exam => data.mockExamIds.includes(exam.id)) || question?.mockExams
+      };
 
       // Optimistically update ALL question queries instantly
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old || !question) return old;
         return old.map((q: any) => 
-          q.id === question.id 
-            ? { 
-                ...q, 
-                mockExamIds: data.mockExamIds,
-                type: data.type,
-                theory: data.theory,
-                failureCount: data.failureCount,
-                isLearned: data.isLearned,
-                subject: optimisticSubject,
-                topic: optimisticTopic
-              } 
-            : q
+          q.id === question.id ? updatedQuestion : q
         );
       });
 
@@ -197,13 +201,29 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
         variant: "destructive",
       });
     },
-    onSuccess: async () => {
-      // Invalidate and refetch all question queries to ensure fresh data everywhere
+    onSuccess: async (updatedQuestion) => {
+      // Update all question queries with the real response data
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old || !question) return old;
+        
+        const questionWithRelations = {
+          ...updatedQuestion,
+          mockExam: mockExams?.find(exam => updatedQuestion.mockExamIds?.includes(exam.id)) || null,
+          mockExams: mockExams?.filter(exam => updatedQuestion.mockExamIds?.includes(exam.id)) || [],
+          subject: subjects?.find(s => s.id === updatedQuestion.subjectId) || question.subject,
+          topic: topics?.find(t => t.id === updatedQuestion.topicId) || question.topic
+        };
+        
+        return old.map((q: any) => 
+          q.id === question.id ? questionWithRelations : q
+        );
+      });
+
+      // Invalidate mock exams to update question counts
       await queryClient.invalidateQueries({ 
-        queryKey: ["/api/questions"],
+        queryKey: ["/api/mock-exams"],
         refetchType: "active"
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
 
       onClose();
       toast({

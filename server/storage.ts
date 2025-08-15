@@ -506,10 +506,13 @@ export class Storage {
 
     await batch.commit();
 
-    // INVALIDACIÓN SÚPER SELECTIVA - solo actualizar lo que cambió
-    cache.invalidateSmartly('QUESTIONS', firebaseUid, 'update', id.toString());
+    // Invalidar todos los caches relacionados para asegurar consistencia
+    cache.invalidate('QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
+    cache.invalidate('QUESTION_COUNTS', firebaseUid);
     if (mockExamIds) {
-      cache.invalidateSmartly('QUESTION_RELATIONS', firebaseUid, 'update');
+      cache.invalidate('MOCK_EXAMS', firebaseUid); // Para actualizar conteos
     }
 
     const updatedDoc = await doc.ref.get();
