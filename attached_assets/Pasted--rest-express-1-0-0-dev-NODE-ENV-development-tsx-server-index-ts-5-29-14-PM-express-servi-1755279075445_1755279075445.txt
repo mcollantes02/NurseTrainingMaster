@@ -1,0 +1,428 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+5:29:14 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+5:29:34 PM [express] POST /api/auth/firebase 200 in 32ms :: {"user":{"uid":"iq7EKjAiXjTEuSKGe5NcZoHl…
+5:29:34 PM [express] POST /api/auth/firebase 200 in 16ms :: {"user":{"uid":"iq7EKjAiXjTEuSKGe5NcZoHl…
+Getting mock exams for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+5:29:34 PM [express] POST /api/auth/firebase 200 in 1ms :: {"user":{"uid":"iq7EKjAiXjTEuSKGe5NcZoHlQ…
+5:29:34 PM [express] POST /api/auth/firebase 200 in 1ms :: {"user":{"uid":"iq7EKjAiXjTEuSKGe5NcZoHlQ…
+5:29:35 PM [express] GET /api/subjects 200 in 644ms :: [{"name":"Farma","createdBy":"iq7EKjAiXjTEuSK…
+5:29:35 PM [express] GET /api/topics 200 in 785ms :: [{"createdBy":"iq7EKjAiXjTEuSKGe5NcZoHlQOD2","i…
+Mock exams with counts: [
+  { id: 84638, title: 'jyfouy', questionCount: 4 },
+  { id: 386493, title: 'Test5', questionCount: 3 },
+  { id: 704501, title: 'Test 3', questionCount: 16 },
+  { id: 340398, title: 'Test 2', questionCount: 14 },
+  { id: 415512, title: 'Test 1', questionCount: 18 }
+]
+5:29:35 PM [express] GET /api/mock-exams 200 in 1023ms :: [{"title":"jyfouy","createdBy":"iq7EKjAiXj…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: {}
+Found questions: 30
+First question: {
+  id: 299964,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755278457, _nanoseconds: 427000000 }
+}
+5:29:36 PM [express] GET /api/questions 200 in 574ms :: [{"id":299964,"subjectId":209734,"topicId":6…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '415512' }
+Found questions: 18
+First question: {
+  id: 964887,
+  subjectId: 209734,
+  topicId: 868141,
+  type: 'error',
+  theory: 'test - copiada',
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755270943, _nanoseconds: 552000000 },
+  failureCount: 0,
+  isLearned: false
+}
+5:29:38 PM [express] GET /api/questions 200 in 588ms :: [{"id":964887,"subjectId":209734,"topicId":8…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '415512' }
+Found questions: 18
+First question: {
+  id: 964887,
+  subjectId: 209734,
+  topicId: 868141,
+  type: 'error',
+  theory: 'test - copiada',
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755270943, _nanoseconds: 552000000 },
+  failureCount: 0,
+  isLearned: false
+}
+5:29:39 PM [express] GET /api/questions 304 in 666ms :: [{"id":964887,"subjectId":209734,"topicId":8…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '340398' }
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '415512' }
+Found questions: 14
+First question: {
+  id: 964887,
+  subjectId: 209734,
+  topicId: 868141,
+  type: 'error',
+  theory: 'test - copiada',
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755270943, _nanoseconds: 552000000 },
+  failureCount: 0,
+  isLearned: false
+}
+5:29:40 PM [express] GET /api/questions 200 in 655ms :: [{"id":964887,"subjectId":209734,"topicId":8…
+Found questions: 18
+First question: {
+  id: 964887,
+  subjectId: 209734,
+  topicId: 868141,
+  type: 'error',
+  theory: 'test - copiada',
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755270943, _nanoseconds: 552000000 },
+  failureCount: 0,
+  isLearned: false
+}
+5:29:40 PM [express] GET /api/questions 304 in 761ms :: [{"id":964887,"subjectId":209734,"topicId":8…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '340398' }
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '704501' }
+Found questions: 14
+First question: {
+  id: 964887,
+  subjectId: 209734,
+  topicId: 868141,
+  type: 'error',
+  theory: 'test - copiada',
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755270943, _nanoseconds: 552000000 },
+  failureCount: 0,
+  isLearned: false
+}
+5:29:42 PM [express] GET /api/questions 304 in 673ms :: [{"id":964887,"subjectId":209734,"topicId":8…
+Found questions: 16
+First question: {
+  id: 209941,
+  subjectId: 209734,
+  topicId: 868141,
+  type: 'error',
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755270914, _nanoseconds: 878000000 },
+  theory: 'PRUEBAAAAAAAAAAAAAAAA - copiada',
+  isLearned: false,
+  failureCount: 0
+}
+5:29:42 PM [express] GET /api/questions 200 in 687ms :: [{"id":209941,"subjectId":209734,"topicId":8…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '704501' }
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '84638' }
+Found questions: 4
+First question: {
+  id: 299964,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755278457, _nanoseconds: 427000000 }
+}
+5:29:44 PM [express] GET /api/questions 200 in 455ms :: [{"id":299964,"subjectId":209734,"topicId":6…
+Found questions: 16
+First question: {
+  id: 209941,
+  subjectId: 209734,
+  topicId: 868141,
+  type: 'error',
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755270914, _nanoseconds: 878000000 },
+  theory: 'PRUEBAAAAAAAAAAAAAAAA - copiada',
+  isLearned: false,
+  failureCount: 0
+}
+5:29:44 PM [express] GET /api/questions 304 in 657ms :: [{"id":209941,"subjectId":209734,"topicId":8…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '84638' }
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '386493' }
+Found questions: 4
+First question: {
+  id: 299964,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755278457, _nanoseconds: 427000000 }
+}
+5:29:46 PM [express] GET /api/questions 304 in 444ms :: [{"id":299964,"subjectId":209734,"topicId":6…
+Found questions: 3
+First question: {
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'error',
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  id: 126526,
+  createdAt: Timestamp { _seconds: 1755268607, _nanoseconds: 500000000 },
+  failureCount: 1,
+  isLearned: true,
+  theory: 'Dime que '
+}
+5:29:46 PM [express] GET /api/questions 200 in 616ms :: [{"subjectId":209734,"topicId":694107,"type"…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '386493' }
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: {}
+Found questions: 30
+First question: {
+  id: 299964,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755278457, _nanoseconds: 427000000 }
+}
+5:29:48 PM [express] GET /api/questions 304 in 552ms :: [{"id":299964,"subjectId":209734,"topicId":6…
+Found questions: 3
+First question: {
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'error',
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  id: 126526,
+  createdAt: Timestamp { _seconds: 1755268607, _nanoseconds: 500000000 },
+  failureCount: 1,
+  isLearned: true,
+  theory: 'Dime que '
+}
+5:29:48 PM [express] GET /api/questions 304 in 559ms :: [{"subjectId":209734,"topicId":694107,"type"…
+5:29:57 PM [express] POST /api/questions/299964/duplicate 200 in 557ms :: {"question":{"id":829737,"…
+Getting mock exams for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: {}
+Mock exams with counts: [
+  { id: 84638, title: 'jyfouy', questionCount: 5 },
+  { id: 386493, title: 'Test5', questionCount: 3 },
+  { id: 704501, title: 'Test 3', questionCount: 16 },
+  { id: 340398, title: 'Test 2', questionCount: 14 },
+  { id: 415512, title: 'Test 1', questionCount: 18 }
+]
+5:29:57 PM [express] GET /api/mock-exams 200 in 232ms :: [{"title":"jyfouy","createdBy":"iq7EKjAiXjT…
+Found questions: 31
+First question: {
+  id: 829737,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755278997, _nanoseconds: 153000000 }
+}
+5:29:58 PM [express] GET /api/questions 200 in 486ms :: [{"id":829737,"subjectId":209734,"topicId":6…
+5:30:02 PM [express] POST /api/questions/452073/duplicate 200 in 1476ms :: {"question":{"subjectId":…
+Getting mock exams for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: {}
+Mock exams with counts: [
+  { id: 84638, title: 'jyfouy', questionCount: 6 },
+  { id: 386493, title: 'Test5', questionCount: 3 },
+  { id: 704501, title: 'Test 3', questionCount: 16 },
+  { id: 340398, title: 'Test 2', questionCount: 14 },
+  { id: 415512, title: 'Test 1', questionCount: 18 }
+]
+5:30:02 PM [express] GET /api/mock-exams 200 in 321ms :: [{"title":"jyfouy","createdBy":"iq7EKjAiXjT…
+Found questions: 32
+First question: {
+  subjectId: 725401,
+  topicId: 694107,
+  type: 'error',
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  id: 126707,
+  createdAt: Timestamp { _seconds: 1755279001, _nanoseconds: 567000000 },
+  failureCount: 0,
+  isLearned: false,
+  theory: 'awfw - copiada'
+}
+5:30:03 PM [express] GET /api/questions 200 in 639ms :: [{"subjectId":725401,"topicId":694107,"type"…
+5:30:05 PM [express] POST /api/questions/840342/duplicate 200 in 537ms :: {"question":{"subjectId":7…
+Getting mock exams for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: {}
+Mock exams with counts: [
+  { id: 84638, title: 'jyfouy', questionCount: 7 },
+  { id: 386493, title: 'Test5', questionCount: 3 },
+  { id: 704501, title: 'Test 3', questionCount: 16 },
+  { id: 340398, title: 'Test 2', questionCount: 14 },
+  { id: 415512, title: 'Test 1', questionCount: 18 }
+]
+5:30:06 PM [express] GET /api/mock-exams 200 in 226ms :: [{"title":"jyfouy","createdBy":"iq7EKjAiXjT…
+Found questions: 33
+First question: {
+  subjectId: 725401,
+  topicId: 868141,
+  type: 'error',
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  id: 483215,
+  createdAt: Timestamp { _seconds: 1755279005, _nanoseconds: 496000000 },
+  isLearned: false,
+  theory: 'awtaw1111111111 - copiada'
+}
+5:30:06 PM [express] GET /api/questions 200 in 473ms :: [{"subjectId":725401,"topicId":868141,"type"…
+5:30:09 PM [express] POST /api/questions/382909/duplicate 200 in 535ms :: {"question":{"id":631385,"…
+Getting mock exams for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: {}
+Mock exams with counts: [
+  { id: 84638, title: 'jyfouy', questionCount: 8 },
+  { id: 386493, title: 'Test5', questionCount: 3 },
+  { id: 704501, title: 'Test 3', questionCount: 16 },
+  { id: 340398, title: 'Test 2', questionCount: 14 },
+  { id: 415512, title: 'Test 1', questionCount: 18 }
+]
+5:30:09 PM [express] GET /api/mock-exams 200 in 240ms :: [{"title":"jyfouy","createdBy":"iq7EKjAiXjT…
+Found questions: 34
+First question: {
+  id: 631385,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755279008, _nanoseconds: 921000000 }
+}
+5:30:10 PM [express] GET /api/questions 200 in 603ms :: [{"id":631385,"subjectId":209734,"topicId":6…
+5:30:13 PM [express] POST /api/questions/631385/duplicate 200 in 537ms :: {"question":{"id":513009,"…
+Getting mock exams for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: {}
+Mock exams with counts: [
+  { id: 84638, title: 'jyfouy', questionCount: 9 },
+  { id: 386493, title: 'Test5', questionCount: 3 },
+  { id: 704501, title: 'Test 3', questionCount: 16 },
+  { id: 340398, title: 'Test 2', questionCount: 14 },
+  { id: 415512, title: 'Test 1', questionCount: 18 }
+]
+5:30:13 PM [express] GET /api/mock-exams 200 in 219ms :: [{"title":"jyfouy","createdBy":"iq7EKjAiXjT…
+Found questions: 35
+First question: {
+  id: 513009,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755279012, _nanoseconds: 775000000 }
+}
+5:30:13 PM [express] GET /api/questions 200 in 477ms :: [{"id":513009,"subjectId":209734,"topicId":6…
+5:30:16 PM [express] POST /api/questions/631385/duplicate 200 in 530ms :: {"question":{"id":723517,"…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: {}
+Getting mock exams for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Mock exams with counts: [
+  { id: 84638, title: 'jyfouy', questionCount: 10 },
+  { id: 386493, title: 'Test5', questionCount: 3 },
+  { id: 704501, title: 'Test 3', questionCount: 16 },
+  { id: 340398, title: 'Test 2', questionCount: 14 },
+  { id: 415512, title: 'Test 1', questionCount: 18 }
+]
+5:30:17 PM [express] GET /api/mock-exams 200 in 305ms :: [{"title":"jyfouy","createdBy":"iq7EKjAiXjT…
+Found questions: 36
+First question: {
+  id: 723517,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755279016, _nanoseconds: 226000000 }
+}
+5:30:17 PM [express] GET /api/questions 200 in 476ms :: [{"id":723517,"subjectId":209734,"topicId":6…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '84638' }
+Found questions: 10
+First question: {
+  id: 723517,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755279016, _nanoseconds: 226000000 }
+}
+5:30:19 PM [express] GET /api/questions 200 in 526ms :: [{"id":723517,"subjectId":209734,"topicId":6…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '84638' }
+Found questions: 10
+First question: {
+  id: 723517,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755279016, _nanoseconds: 226000000 }
+}
+5:30:21 PM [express] GET /api/questions 304 in 526ms :: [{"id":723517,"subjectId":209734,"topicId":6…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '84638' }
+Found questions: 10
+First question: {
+  id: 723517,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755279016, _nanoseconds: 226000000 }
+}
+5:30:22 PM [express] GET /api/questions 304 in 523ms :: [{"id":723517,"subjectId":209734,"topicId":6…
+Getting questions for user: iq7EKjAiXjTEuSKGe5NcZoHlQOD2
+Query params: { mockExamIds: '84638' }
+Found questions: 10
+First question: {
+  id: 723517,
+  subjectId: 209734,
+  topicId: 694107,
+  type: 'doubt',
+  theory: 'awdawd - copiada - copiada',
+  isLearned: false,
+  failureCount: 0,
+  createdBy: 'iq7EKjAiXjTEuSKGe5NcZoHlQOD2',
+  createdAt: Timestamp { _seconds: 1755279016, _nanoseconds: 226000000 }
+}
+5:30:25 PM [express] GET /api/questions 304 in 527ms :: [{"id":723517,"subjectId":209734,"topicId":6…
