@@ -164,11 +164,11 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
       });
       return response.json();
     },
-    onSuccess: (newQuestion, variables) => {
-      // Solo invalidar sin refetch automático
-      queryClient.invalidateQueries({ 
+    onSuccess: async (newQuestion, variables) => {
+      // Invalidar y refetch inmediato para que aparezca la pregunta
+      await queryClient.invalidateQueries({ 
         queryKey: ["/api/questions"],
-        refetchType: "none" 
+        refetchType: "active" 
       });
       queryClient.invalidateQueries({ 
         queryKey: ["/api/mock-exams"],

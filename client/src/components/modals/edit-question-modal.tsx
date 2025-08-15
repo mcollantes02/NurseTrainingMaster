@@ -183,31 +183,8 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
 
       return { previousQueries };
     },
-    onSuccess: async (updatedQuestion, variables) => {
-      // Clear all question-related queries immediately to ensure fresh data
-      await queryClient.removeQueries({ queryKey: ["/api/questions"] });
-      await queryClient.removeQueries({ queryKey: ["/api/mock-exams"] });
-      
-      // Force refetch all data to ensure consistency across all tabs
-      await queryClient.refetchQueries({ queryKey: ["/api/mock-exams"] });
-      await queryClient.refetchQueries({ queryKey: ["/api/questions"] });
-      
-      // Also invalidate any potential cached queries with specific parameters
-      queryClient.invalidateQueries({ 
-        predicate: (query) => {
-          const queryKey = query.queryKey;
-          return queryKey[0] === "/api/questions" || queryKey[0] === "/api/mock-exams";
-        }
-      });
-
-      onClose();
-      toast({
-        title: t("question.updated"),
-        description: t("question.updatedDescription"),
-      });
-    },
-    onError: (err, variables, context) => {
-      // Rollback all optimistic updates on error
+    onError: (err, newData, context) => {
+      // On error, roll back to the previous queries state
       if (context?.previousQueries) {
         context.previousQueries.forEach(([queryKey, data]) => {
           queryClient.setQueryData(queryKey, data);
@@ -220,8 +197,19 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
         variant: "destructive",
       });
     },
-    onSettled: () => {
-      // No need to refetch here since we handle it in onSuccess and onError
+    onSuccess: async () => {
+      // Invalidate and refetch all question queries to ensure fresh data everywhere
+      await queryClient.invalidateQueries({ 
+        queryKey: ["/api/questions"],
+        refetchType: "active"
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
+
+      onClose();
+      toast({
+        title: t("question.updated"),
+        description: t("question.updatedDescription"),
+      });
     },
   });
 
