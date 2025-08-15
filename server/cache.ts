@@ -1,3 +1,4 @@
+
 import { Timestamp } from 'firebase-admin/firestore';
 
 interface CacheEntry<T> {
@@ -16,20 +17,43 @@ interface CacheStats {
 class Cache {
   private cache = new Map<string, CacheEntry<any>>();
   private stats: CacheStats = { hits: 0, misses: 0, sets: 0, invalidations: 0 };
-  private locks = new Map<string, Promise<any>>(); // Para prevenir consultas duplicadas simultáneas
+  private locks = new Map<string, Promise<any>>();
 
   private generateKey(namespace: string, userId: string, extra?: string): string {
     return extra ? `${namespace}:${userId}:${extra}` : `${namespace}:${userId}`;
   }
 
   get<T>(namespace: string, userId: string, extra?: string): T | null {
-    // DESHABILITAR CACHE COMPLETAMENTE para debugging
-    return null;
+    const key = this.generateKey(namespace, userId, extra);
+    const entry = this.cache.get(key);
+    
+    if (!entry) {
+      this.stats.misses++;
+      return null;
+    }
+
+    // Check if expired
+    if (Date.now() - entry.timestamp > entry.ttl) {
+      this.cache.delete(key);
+      this.stats.misses++;
+      return null;
+    }
+
+    this.stats.hits++;
+    return entry.data;
   }
 
   set<T>(namespace: string, userId: string, data: T, extra?: string, customTtl?: number): void {
-    // DESHABILITAR CACHE COMPLETAMENTE para debugging
-    return;
+    const key = this.generateKey(namespace, userId, extra);
+    const ttl = customTtl || this.getDefaultTtl(namespace);
+    
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now(),
+      ttl
+    });
+    
+    this.stats.sets++;
   }
 
   setBatch<T>(namespace: string, userId: string, dataMap: Record<string, T>, customTtl?: number): void {
@@ -38,7 +62,7 @@ class Cache {
     });
   }
 
-  // Método para prevenir consultas duplicadas simultáneas
+  // Método optimizado para prevenir consultas duplicadas
   async getOrFetch<T>(
     key: string,
     fetcher: () => Promise<T>,
@@ -47,38 +71,33 @@ class Cache {
     extra?: string,
     customTtl?: number
   ): Promise<T> {
-    // DESHABILITAR CACHE - siempre fetch datos frescos
-    console.log(`Fetching fresh data for ${key} (cache disabled)`);
-    return await fetcher();
-  }
-
-  // Invalidación MUCHO más selectiva - solo invalida lo que realmente cambió
-  invalidateSmartly(namespace: string, userId: string, operation: 'create' | 'update' | 'delete', extra?: string): void {
-    switch (operation) {
-      case 'create':
-        // Solo invalidar las consultas que incluyen "todas las preguntas"
-        this.invalidate('ALL_USER_QUESTIONS', userId);
-        // NO invalidar cache de preguntas específicas ya que no han cambiado
-        // Solo invalidar las relaciones si es necesario
-        if (namespace === 'QUESTIONS') {
-          this.invalidate('ALL_QUESTION_RELATIONS', userId);
-        }
-        break;
-      case 'update':
-        // Solo invalidar la consulta específica si existe
-        if (extra) {
-          this.invalidate(namespace, userId, extra);
-        }
-        this.invalidate('ALL_USER_QUESTIONS', userId);
-        break;
-      case 'delete':
-        // Invalidar todo el namespace solo en deletes
-        this.invalidate(namespace, userId);
-        break;
+    // Check cache first
+    const cached = this.get<T>(namespace, userId, extra);
+    if (cached) {
+      return cached;
     }
-    this.stats.invalidations++;
+
+    // Check if there's already a pending fetch for this key
+    const pendingFetch = this.locks.get(key);
+    if (pendingFetch) {
+      return pendingFetch;
+    }
+
+    // Create new fetch promise
+    const fetchPromise = fetcher().then(data => {
+      this.set(namespace, userId, data, extra, customTtl);
+      this.locks.delete(key);
+      return data;
+    }).catch(error => {
+      this.locks.delete(key);
+      throw error;
+    });
+
+    this.locks.set(key, fetchPromise);
+    return fetchPromise;
   }
 
+  // Invalidación inteligente - solo lo necesario
   invalidate(namespace: string, userId: string, extra?: string): void {
     if (extra) {
       const key = this.generateKey(namespace, userId, extra);
@@ -95,13 +114,26 @@ class Cache {
     this.stats.invalidations++;
   }
 
-  // Invalidación selectiva más inteligente
-  invalidateSelective(namespace: string, userId: string, preserveStatic: boolean = true): void {
-    if (preserveStatic && (namespace === 'SUBJECTS' || namespace === 'TOPICS' || namespace === 'MOCK_EXAMS')) {
-      // No invalidar datos que cambian poco
-      return;
+  // Invalidación selectiva para operaciones CRUD
+  invalidateForOperation(namespace: string, userId: string, operation: 'create' | 'update' | 'delete'): void {
+    switch (operation) {
+      case 'create':
+        // Solo invalidar los listados generales, no datos específicos
+        this.invalidate('ALL_USER_QUESTIONS', userId);
+        this.invalidate('ALL_QUESTION_RELATIONS', userId);
+        break;
+      case 'update':
+        // Invalidar datos específicos y generales
+        this.invalidate(namespace, userId);
+        this.invalidate('ALL_USER_QUESTIONS', userId);
+        break;
+      case 'delete':
+        // Invalidar todo para deletes
+        this.invalidate(namespace, userId);
+        this.invalidate('ALL_USER_QUESTIONS', userId);
+        this.invalidate('ALL_QUESTION_RELATIONS', userId);
+        break;
     }
-    this.invalidate(namespace, userId);
   }
 
   private getDefaultTtl(namespace: string): number {
@@ -109,21 +141,19 @@ class Cache {
       case 'MOCK_EXAMS':
       case 'SUBJECTS':
       case 'TOPICS':
-        return 4 * 60 * 60 * 1000; // 4 horas - datos que casi nunca cambian
+        return 30 * 60 * 1000; // 30 minutos - datos que cambian poco
       case 'QUESTIONS':
-        return 60 * 60 * 1000; // 1 hora - aumentado drásticamente
-      case 'QUESTION_COUNTS':
-      case 'QUESTION_RELATIONS':
-      case 'ALL_QUESTION_RELATIONS':
-        return 90 * 60 * 1000; // 1.5 horas - más tiempo para relaciones
-      case 'USER_STATS':
-        return 30 * 60 * 1000; // 30 minutos
-      case 'TRASHED_QUESTIONS':
-        return 2 * 60 * 60 * 1000; // 2 horas
+        return 10 * 60 * 1000; // 10 minutos
       case 'ALL_USER_QUESTIONS':
-        return 45 * 60 * 1000; // 45 minutos para el batch completo
+        return 15 * 60 * 1000; // 15 minutos para el batch completo
+      case 'ALL_QUESTION_RELATIONS':
+        return 20 * 60 * 1000; // 20 minutos para relaciones
+      case 'USER_STATS':
+        return 5 * 60 * 1000; // 5 minutos
+      case 'TRASHED_QUESTIONS':
+        return 10 * 60 * 1000; // 10 minutos
       default:
-        return 20 * 60 * 1000; // 20 minutos default
+        return 5 * 60 * 1000; // 5 minutos default
     }
   }
 

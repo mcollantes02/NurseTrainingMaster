@@ -323,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const topicMap = new Map(topics.map(topic => [topic.id, topic]));
 
       // Use the optimized method that gets all relations at once
-      const questionMockExamMap = await (storage as any).getAllQuestionRelations(firebaseUid);
+      const questionMockExamMap = await storage.getAllQuestionRelations(firebaseUid);
 
       // Add relations to questions (now much faster)
       const questionsWithRelations = questions.map(question => {
@@ -345,10 +345,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdBy: req.user
         };
       });
-      console.log("Found questions:", questions.length); // Added debugging
-      if (questions.length > 0) {
-        console.log("First question:", questions[0]); // Added debugging
-      }
       res.json(questionsWithRelations);
     } catch (error) {
       console.error("Get questions error:", error);
@@ -481,9 +477,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ message: "Question not found" });
       }
-
-      // Invalidar cache de papelera para que se muestre inmediatamente
-      cache.invalidate('TRASHED_QUESTIONS', firebaseUid);
 
       res.json({ message: "Question deleted successfully" });
     } catch (error) {

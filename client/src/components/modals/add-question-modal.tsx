@@ -165,24 +165,15 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
       return response.json();
     },
     onSuccess: (newQuestion, variables) => {
-      // Invalidar TODOS los queries relacionados con preguntas de forma agresiva
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
-      queryClient.refetchQueries({ queryKey: ["/api/questions"] });
-      queryClient.refetchQueries({ queryKey: ["/api/mock-exams"] });
-
-      // Invalidate specific mock exam queries for each selected exam
-      if (variables.mockExamIds && Array.isArray(variables.mockExamIds)) {
-        variables.mockExamIds.forEach(mockExamId => {
-          queryClient.invalidateQueries({ 
-            queryKey: ["/api/questions"],
-            predicate: (query) => {
-              const queryString = query.queryKey[1] as string;
-              return queryString && queryString.includes(`mockExamIds=${mockExamId}`);
-            }
-          });
-        });
-      }
+      // Solo invalidar sin refetch automático
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/questions"],
+        refetchType: "none" 
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/mock-exams"],
+        refetchType: "none" 
+      });
 
       form.reset({
         mockExamIds: preSelectedMockExamId ? [preSelectedMockExamId] : [],

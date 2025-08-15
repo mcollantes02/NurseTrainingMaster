@@ -341,25 +341,22 @@ export class Storage {
 
   // Question methods
   async getQuestions(filters: QuestionFilters): Promise<FirestoreQuestion[]> {
-    // Crear una clave de cache basada en los filtros
     const cacheKey = JSON.stringify(filters);
-    
+
     return cache.getOrFetch(
       `questions_${cacheKey}`,
       async () => {
-        console.log("Loading questions with filters:", cacheKey);
-
-        // ESTRATEGIA OPTIMIZADA: Cargar todas las preguntas una vez y filtrar en memoria
+        // Obtener todas las preguntas del usuario desde cache
         const allQuestions = await this.getAllUserQuestions(filters.firebaseUid);
-        let results = [...allQuestions]; // Copia para filtrar
+        let results = [...allQuestions];
 
-        // Filtrar por mock exams usando el cache de relaciones
+        // Si hay filtro por mockExamIds, aplicarlo primero usando las relaciones
         if (filters.mockExamIds && filters.mockExamIds.length > 0) {
-          const questionRelations = await this.getAllQuestionRelations(filters.firebaseUid);
+          const relationMap = await this.getAllQuestionRelations(filters.firebaseUid);
           const mockExamSet = new Set(filters.mockExamIds);
-          
+
           results = results.filter(question => {
-            const questionMockExams = questionRelations.get(question.id) || [];
+            const questionMockExams = relationMap.get(question.id) || [];
             return questionMockExams.some(mockExamId => mockExamSet.has(mockExamId));
           });
         }
@@ -403,9 +400,8 @@ export class Storage {
       },
       'QUESTIONS',
       filters.firebaseUid,
-      cacheKey,
-      60 * 60 * 1000 // 1 hora de cache
-    );
+      cacheKey
+    )
   }
 
   async createQuestion(questionData: Omit<FirestoreQuestion, 'id' | 'createdAt'>, mockExamIds: number[]): Promise<FirestoreQuestion> {
@@ -421,35 +417,32 @@ export class Storage {
       createdAt: Timestamp.now(),
     };
 
+    // Use batch for atomic operation
     const batch = firestore.batch();
-
-    // Create question
     batch.set(docRef, question);
 
-    // Create relations with mock exams
+    // Create question-mockexam relations
     for (const mockExamId of mockExamIds) {
       const relationRef = firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS).doc();
-      const relationId = Math.abs(relationRef.id.split('').reduce((a, b) => {
+      const relationNumericId = Math.abs(relationRef.id.split('').reduce((a, b) => {
         a = ((a << 5) - a) + b.charCodeAt(0);
         return a & a;
       }, 0)) % 1000000;
 
       const relation: FirestoreQuestionMockExam = {
-        id: relationId,
+        id: relationNumericId,
         questionId: numericId,
         mockExamId,
         createdBy: questionData.createdBy,
         createdAt: Timestamp.now(),
       };
-
       batch.set(relationRef, relation);
     }
 
     await batch.commit();
 
-    // INVALIDACIÓN SÚPER SELECTIVA - solo lo mínimo necesario
-    cache.invalidateSmartly('QUESTIONS', questionData.createdBy, 'create');
-    // NO invalidar QUESTIONS completo - solo las consultas que incluyen "todas"
+    // Invalidar solo los caches necesarios
+    cache.invalidateForOperation('QUESTIONS', questionData.createdBy, 'create');
 
     return question;
   }

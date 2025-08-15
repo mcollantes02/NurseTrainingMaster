@@ -71,18 +71,15 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
   const { data: questions = [], isLoading, refetch } = useQuery({
     queryKey: ["/api/questions", queryParams.toString()],
     queryFn: async () => {
-      console.log("Making API request with params:", queryParams.toString());
       const url = `/api/questions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiRequest("GET", url);
-      const data = await response.json();
-      console.log("First question structure:", data[0]);
-      return data;
+      return response.json();
     },
     refetchOnWindowFocus: false,
-    refetchOnMount: true, // CAMBIAR: refetch al montar para obtener datos frescos
+    refetchOnMount: false, // No refetch automático
     refetchOnReconnect: false,
-    staleTime: 5 * 60 * 1000, // REDUCIR: 5 minutos en lugar de 1 hora
-    gcTime: 10 * 60 * 1000, // REDUCIR: 10 minutos en lugar de 2 horas
+    staleTime: 10 * 60 * 1000, // 10 minutos
+    gcTime: 30 * 60 * 1000, // 30 minutos
     enabled: true,
     retry: 1,
     retryDelay: 1000,
