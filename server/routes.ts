@@ -334,7 +334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         for (const batch of batches) {
-          const relationSnapshot = await firestore.collection('question_mock_exams')
+          const relationSnapshot = await storage.db.collection('question_mock_exams')
             .where('questionId', 'in', batch)
             .where('createdBy', '==', firebaseUid)
             .get();
