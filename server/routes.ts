@@ -4,6 +4,7 @@ import { storage } from "./storage.js";
 import { insertMockExamSchema, insertQuestionSchema } from "../shared/schema.js";
 import { auth } from "./firebase.js";
 import { Timestamp } from "firebase-admin/firestore";
+import { cache } from "./cache.js";
 import "./types.js";
 
 // Helper function to convert Firestore timestamp to Date
@@ -477,6 +478,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ message: "Question not found" });
       }
+
+      // Invalidate trash cache so new trashed questions appear immediately
+      cache.invalidate('TRASHED_QUESTIONS', firebaseUid);
 
       res.json({ message: "Question deleted successfully" });
     } catch (error) {
