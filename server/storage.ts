@@ -67,11 +67,11 @@ export class Storage {
     };
 
     await docRef.set(mockExam);
-    
+
     // Invalidate cache
     cache.invalidate('MOCK_EXAMS', mockExamData.createdBy);
     cache.invalidate('USER_STATS', mockExamData.createdBy);
-    
+
     return mockExam;
   }
 
@@ -155,10 +155,10 @@ export class Storage {
       .get();
 
     const subject = snapshot.empty ? null : snapshot.docs[0].data() as FirestoreSubject;
-    
+
     // Guardar en cache
     cache.set('SUBJECT_BY_NAME', firebaseUid, subject, name);
-    
+
     return subject;
   }
 
@@ -268,10 +268,10 @@ export class Storage {
       .get();
 
     const topic = snapshot.empty ? null : snapshot.docs[0].data() as FirestoreTopic;
-    
+
     // Guardar en cache
     cache.set('TOPIC_BY_NAME', firebaseUid, topic, name);
-    
+
     return topic;
   }
 
@@ -397,7 +397,7 @@ export class Storage {
         results.push(...snapshot.docs.map(doc => doc.data() as FirestoreQuestion));
       }
 
-      // Apply other filters to results
+      // Apply other filters
       let filteredResults = results;
 
       // Apply other filters
@@ -531,6 +531,8 @@ export class Storage {
     cache.invalidate('QUESTION_COUNTS', questionData.createdBy);
     cache.invalidate('QUESTION_RELATIONS', questionData.createdBy);
     cache.invalidate('USER_STATS', questionData.createdBy);
+    cache.invalidate('ALL_USER_QUESTIONS', questionData.createdBy);
+    cache.invalidate('ALL_QUESTION_RELATIONS', questionData.createdBy);
 
     return question;
   }
@@ -594,6 +596,8 @@ export class Storage {
     // Invalidate cache
     cache.invalidate('QUESTIONS', firebaseUid);
     cache.invalidate('QUESTION_COUNTS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
 
     const updatedDoc = await doc.ref.get();
     return updatedDoc.data() as FirestoreQuestion;
@@ -615,6 +619,7 @@ export class Storage {
 
     // Invalidate cache
     cache.invalidate('QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
 
     // Return the updated question with relations
     return this.getQuestionWithRelations(questionId, firebaseUid);
@@ -689,6 +694,8 @@ export class Storage {
     // Invalidate cache
     cache.invalidate('QUESTIONS', firebaseUid);
     cache.invalidate('QUESTION_COUNTS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
 
     // Return the duplicated question with relations
     return this.getQuestionWithRelations(newQuestionId, firebaseUid);
@@ -697,6 +704,7 @@ export class Storage {
   async updateQuestionFailureCount(id: number, failureCount: number, firebaseUid: string): Promise<FirestoreQuestion | null> {
     // Invalidate cache
     cache.invalidate('QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
     return this.updateQuestion(id, { failureCount }, firebaseUid);
   }
 
@@ -792,6 +800,8 @@ export class Storage {
     // Invalidate cache
     cache.invalidate('QUESTIONS', firebaseUid);
     cache.invalidate('QUESTION_COUNTS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
 
     return true;
   }
@@ -809,10 +819,10 @@ export class Storage {
       .get();
 
     const mockExamIds = snapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).mockExamId);
-    
+
     // Guardar en cache
     cache.set('QUESTION_RELATIONS', firebaseUid, mockExamIds, questionId.toString());
-    
+
     return mockExamIds;
   }
 
@@ -973,6 +983,8 @@ export class Storage {
     // Invalidate cache
     cache.invalidate('QUESTIONS', firebaseUid);
     cache.invalidate('QUESTION_COUNTS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
 
     return true;
   }

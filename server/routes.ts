@@ -322,32 +322,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subjectMap = new Map(subjects.map(subject => [subject.id, subject]));
       const topicMap = new Map(topics.map(topic => [topic.id, topic]));
 
-      // Optimized: Get all question-mockexam relations in batch
-      const allQuestionIds = questions.map(q => q.id);
-      const questionMockExamMap = new Map<number, number[]>();
-      
-      // Batch query for all question-mockexam relations
-      if (allQuestionIds.length > 0) {
-        const batches = [];
-        for (let i = 0; i < allQuestionIds.length; i += 10) {
-          batches.push(allQuestionIds.slice(i, i + 10));
-        }
-
-        for (const batch of batches) {
-          const relationSnapshot = await storage.db.collection('question_mock_exams')
-            .where('questionId', 'in', batch)
-            .where('createdBy', '==', firebaseUid)
-            .get();
-
-          relationSnapshot.docs.forEach(doc => {
-            const relation = doc.data();
-            if (!questionMockExamMap.has(relation.questionId)) {
-              questionMockExamMap.set(relation.questionId, []);
-            }
-            questionMockExamMap.get(relation.questionId)!.push(relation.mockExamId);
-          });
-        }
-      }
+      // Use the optimized method that gets all relations at once
+      const questionMockExamMap = await (storage as any).getAllQuestionRelations(firebaseUid);
 
       // Add relations to questions (now much faster)
       const questionsWithRelations = questions.map(question => {

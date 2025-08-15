@@ -25,6 +25,8 @@ export class FirestoreCache {
     QUESTIONS: 5 * 60 * 1000,     // 5 minutos - datos más dinámicos pero cacheable
     QUESTION_COUNTS: 5 * 60 * 1000, // 5 minutos - se actualiza con preguntas
     QUESTION_RELATIONS: 10 * 60 * 1000, // 10 minutos - relaciones question-mockexam
+    ALL_USER_QUESTIONS: 5 * 60 * 1000, // 5 minutos - todas las preguntas del usuario
+    ALL_QUESTION_RELATIONS: 10 * 60 * 1000, // 10 minutos - todas las relaciones del usuario
     USER_STATS: 3 * 60 * 1000,    // 3 minutos - estadísticas de usuario
     TRASHED_QUESTIONS: 10 * 60 * 1000, // 10 minutos - preguntas eliminadas
   };
