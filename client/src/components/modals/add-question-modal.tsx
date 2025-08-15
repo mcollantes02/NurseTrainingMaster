@@ -165,14 +165,21 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
       return response.json();
     },
     onSuccess: async (newQuestion, variables) => {
-      // Invalidar y refetch inmediato para que aparezca la pregunta
+      // Forzar actualización inmediata sin cache para mostrar la nueva pregunta
       await queryClient.invalidateQueries({ 
         queryKey: ["/api/questions"],
-        refetchType: "active" 
+        exact: false
       });
+      
+      // Forzar refetch inmediato de todas las queries de preguntas activas
+      await queryClient.refetchQueries({ 
+        queryKey: ["/api/questions"],
+        type: "active"
+      });
+
+      // Invalidar mock exams para actualizar contadores
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/mock-exams"],
-        refetchType: "none" 
+        queryKey: ["/api/mock-exams"]
       });
 
       form.reset({
