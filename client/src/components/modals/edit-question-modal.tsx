@@ -84,8 +84,22 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
   // Reset form when question changes
   useEffect(() => {
     if (question) {
+      // Extract mock exam IDs from different possible sources
+      let mockExamIds: number[] = [];
+      
+      if (question.mockExamIds && Array.isArray(question.mockExamIds)) {
+        // Use mockExamIds if available (from server response)
+        mockExamIds = question.mockExamIds;
+      } else if (question.mockExams && Array.isArray(question.mockExams) && question.mockExams.length > 0) {
+        // Extract from mockExams array
+        mockExamIds = question.mockExams.map(exam => exam.id).filter(id => id != null);
+      } else if (question.mockExamId) {
+        // Fallback to single mockExamId
+        mockExamIds = [question.mockExamId];
+      }
+
       form.reset({
-        mockExamIds: question.mockExams ? question.mockExams.map(exam => exam.id) : [question.mockExamId],
+        mockExamIds: mockExamIds,
         subjectName: question.subject.name,
         topicName: question.topic.name,
         type: question.type as "error" | "doubt",
