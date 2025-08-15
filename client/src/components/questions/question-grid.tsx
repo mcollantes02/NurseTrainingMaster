@@ -129,7 +129,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
 
   // Debug: log the first question to see its structure
   if (questions.length > 0) {
-    console.log("First question structure:", questions[0]);
+    
   }
 
   if (groupByExam) {

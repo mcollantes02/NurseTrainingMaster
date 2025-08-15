@@ -199,6 +199,27 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
         );
       });
 
+      // Update mock exam counts if question moved between exams
+      const oldMockExamIds = question.mockExamIds || question.mockExams?.map(e => e.id) || [question.mockExamId].filter(Boolean);
+      const newMockExamIds = data.mockExamIds;
+      
+      const addedExams = newMockExamIds.filter(id => !oldMockExamIds.includes(id));
+      const removedExams = oldMockExamIds.filter(id => !newMockExamIds.includes(id));
+      
+      if (addedExams.length > 0 || removedExams.length > 0) {
+        queryClient.setQueryData(["/api/mock-exams"], (old: any) => {
+          if (!old) return old;
+          return old.map((exam: any) => {
+            if (addedExams.includes(exam.id)) {
+              return { ...exam, questionCount: (exam.questionCount || 0) + 1 };
+            } else if (removedExams.includes(exam.id)) {
+              return { ...exam, questionCount: Math.max(0, (exam.questionCount || 0) - 1) };
+            }
+            return exam;
+          });
+        });
+      }
+
       return { previousQueries };
     },
     onError: (err, newData, context) => {
@@ -233,11 +254,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
         );
       });
 
-      // Invalidate mock exams to update question counts
-      await queryClient.invalidateQueries({ 
-        queryKey: ["/api/mock-exams"],
-        refetchType: "active"
-      });
+      
 
       onClose();
       toast({

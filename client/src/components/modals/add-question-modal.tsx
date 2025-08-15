@@ -196,6 +196,16 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
         return [optimisticQuestion, ...old];
       });
 
+      // Optimistically update mock exam counts
+      queryClient.setQueryData(["/api/mock-exams"], (old: any) => {
+        if (!old) return old;
+        return old.map((exam: any) => 
+          variables.mockExamIds.includes(exam.id) 
+            ? { ...exam, questionCount: (exam.questionCount || 0) + 1 }
+            : exam
+        );
+      });
+
       return { previousQuestions, tempId };
     },
     onSuccess: (newQuestion, variables, context) => {
@@ -222,11 +232,6 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
         refetchType: "none"
       });
 
-      queryClient.invalidateQueries({
-        queryKey: ["/api/mock-exams"],
-        refetchType: "none"
-      });
-
       form.reset({
         mockExamIds: preSelectedMockExamId ? [preSelectedMockExamId] : [],
         subjectName: "",
@@ -248,6 +253,16 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
           queryClient.setQueryData(queryKey, data);
         });
       }
+      
+      // Rollback mock exam counts
+      queryClient.setQueryData(["/api/mock-exams"], (old: any) => {
+        if (!old) return old;
+        return old.map((exam: any) => 
+          variables.mockExamIds.includes(exam.id) 
+            ? { ...exam, questionCount: Math.max(0, (exam.questionCount || 0) - 1) }
+            : exam
+        );
+      });
 
       console.error("Create question error:", error);
       toast({
