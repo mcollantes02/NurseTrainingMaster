@@ -91,10 +91,10 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      staleTime: 30 * 1000, // 30 segundos - más agresivo para nuevas preguntas
-      gcTime: 2 * 60 * 1000, // 2 minutos
+      staleTime: 2 * 60 * 1000, // 2 minutos - reducir solicitudes
+      gcTime: 5 * 60 * 1000, // 5 minutos
       refetchOnWindowFocus: false,
-      refetchOnMount: true, // Siempre refetch al montar
+      refetchOnMount: false, // No refetch automático al montar - usar cache
       refetchOnReconnect: false,
       retry: 1,
       retryDelay: 1000,

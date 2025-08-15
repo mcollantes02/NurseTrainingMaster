@@ -165,21 +165,34 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
       return response.json();
     },
     onSuccess: async (newQuestion, variables) => {
-      // Forzar actualización inmediata sin cache para mostrar la nueva pregunta
-      await queryClient.invalidateQueries({ 
-        queryKey: ["/api/questions"],
-        exact: false
-      });
-      
-      // Forzar refetch inmediato de todas las queries de preguntas activas
-      await queryClient.refetchQueries({ 
-        queryKey: ["/api/questions"],
-        type: "active"
+      // Actualización optimista inmediata - agregar la nueva pregunta a todas las queries existentes
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return [newQuestion];
+        
+        // Construir la pregunta completa con relaciones para mostrar inmediatamente
+        const questionWithRelations = {
+          ...newQuestion,
+          mockExam: mockExams.find(exam => variables.mockExamIds.includes(exam.id)) || null,
+          mockExams: mockExams.filter(exam => variables.mockExamIds.includes(exam.id)),
+          subject: subjects.find(s => s.name === variables.subjectName) || { name: variables.subjectName },
+          topic: topics.find(t => t.name === variables.topicName) || { name: variables.topicName },
+          createdBy: { uid: newQuestion.createdBy }
+        };
+        
+        // Agregar al principio de la lista (más nuevo primero)
+        return [questionWithRelations, ...old];
       });
 
-      // Invalidar mock exams para actualizar contadores
+      // Una sola invalidación silenciosa para sincronizar en background (sin refetch inmediato)
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/mock-exams"]
+        queryKey: ["/api/questions"],
+        refetchType: "none" // No refetch inmediato, solo marcar como stale
+      });
+
+      // Invalidar mock exams silenciosamente para contadores
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/mock-exams"],
+        refetchType: "none"
       });
 
       form.reset({

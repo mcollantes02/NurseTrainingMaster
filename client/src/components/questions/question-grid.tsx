@@ -76,10 +76,10 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
       return response.json();
     },
     refetchOnWindowFocus: false,
-    refetchOnMount: true, // Refetch para datos frescos
+    refetchOnMount: false, // No refetch automático - usar cache optimista
     refetchOnReconnect: false,
-    staleTime: 30 * 1000, // REDUCIR: 30 segundos para preguntas nuevas
-    gcTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 5 * 60 * 1000, // 5 minutos - mayor tiempo de cache
+    gcTime: 10 * 60 * 1000, // 10 minutos
     enabled: true,
     retry: 1,
     retryDelay: 1000,
