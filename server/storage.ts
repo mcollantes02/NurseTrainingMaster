@@ -343,71 +343,69 @@ export class Storage {
   async getQuestions(filters: QuestionFilters): Promise<FirestoreQuestion[]> {
     // Crear una clave de cache basada en los filtros
     const cacheKey = JSON.stringify(filters);
-    const cached = cache.get<FirestoreQuestion[]>('QUESTIONS', filters.firebaseUid, cacheKey);
-    if (cached) {
-      console.log("Cache hit for questions:", cacheKey);
-      return cached;
-    }
+    
+    return cache.getOrFetch(
+      `questions_${cacheKey}`,
+      async () => {
+        console.log("Loading questions with filters:", cacheKey);
 
-    console.log("Cache miss for questions:", cacheKey);
+        // ESTRATEGIA OPTIMIZADA: Cargar todas las preguntas una vez y filtrar en memoria
+        const allQuestions = await this.getAllUserQuestions(filters.firebaseUid);
+        let results = [...allQuestions]; // Copia para filtrar
 
-    // NUEVA ESTRATEGIA: Cargar todas las preguntas una vez y filtrar en memoria
-    // Esto elimina múltiples consultas a Firestore
-    const allQuestions = await this.getAllUserQuestions(filters.firebaseUid);
-    let results = [...allQuestions]; // Copia para filtrar
+        // Filtrar por mock exams usando el cache de relaciones
+        if (filters.mockExamIds && filters.mockExamIds.length > 0) {
+          const questionRelations = await this.getAllQuestionRelations(filters.firebaseUid);
+          const mockExamSet = new Set(filters.mockExamIds);
+          
+          results = results.filter(question => {
+            const questionMockExams = questionRelations.get(question.id) || [];
+            return questionMockExams.some(mockExamId => mockExamSet.has(mockExamId));
+          });
+        }
 
-    // Filtrar por mock exams usando el cache de relaciones
-    if (filters.mockExamIds && filters.mockExamIds.length > 0) {
-      const questionRelations = await this.getAllQuestionRelations(filters.firebaseUid);
-      const mockExamSet = new Set(filters.mockExamIds);
-      
-      results = results.filter(question => {
-        const questionMockExams = questionRelations.get(question.id) || [];
-        return questionMockExams.some(mockExamId => mockExamSet.has(mockExamId));
-      });
-    }
+        // Aplicar todos los demás filtros en memoria (mucho más rápido)
+        if (filters.subjectIds && filters.subjectIds.length > 0) {
+          const subjectSet = new Set(filters.subjectIds);
+          results = results.filter(q => subjectSet.has(q.subjectId));
+        }
 
-    // Aplicar todos los demás filtros en memoria (mucho más rápido)
-    if (filters.subjectIds && filters.subjectIds.length > 0) {
-      const subjectSet = new Set(filters.subjectIds);
-      results = results.filter(q => subjectSet.has(q.subjectId));
-    }
+        if (filters.topicIds && filters.topicIds.length > 0) {
+          const topicSet = new Set(filters.topicIds);
+          results = results.filter(q => topicSet.has(q.topicId));
+        }
 
-    if (filters.topicIds && filters.topicIds.length > 0) {
-      const topicSet = new Set(filters.topicIds);
-      results = results.filter(q => topicSet.has(q.topicId));
-    }
+        if (filters.learningStatus && filters.learningStatus.length === 1) {
+          results = results.filter(q => q.isLearned === filters.learningStatus![0]);
+        }
 
-    if (filters.learningStatus && filters.learningStatus.length === 1) {
-      results = results.filter(q => q.isLearned === filters.learningStatus![0]);
-    }
+        if (filters.keywords) {
+          const keywords = filters.keywords.toLowerCase();
+          results = results.filter(q => 
+            q.theory.toLowerCase().includes(keywords) ||
+            q.type.toLowerCase().includes(keywords)
+          );
+        }
 
-    if (filters.keywords) {
-      const keywords = filters.keywords.toLowerCase();
-      results = results.filter(q => 
-        q.theory.toLowerCase().includes(keywords) ||
-        q.type.toLowerCase().includes(keywords)
-      );
-    }
+        if (filters.failureCountExact !== undefined) {
+          results = results.filter(q => (q.failureCount || 0) === filters.failureCountExact!);
+        }
 
-    if (filters.failureCountExact !== undefined) {
-      results = results.filter(q => (q.failureCount || 0) === filters.failureCountExact!);
-    }
+        if (filters.failureCountMin !== undefined) {
+          results = results.filter(q => (q.failureCount || 0) >= filters.failureCountMin!);
+        }
 
-    if (filters.failureCountMin !== undefined) {
-      results = results.filter(q => (q.failureCount || 0) >= filters.failureCountMin!);
-    }
+        if (filters.failureCountMax !== undefined) {
+          results = results.filter(q => (q.failureCount || 0) <= filters.failureCountMax!);
+        }
 
-    if (filters.failureCountMax !== undefined) {
-      results = results.filter(q => (q.failureCount || 0) <= filters.failureCountMax!);
-    }
-
-    // Los resultados ya vienen ordenados de getAllUserQuestions
-
-    // Guardar en cache por más tiempo
-    cache.set('QUESTIONS', filters.firebaseUid, results, cacheKey, 20 * 60 * 1000); // 20 minutos
-
-    return results;
+        return results;
+      },
+      'QUESTIONS',
+      filters.firebaseUid,
+      cacheKey,
+      60 * 60 * 1000 // 1 hora de cache
+    );
   }
 
   async createQuestion(questionData: Omit<FirestoreQuestion, 'id' | 'createdAt'>, mockExamIds: number[]): Promise<FirestoreQuestion> {
@@ -449,11 +447,9 @@ export class Storage {
 
     await batch.commit();
 
-    // Invalidación más selectiva para minimizar cache misses
-    cache.invalidate('ALL_USER_QUESTIONS', questionData.createdBy);
-    cache.invalidate('ALL_QUESTION_RELATIONS', questionData.createdBy);
-    cache.invalidate('QUESTIONS', questionData.createdBy); // Esto invalidará todas las consultas de preguntas
-    cache.invalidateSelective('USER_STATS', questionData.createdBy, true);
+    // INVALIDACIÓN SÚPER SELECTIVA - solo lo mínimo necesario
+    cache.invalidateSmartly('QUESTIONS', questionData.createdBy, 'create');
+    // NO invalidar QUESTIONS completo - solo las consultas que incluyen "todas"
 
     return question;
   }
@@ -514,12 +510,11 @@ export class Storage {
 
     await batch.commit();
 
-    // Invalidación más selectiva
-    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    // INVALIDACIÓN SÚPER SELECTIVA - solo actualizar lo que cambió
+    cache.invalidateSmartly('QUESTIONS', firebaseUid, 'update', id.toString());
     if (mockExamIds) {
-      cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
+      cache.invalidateSmartly('QUESTION_RELATIONS', firebaseUid, 'update');
     }
-    cache.invalidate('QUESTIONS', firebaseUid);
 
     const updatedDoc = await doc.ref.get();
     return updatedDoc.data() as FirestoreQuestion;
@@ -539,9 +534,8 @@ export class Storage {
     const questionDoc = snapshot.docs[0];
     await questionDoc.ref.update({ isLearned });
 
-    // Invalidación mínima - solo lo necesario
-    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
-    cache.invalidate('QUESTIONS', firebaseUid);
+    // INVALIDACIÓN MÍNIMA - solo actualizar la pregunta específica
+    cache.invalidateSmartly('QUESTIONS', firebaseUid, 'update', questionId.toString());
 
     // Return the updated question with relations
     return this.getQuestionWithRelations(questionId, firebaseUid);
@@ -750,57 +744,56 @@ export class Storage {
 
   // Cache global de todas las preguntas del usuario para minimizar consultas
   async getAllUserQuestions(firebaseUid: string): Promise<FirestoreQuestion[]> {
-    const cached = cache.get<FirestoreQuestion[]>('ALL_USER_QUESTIONS', firebaseUid);
-    if (cached) {
-      console.log("Cache hit for all user questions");
-      return cached;
-    }
+    return cache.getOrFetch(
+      `all_user_questions_${firebaseUid}`,
+      async () => {
+        console.log("Loading all user questions from Firestore - this should happen VERY rarely");
+        const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+          .where('createdBy', '==', firebaseUid)
+          .get();
 
-    console.log("Loading all user questions from Firestore");
-    const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
-      .where('createdBy', '==', firebaseUid)
-      .get();
+        const questions = snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
+        // Sort in memory
+        questions.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
 
-    const questions = snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
-    // Sort in memory
-    questions.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-
-    // Cache for longer time since we're loading everything
-    cache.set('ALL_USER_QUESTIONS', firebaseUid, questions, undefined, 30 * 60 * 1000); // 30 minutos
-
-    return questions;
+        return questions;
+      },
+      'ALL_USER_QUESTIONS',
+      firebaseUid,
+      undefined,
+      60 * 60 * 1000 // 1 hora - cache muy largo
+    );
   }
 
   async getAllQuestionRelations(firebaseUid: string): Promise<Map<number, number[]>> {
-    // Intentar obtener del cache primero
-    const cached = cache.get<Map<number, number[]>>('ALL_QUESTION_RELATIONS', firebaseUid);
-    if (cached) {
-      console.log("Cache hit for all question relations");
-      return cached;
-    }
+    return cache.getOrFetch(
+      `all_question_relations_${firebaseUid}`,
+      async () => {
+        console.log("Loading all question relations from Firestore - this should happen VERY rarely");
+        const snapshot = await firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS)
+          .where('createdBy', '==', firebaseUid)
+          .get();
 
-    console.log("Loading all question relations from Firestore");
-    const snapshot = await firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS)
-      .where('createdBy', '==', firebaseUid)
-      .get();
+        const relationMap = new Map<number, number[]>();
 
-    const relationMap = new Map<number, number[]>();
+        snapshot.docs.forEach(doc => {
+          const relation = doc.data() as FirestoreQuestionMockExam;
+          const questionId = relation.questionId;
+          const mockExamId = relation.mockExamId;
 
-    snapshot.docs.forEach(doc => {
-      const relation = doc.data() as FirestoreQuestionMockExam;
-      const questionId = relation.questionId;
-      const mockExamId = relation.mockExamId;
+          if (!relationMap.has(questionId)) {
+            relationMap.set(questionId, []);
+          }
+          relationMap.get(questionId)!.push(mockExamId);
+        });
 
-      if (!relationMap.has(questionId)) {
-        relationMap.set(questionId, []);
-      }
-      relationMap.get(questionId)!.push(mockExamId);
-    });
-
-    // Guardar en cache por más tiempo
-    cache.set('ALL_QUESTION_RELATIONS', firebaseUid, relationMap, undefined, 45 * 60 * 1000); // 45 minutos
-
-    return relationMap;
+        return relationMap;
+      },
+      'ALL_QUESTION_RELATIONS',
+      firebaseUid,
+      undefined,
+      90 * 60 * 1000 // 1.5 horas - cache muy largo
+    );
   }
 
   async getQuestionsForMockExam(mockExamId: number, firebaseUid: string): Promise<number[]> {

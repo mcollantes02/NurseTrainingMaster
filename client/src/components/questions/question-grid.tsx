@@ -78,11 +78,14 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
       console.log("First question structure:", data[0]);
       return data;
     },
-    refetchOnWindowFocus: false,
-    staleTime: 15 * 60 * 1000, // 15 minutes - aumentado significativamente
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false, // NUNCA refetch al cambiar foco
+    refetchOnMount: false, // NUNCA refetch al montar
+    refetchOnReconnect: false, // NUNCA refetch al reconectar
+    staleTime: 60 * 60 * 1000, // 1 HORA - cache súper agresivo
+    gcTime: 2 * 60 * 60 * 1000, // 2 HORAS - mantener en memoria más tiempo
     enabled: true,
-    refetchOnMount: false, // No refetch on mount
+    retry: 1, // Reducir reintentos
+    retryDelay: 1000, // Delay entre reintentos
   });
 
   // Eliminar el refetch automático al cambiar filtros - usar solo el cache de React Query
