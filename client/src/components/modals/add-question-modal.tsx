@@ -96,7 +96,6 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
         subjectName: "",
         topicName: "",
         type: "error",
-        theory: "",
         isLearned: false,
         failureCount: 0,
       });
@@ -167,13 +166,13 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
     onMutate: async (variables) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
-      
+
       // Snapshot previous state
       const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
-      
+
       // Generate temporary ID for optimistic update
       const tempId = Date.now();
-      
+
       // Create optimistic question immediately
       const optimisticQuestion = {
         id: tempId,
@@ -190,20 +189,20 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
         subject: subjects.find(s => s.name === variables.subjectName) || { name: variables.subjectName },
         topic: topics.find(t => t.name === variables.topicName) || { name: variables.topicName }
       };
-      
+
       // Optimistically update all question queries
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return [optimisticQuestion];
         return [optimisticQuestion, ...old];
       });
-      
+
       return { previousQuestions, tempId };
     },
     onSuccess: (newQuestion, variables, context) => {
       // Replace the optimistic update with real data
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old) return [newQuestion];
-        
+
         const questionWithRelations = {
           ...newQuestion,
           mockExam: mockExams.find(exam => variables.mockExamIds.includes(exam.id)) || null,
@@ -212,18 +211,18 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
           topic: topics.find(t => t.name === variables.topicName) || { name: variables.topicName },
           createdBy: { uid: newQuestion.createdBy }
         };
-        
+
         // Replace temp question with real one
         return old.map((q: any) => q.id === context?.tempId ? questionWithRelations : q);
       });
 
       // Invalidate cache to sync in background
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ["/api/questions"],
         refetchType: "none"
       });
 
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ["/api/mock-exams"],
         refetchType: "none"
       });
@@ -233,7 +232,6 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
         subjectName: "",
         topicName: "",
         type: "error",
-        theory: "",
         isLearned: false,
         failureCount: 0,
       });
@@ -250,7 +248,7 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
           queryClient.setQueryData(queryKey, data);
         });
       }
-      
+
       console.error("Create question error:", error);
       toast({
         title: t("error.title"),

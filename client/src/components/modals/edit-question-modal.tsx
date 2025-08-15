@@ -86,7 +86,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
     if (question) {
       // Extract mock exam IDs from different possible sources
       let mockExamIds: number[] = [];
-      
+
       if (question.mockExamIds && Array.isArray(question.mockExamIds)) {
         // Use mockExamIds if available (from server response)
         mockExamIds = question.mockExamIds;
@@ -219,7 +219,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
       // Update all question queries with the real response data
       queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
         if (!old || !question) return old;
-        
+
         const questionWithRelations = {
           ...updatedQuestion,
           mockExam: mockExams?.find(exam => updatedQuestion.mockExamIds?.includes(exam.id)) || null,
@@ -227,7 +227,7 @@ export function EditQuestionModal({ isOpen, onClose, question }: EditQuestionMod
           subject: subjects?.find(s => s.id === updatedQuestion.subjectId) || question.subject,
           topic: topics?.find(t => t.id === updatedQuestion.topicId) || question.topic
         };
-        
+
         return old.map((q: any) => 
           q.id === question.id ? questionWithRelations : q
         );

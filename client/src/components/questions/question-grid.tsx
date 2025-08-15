@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/useLanguage";
 import { QuestionCard } from "./question-card";
@@ -29,6 +29,7 @@ interface QuestionGridProps {
 
 export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }: QuestionGridProps) {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [editingQuestion, setEditingQuestion] = useState<QuestionWithRelations | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
