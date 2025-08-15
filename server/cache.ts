@@ -136,6 +136,33 @@ class Cache {
     }
   }
 
+  // Invalidación inteligente más granular
+  invalidateSmartly(namespace: string, userId: string, operation: 'create' | 'update' | 'delete', identifier?: string): void {
+    switch (operation) {
+      case 'create':
+        // Para creaciones, invalidar solo los listados generales
+        this.invalidate('ALL_USER_QUESTIONS', userId);
+        this.invalidate('ALL_QUESTION_RELATIONS', userId);
+        this.invalidate('QUESTION_COUNTS', userId);
+        break;
+      case 'update':
+        // Para actualizaciones, invalidar específicamente
+        if (identifier) {
+          this.invalidate(namespace, userId, identifier);
+        }
+        this.invalidate('ALL_USER_QUESTIONS', userId);
+        this.invalidate('QUESTION_COUNTS', userId);
+        break;
+      case 'delete':
+        // Para eliminaciones, invalidar todo lo relacionado
+        this.invalidate(namespace, userId);
+        this.invalidate('ALL_USER_QUESTIONS', userId);
+        this.invalidate('ALL_QUESTION_RELATIONS', userId);
+        this.invalidate('QUESTION_COUNTS', userId);
+        break;
+    }
+  }
+
   private getDefaultTtl(namespace: string): number {
     switch (namespace) {
       case 'MOCK_EXAMS':
