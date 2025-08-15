@@ -17,13 +17,16 @@ export class FirestoreCache {
   private cache = new Map<string, CacheEntry<any>>();
   private stats: CacheStats = { hits: 0, misses: 0, size: 0 };
   
-  // TTL por tipo de datos (en milisegundos)
+  // TTL por tipo de datos (en milisegundos) - TTL más largos para reducir operaciones
   private readonly TTL = {
-    SUBJECTS: 5 * 60 * 1000,      // 5 minutos - datos relativamente estáticos
-    TOPICS: 5 * 60 * 1000,        // 5 minutos - datos relativamente estáticos
-    MOCK_EXAMS: 2 * 60 * 1000,    // 2 minutos - pueden cambiar ocasionalmente
-    QUESTIONS: 30 * 1000,         // 30 segundos - datos más dinámicos
-    QUESTION_COUNTS: 30 * 1000,   // 30 segundos - se actualiza con preguntas
+    SUBJECTS: 30 * 60 * 1000,     // 30 minutos - datos muy estáticos
+    TOPICS: 30 * 60 * 1000,       // 30 minutos - datos muy estáticos
+    MOCK_EXAMS: 15 * 60 * 1000,   // 15 minutos - cambian raramente
+    QUESTIONS: 5 * 60 * 1000,     // 5 minutos - datos más dinámicos pero cacheable
+    QUESTION_COUNTS: 5 * 60 * 1000, // 5 minutos - se actualiza con preguntas
+    QUESTION_RELATIONS: 10 * 60 * 1000, // 10 minutos - relaciones question-mockexam
+    USER_STATS: 3 * 60 * 1000,    // 3 minutos - estadísticas de usuario
+    TRASHED_QUESTIONS: 10 * 60 * 1000, // 10 minutos - preguntas eliminadas
   };
 
   private generateKey(prefix: string, userId: string, params?: any): string {
@@ -115,6 +118,38 @@ export class FirestoreCache {
     const now = Date.now();
     for (const [key, entry] of this.cache) {
       if (now - entry.timestamp > entry.ttl) {
+        this.cache.delete(key);
+        this.stats.size--;
+      }
+    }
+  }
+
+  // Métodos para cache por lotes
+  setBatch<T>(prefix: string, userId: string, items: Record<string, T>, baseTtl?: number): void {
+    const ttl = baseTtl || this.TTL[prefix as keyof typeof this.TTL] || 60000;
+    for (const [itemKey, data] of Object.entries(items)) {
+      const key = this.generateKey(prefix, userId, itemKey);
+      this.cache.set(key, {
+        data,
+        timestamp: Date.now(),
+        ttl
+      });
+      this.stats.size++;
+    }
+  }
+
+  getBatch<T>(prefix: string, userId: string, itemKeys: string[]): Record<string, T | null> {
+    const result: Record<string, T | null> = {};
+    for (const itemKey of itemKeys) {
+      result[itemKey] = this.get<T>(prefix, userId, itemKey);
+    }
+    return result;
+  }
+
+  // Invalidar por patrón más específico
+  invalidatePattern(pattern: string): void {
+    for (const [key] of this.cache) {
+      if (key.includes(pattern)) {
         this.cache.delete(key);
         this.stats.size--;
       }

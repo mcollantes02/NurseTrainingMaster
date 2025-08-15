@@ -34,12 +34,23 @@ export class Storage {
 
   // Mock Exam methods
   async getMockExams(firebaseUid: string): Promise<FirestoreMockExam[]> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<FirestoreMockExam[]>('MOCK_EXAMS', firebaseUid);
+    if (cached) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
       .where('createdBy', '==', firebaseUid)
       .get();
     const mockExams = snapshot.docs.map(doc => doc.data() as FirestoreMockExam);
     // Sort in memory to avoid Firestore index requirement
-    return mockExams.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+    const sortedMockExams = mockExams.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+
+    // Guardar en cache
+    cache.set('MOCK_EXAMS', firebaseUid, sortedMockExams);
+
+    return sortedMockExams;
   }
 
   async createMockExam(mockExamData: Omit<FirestoreMockExam, 'id' | 'createdAt'>): Promise<FirestoreMockExam> {
@@ -56,6 +67,11 @@ export class Storage {
     };
 
     await docRef.set(mockExam);
+    
+    // Invalidate cache
+    cache.invalidate('MOCK_EXAMS', mockExamData.createdBy);
+    cache.invalidate('USER_STATS', mockExamData.createdBy);
+    
     return mockExam;
   }
 
@@ -112,20 +128,38 @@ export class Storage {
     // Sort in memory to avoid Firestore index requirement
     const sortedSubjects = subjects.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Guardar en cache
+    // Guardar en cache con TTL largo
     cache.set('SUBJECTS', firebaseUid, sortedSubjects);
+
+    // También cachear cada subject individualmente
+    const subjectMap: Record<string, FirestoreSubject> = {};
+    sortedSubjects.forEach(subject => {
+      subjectMap[subject.name] = subject;
+    });
+    cache.setBatch('SUBJECT_BY_NAME', firebaseUid, subjectMap);
 
     return sortedSubjects;
   }
 
   async getSubjectByName(name: string, firebaseUid: string): Promise<FirestoreSubject | null> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<FirestoreSubject>('SUBJECT_BY_NAME', firebaseUid, name);
+    if (cached !== null) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
       .where('name', '==', name)
       .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
-    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreSubject;
+    const subject = snapshot.empty ? null : snapshot.docs[0].data() as FirestoreSubject;
+    
+    // Guardar en cache
+    cache.set('SUBJECT_BY_NAME', firebaseUid, subject, name);
+    
+    return subject;
   }
 
   async createSubject(subjectData: Omit<FirestoreSubject, 'id' | 'createdAt'>): Promise<FirestoreSubject> {
@@ -142,8 +176,10 @@ export class Storage {
     };
 
     await docRef.set(subject);
-    // Invalidate cache for subjects
+    // Invalidate cache for subjects and related caches
     cache.invalidate('SUBJECTS', subjectData.createdBy);
+    cache.invalidate('SUBJECT_BY_NAME', subjectData.createdBy);
+    cache.invalidate('USER_STATS', subjectData.createdBy);
     return subject;
   }
 
@@ -205,20 +241,38 @@ export class Storage {
     // Sort in memory to avoid Firestore index requirement
     const sortedTopics = topics.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Guardar en cache
+    // Guardar en cache con TTL largo
     cache.set('TOPICS', firebaseUid, sortedTopics);
+
+    // También cachear cada topic individualmente
+    const topicMap: Record<string, FirestoreTopic> = {};
+    sortedTopics.forEach(topic => {
+      topicMap[topic.name] = topic;
+    });
+    cache.setBatch('TOPIC_BY_NAME', firebaseUid, topicMap);
 
     return sortedTopics;
   }
 
   async getTopicByName(name: string, firebaseUid: string): Promise<FirestoreTopic | null> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<FirestoreTopic>('TOPIC_BY_NAME', firebaseUid, name);
+    if (cached !== null) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
       .where('name', '==', name)
       .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
-    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreTopic;
+    const topic = snapshot.empty ? null : snapshot.docs[0].data() as FirestoreTopic;
+    
+    // Guardar en cache
+    cache.set('TOPIC_BY_NAME', firebaseUid, topic, name);
+    
+    return topic;
   }
 
   async createTopic(topicData: Omit<FirestoreTopic, 'id' | 'createdAt'>): Promise<FirestoreTopic> {
@@ -235,8 +289,10 @@ export class Storage {
     };
 
     await docRef.set(topic);
-    // Invalidate cache for topics
+    // Invalidate cache for topics and related caches
     cache.invalidate('TOPICS', topicData.createdBy);
+    cache.invalidate('TOPIC_BY_NAME', topicData.createdBy);
+    cache.invalidate('USER_STATS', topicData.createdBy);
     return topic;
   }
 
@@ -473,6 +529,8 @@ export class Storage {
     // Invalidar cache relacionado con preguntas y conteos
     cache.invalidate('QUESTIONS', questionData.createdBy);
     cache.invalidate('QUESTION_COUNTS', questionData.createdBy);
+    cache.invalidate('QUESTION_RELATIONS', questionData.createdBy);
+    cache.invalidate('USER_STATS', questionData.createdBy);
 
     return question;
   }
@@ -739,12 +797,23 @@ export class Storage {
   }
 
   async getQuestionMockExams(questionId: number, firebaseUid: string): Promise<number[]> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<number[]>('QUESTION_RELATIONS', firebaseUid, questionId.toString());
+    if (cached !== null) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS)
       .where('questionId', '==', questionId)
       .where('createdBy', '==', firebaseUid)
       .get();
 
-    return snapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).mockExamId);
+    const mockExamIds = snapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).mockExamId);
+    
+    // Guardar en cache
+    cache.set('QUESTION_RELATIONS', firebaseUid, mockExamIds, questionId.toString());
+    
+    return mockExamIds;
   }
 
   async getQuestionsForMockExam(mockExamId: number, firebaseUid: string): Promise<number[]> {
@@ -791,6 +860,12 @@ export class Storage {
 
   // User stats
   async getUserStats(firebaseUid: string) {
+    // Intentar obtener del cache primero
+    const cached = cache.get<any>('USER_STATS', firebaseUid);
+    if (cached) {
+      return cached;
+    }
+
     const [mockExams, subjects, topics, questions, trashedQuestions] = await Promise.all([
       this.getMockExams(firebaseUid),
       this.getSubjects(firebaseUid),
@@ -802,7 +877,7 @@ export class Storage {
     const learnedQuestions = questions.filter(q => q.isLearned);
     const unlearnedQuestions = questions.filter(q => !q.isLearned);
 
-    return {
+    const stats = {
       totalMockExams: mockExams.length,
       totalSubjects: subjects.length,
       totalTopics: topics.length,
@@ -811,15 +886,31 @@ export class Storage {
       unlearnedQuestions: unlearnedQuestions.length,
       trashedQuestions: trashedQuestions.length,
     };
+
+    // Guardar en cache
+    cache.set('USER_STATS', firebaseUid, stats);
+
+    return stats;
   }
 
   // Trash methods
   async getTrashedQuestions(firebaseUid: string): Promise<FirestoreTrashedQuestion[]> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<FirestoreTrashedQuestion[]>('TRASHED_QUESTIONS', firebaseUid);
+    if (cached) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
       .where('createdBy', '==', firebaseUid)
       .get();
     const trashedQuestions = snapshot.docs.map(doc => doc.data() as FirestoreTrashedQuestion);
-    return trashedQuestions.sort((a, b) => b.deletedAt.seconds - a.deletedAt.seconds);
+    const sortedTrashedQuestions = trashedQuestions.sort((a, b) => b.deletedAt.seconds - a.deletedAt.seconds);
+
+    // Guardar en cache
+    cache.set('TRASHED_QUESTIONS', firebaseUid, sortedTrashedQuestions);
+
+    return sortedTrashedQuestions;
   }
 
   async restoreQuestion(trashedQuestionId: number, firebaseUid: string): Promise<boolean> {
