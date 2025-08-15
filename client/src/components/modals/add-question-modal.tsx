@@ -165,8 +165,11 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
       return response.json();
     },
     onSuccess: (newQuestion, variables) => {
+      // Invalidar TODOS los queries relacionados con preguntas de forma agresiva
       queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
       queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.refetchQueries({ queryKey: ["/api/questions"] });
+      queryClient.refetchQueries({ queryKey: ["/api/mock-exams"] });
 
       // Invalidate specific mock exam queries for each selected exam
       if (variables.mockExamIds && Array.isArray(variables.mockExamIds)) {

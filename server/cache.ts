@@ -23,36 +23,13 @@ class Cache {
   }
 
   get<T>(namespace: string, userId: string, extra?: string): T | null {
-    const key = this.generateKey(namespace, userId, extra);
-    const entry = this.cache.get(key);
-
-    if (!entry) {
-      this.stats.misses++;
-      return null;
-    }
-
-    // Check if expired
-    if (Date.now() - entry.timestamp > entry.ttl) {
-      this.cache.delete(key);
-      this.stats.misses++;
-      return null;
-    }
-
-    this.stats.hits++;
-    return entry.data;
+    // DESHABILITAR CACHE COMPLETAMENTE para debugging
+    return null;
   }
 
   set<T>(namespace: string, userId: string, data: T, extra?: string, customTtl?: number): void {
-    const key = this.generateKey(namespace, userId, extra);
-    const ttl = customTtl || this.getDefaultTtl(namespace);
-
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl
-    });
-
-    this.stats.sets++;
+    // DESHABILITAR CACHE COMPLETAMENTE para debugging
+    return;
   }
 
   setBatch<T>(namespace: string, userId: string, dataMap: Record<string, T>, customTtl?: number): void {
@@ -63,37 +40,16 @@ class Cache {
 
   // Método para prevenir consultas duplicadas simultáneas
   async getOrFetch<T>(
-    key: string, 
-    fetcher: () => Promise<T>, 
-    namespace: string, 
-    userId: string, 
+    key: string,
+    fetcher: () => Promise<T>,
+    namespace: string,
+    userId: string,
     extra?: string,
     customTtl?: number
   ): Promise<T> {
-    // Verificar cache primero
-    const cached = this.get<T>(namespace, userId, extra);
-    if (cached !== null) {
-      return cached;
-    }
-
-    // Si ya hay una consulta en progreso para esta key, esperarla
-    const lockKey = this.generateKey(namespace, userId, extra);
-    if (this.locks.has(lockKey)) {
-      return this.locks.get(lockKey);
-    }
-
-    // Crear nueva consulta
-    const promise = fetcher().then(data => {
-      this.set(namespace, userId, data, extra, customTtl);
-      this.locks.delete(lockKey);
-      return data;
-    }).catch(error => {
-      this.locks.delete(lockKey);
-      throw error;
-    });
-
-    this.locks.set(lockKey, promise);
-    return promise;
+    // DESHABILITAR CACHE - siempre fetch datos frescos
+    console.log(`Fetching fresh data for ${key} (cache disabled)`);
+    return await fetcher();
   }
 
   // Invalidación MUCHO más selectiva - solo invalida lo que realmente cambió
