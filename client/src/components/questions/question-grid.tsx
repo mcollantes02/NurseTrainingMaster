@@ -79,17 +79,14 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
       return data;
     },
     refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    enabled: true, // Use 'true' directly as isLoadingUser is mocked to false
-    keepPreviousData: true, // Keep previous data while fetching new data
-    refetchOnMount: false, // Don't refetch on component mount if data is fresh
+    staleTime: 15 * 60 * 1000, // 15 minutes - aumentado significativamente
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    enabled: true,
+    refetchOnMount: false, // No refetch on mount
   });
 
-  // Force refetch when filters change to ensure fresh data across tabs
-  useEffect(() => {
-    refetch();
-  }, [filters, refetch]);
+  // Eliminar el refetch automático al cambiar filtros - usar solo el cache de React Query
+  // Esto evita solicitudes innecesarias
 
   const totalPages = Math.ceil(questions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;

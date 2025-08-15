@@ -1,4 +1,3 @@
-
 import { Timestamp } from 'firebase-admin/firestore';
 
 interface CacheEntry<T> {
@@ -10,49 +9,31 @@ interface CacheEntry<T> {
 interface CacheStats {
   hits: number;
   misses: number;
-  size: number;
+  sets: number;
+  invalidations: number;
 }
 
-export class FirestoreCache {
+class Cache {
   private cache = new Map<string, CacheEntry<any>>();
-  private stats: CacheStats = { hits: 0, misses: 0, size: 0 };
-  
-  // TTL por tipo de datos (en milisegundos) - TTL más largos para reducir operaciones
-  private readonly TTL = {
-    SUBJECTS: 60 * 60 * 1000,     // 60 minutos - datos muy estáticos
-    TOPICS: 60 * 60 * 1000,       // 60 minutos - datos muy estáticos
-    MOCK_EXAMS: 30 * 60 * 1000,   // 30 minutos - cambian raramente
-    QUESTIONS: 10 * 60 * 1000,    // 10 minutos - datos más dinámicos pero cacheable
-    QUESTION_COUNTS: 10 * 60 * 1000, // 10 minutos - se actualiza con preguntas
-    QUESTION_RELATIONS: 20 * 60 * 1000, // 20 minutos - relaciones question-mockexam
-    ALL_USER_QUESTIONS: 10 * 60 * 1000, // 10 minutos - todas las preguntas del usuario
-    ALL_QUESTION_RELATIONS: 20 * 60 * 1000, // 20 minutos - todas las relaciones del usuario
-    USER_STATS: 5 * 60 * 1000,    // 5 minutos - estadísticas de usuario
-    TRASHED_QUESTIONS: 15 * 60 * 1000, // 15 minutos - preguntas eliminadas
-  };
+  private stats: CacheStats = { hits: 0, misses: 0, sets: 0, invalidations: 0 };
 
-  private generateKey(prefix: string, userId: string, params?: any): string {
-    if (params) {
-      const sortedParams = JSON.stringify(params, Object.keys(params).sort());
-      return `${prefix}:${userId}:${sortedParams}`;
-    }
-    return `${prefix}:${userId}`;
+  private generateKey(namespace: string, userId: string, extra?: string): string {
+    return extra ? `${namespace}:${userId}:${extra}` : `${namespace}:${userId}`;
   }
 
-  get<T>(prefix: string, userId: string, params?: any): T | null {
-    const key = this.generateKey(prefix, userId, params);
+  get<T>(namespace: string, userId: string, extra?: string): T | null {
+    const key = this.generateKey(namespace, userId, extra);
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       this.stats.misses++;
       return null;
     }
 
-    // Verificar TTL
+    // Check if expired
     if (Date.now() - entry.timestamp > entry.ttl) {
       this.cache.delete(key);
       this.stats.misses++;
-      this.stats.size--;
       return null;
     }
 
@@ -60,109 +41,81 @@ export class FirestoreCache {
     return entry.data;
   }
 
-  set<T>(prefix: string, userId: string, data: T, params?: any): void {
-    const key = this.generateKey(prefix, userId, params);
-    const ttl = this.TTL[prefix as keyof typeof this.TTL] || 60000; // 1 minuto por defecto
-    
-    // Si ya existía, no incrementar size
-    const existed = this.cache.has(key);
-    
+  set<T>(namespace: string, userId: string, data: T, extra?: string, customTtl?: number): void {
+    const key = this.generateKey(namespace, userId, extra);
+    const ttl = customTtl || this.getDefaultTtl(namespace);
+
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
       ttl
     });
 
-    if (!existed) {
-      this.stats.size++;
-    }
+    this.stats.sets++;
   }
 
-  invalidate(prefix: string, userId: string, params?: any): void {
-    if (params) {
-      const key = this.generateKey(prefix, userId, params);
-      if (this.cache.delete(key)) {
-        this.stats.size--;
-      }
+  setBatch<T>(namespace: string, userId: string, dataMap: Record<string, T>, customTtl?: number): void {
+    Object.entries(dataMap).forEach(([extra, data]) => {
+      this.set(namespace, userId, data, extra, customTtl);
+    });
+  }
+
+  invalidate(namespace: string, userId: string, extra?: string): void {
+    if (extra) {
+      const key = this.generateKey(namespace, userId, extra);
+      this.cache.delete(key);
     } else {
-      // Invalidar todos los entries que empiecen con el prefix para este usuario
-      const pattern = `${prefix}:${userId}`;
-      for (const [key] of this.cache) {
-        if (key.startsWith(pattern)) {
+      // Invalidate all keys for this namespace and user
+      const prefix = `${namespace}:${userId}`;
+      for (const key of this.cache.keys()) {
+        if (key.startsWith(prefix)) {
           this.cache.delete(key);
-          this.stats.size--;
         }
       }
     }
+    this.stats.invalidations++;
   }
 
-  invalidateUser(userId: string): void {
-    // Invalidar toda la cache para un usuario específico
-    for (const [key] of this.cache) {
-      if (key.includes(`:${userId}:`)) {
-        this.cache.delete(key);
-        this.stats.size--;
-      }
+  // Invalidación selectiva más inteligente
+  invalidateSelective(namespace: string, userId: string, preserveStatic: boolean = true): void {
+    if (preserveStatic && (namespace === 'SUBJECTS' || namespace === 'TOPICS' || namespace === 'MOCK_EXAMS')) {
+      // No invalidar datos que cambian poco
+      return;
+    }
+    this.invalidate(namespace, userId);
+  }
+
+  private getDefaultTtl(namespace: string): number {
+    switch (namespace) {
+      case 'MOCK_EXAMS':
+      case 'SUBJECTS':
+      case 'TOPICS':
+        return 2 * 60 * 60 * 1000; // 2 horas - datos que casi no cambian
+      case 'QUESTIONS':
+        return 30 * 60 * 1000; // 30 minutos - aumentado significativamente
+      case 'QUESTION_COUNTS':
+      case 'QUESTION_RELATIONS':
+      case 'ALL_QUESTION_RELATIONS':
+        return 45 * 60 * 1000; // 45 minutos - más tiempo para relaciones
+      case 'USER_STATS':
+        return 15 * 60 * 1000; // 15 minutos
+      case 'TRASHED_QUESTIONS':
+        return 60 * 60 * 1000; // 1 hora
+      case 'ALL_USER_QUESTIONS':
+        return 20 * 60 * 1000; // 20 minutos para el batch completo
+      default:
+        return 10 * 60 * 1000; // 10 minutos default
     }
   }
 
   clear(): void {
     this.cache.clear();
-    this.stats = { hits: 0, misses: 0, size: 0 };
+    this.stats = { hits: 0, misses: 0, sets: 0, invalidations: 0 };
   }
 
-  getStats(): CacheStats {
-    return { ...this.stats };
-  }
-
-  // Cleanup automático de entradas expiradas
-  cleanup(): void {
-    const now = Date.now();
-    for (const [key, entry] of this.cache) {
-      if (now - entry.timestamp > entry.ttl) {
-        this.cache.delete(key);
-        this.stats.size--;
-      }
-    }
-  }
-
-  // Métodos para cache por lotes
-  setBatch<T>(prefix: string, userId: string, items: Record<string, T>, baseTtl?: number): void {
-    const ttl = baseTtl || this.TTL[prefix as keyof typeof this.TTL] || 60000;
-    for (const [itemKey, data] of Object.entries(items)) {
-      const key = this.generateKey(prefix, userId, itemKey);
-      this.cache.set(key, {
-        data,
-        timestamp: Date.now(),
-        ttl
-      });
-      this.stats.size++;
-    }
-  }
-
-  getBatch<T>(prefix: string, userId: string, itemKeys: string[]): Record<string, T | null> {
-    const result: Record<string, T | null> = {};
-    for (const itemKey of itemKeys) {
-      result[itemKey] = this.get<T>(prefix, userId, itemKey);
-    }
-    return result;
-  }
-
-  // Invalidar por patrón más específico
-  invalidatePattern(pattern: string): void {
-    for (const [key] of this.cache) {
-      if (key.includes(pattern)) {
-        this.cache.delete(key);
-        this.stats.size--;
-      }
-    }
+  getStats(): CacheStats & { size: number } {
+    return { ...this.stats, size: this.cache.size };
   }
 }
 
-// Instancia global del cache
-export const cache = new FirestoreCache();
-
-// Cleanup cada 5 minutos
-setInterval(() => {
-  cache.cleanup();
-}, 5 * 60 * 1000);
+export const cache = new Cache();
