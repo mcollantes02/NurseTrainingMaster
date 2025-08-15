@@ -65,17 +65,23 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
     queryParams.append('failureCountMax', filters.failureCount.max.toString());
   }
 
+  // Mock isLoadingUser to be false for the purpose of this example as it's not provided
+  const isLoadingUser = false; 
+
   const { data: questions = [], isLoading, refetch } = useQuery({
     queryKey: ["/api/questions", queryParams.toString()],
     queryFn: async () => {
+      console.log("Making API request with params:", queryParams.toString());
       const url = `/api/questions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       const response = await apiRequest("GET", url);
-      return response.json();
+      const data = await response.json();
+      console.log("First question structure:", data[0]);
+      return data;
     },
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    enabled: true,
+    enabled: true, // Use 'true' directly as isLoadingUser is mocked to false
     keepPreviousData: true, // Keep previous data while fetching new data
     refetchOnMount: false, // Don't refetch on component mount if data is fresh
   });
@@ -191,8 +197,8 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
               </h3>
               <div className="space-y-2">
                 {examQuestions.map((question) => (
-                  <QuestionCard 
-                    key={question.id} 
+                  <QuestionCard
+                    key={question.id}
                     question={question}
                     onClick={() => handleQuestionClick(question)}
                     onEdit={() => handleQuestionEdit(question)}

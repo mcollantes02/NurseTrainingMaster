@@ -482,6 +482,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Question not found" });
       }
 
+      // Invalidar cache de papelera para que se muestre inmediatamente
+      cache.invalidate('TRASHED_QUESTIONS', firebaseUid);
+
       res.json({ message: "Question deleted successfully" });
     } catch (error) {
       console.error("Delete question error:", error);
@@ -516,12 +519,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/trash/:id/restore", requireAuth, async (req, res) => {
     try {
       const firebaseUid = req.firebaseUid!;
-      const id = parseInt(req.params.id);
-      const success = await storage.restoreQuestion(id, firebaseUid);
+      const trashedQuestionId = parseInt(req.params.id);
+      console.log("Attempting to restore trashed question ID:", trashedQuestionId); // Debug log
+      
+      const success = await storage.restoreQuestion(trashedQuestionId, firebaseUid);
 
       if (!success) {
+        console.log("Failed to restore question ID:", trashedQuestionId); // Debug log
         return res.status(404).json({ message: "Question not found or cannot be restored" });
       }
+
+      // Invalidate relevant caches after successful restoration
+      cache.invalidate('QUESTIONS', firebaseUid);
+      cache.invalidate('QUESTION_COUNTS', firebaseUid);
+      cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+      cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
+      cache.invalidate('TRASHED_QUESTIONS', firebaseUid);
 
       res.json({ message: "Question restored successfully" });
     } catch (error) {

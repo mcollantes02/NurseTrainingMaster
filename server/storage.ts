@@ -838,12 +838,12 @@ export class Storage {
       .get();
 
     const relationMap = new Map<number, number[]>();
-    
+
     snapshot.docs.forEach(doc => {
       const relation = doc.data() as FirestoreQuestionMockExam;
       const questionId = relation.questionId;
       const mockExamId = relation.mockExamId;
-      
+
       if (!relationMap.has(questionId)) {
         relationMap.set(questionId, []);
       }
@@ -1010,12 +1010,15 @@ export class Storage {
 
     await batch.commit();
 
-    // Invalidate cache
+    // Invalidate cache completamente
     cache.invalidate('QUESTIONS', firebaseUid);
     cache.invalidate('QUESTION_COUNTS', firebaseUid);
     cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
     cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
+    cache.invalidate('TRASHED_QUESTIONS', firebaseUid);
+    cache.invalidate('USER_STATS', firebaseUid);
 
+    console.log("Question restored successfully with ID:", questionId);
     return true;
   }
 

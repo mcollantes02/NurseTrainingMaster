@@ -19,16 +19,16 @@ export class FirestoreCache {
   
   // TTL por tipo de datos (en milisegundos) - TTL más largos para reducir operaciones
   private readonly TTL = {
-    SUBJECTS: 30 * 60 * 1000,     // 30 minutos - datos muy estáticos
-    TOPICS: 30 * 60 * 1000,       // 30 minutos - datos muy estáticos
-    MOCK_EXAMS: 15 * 60 * 1000,   // 15 minutos - cambian raramente
-    QUESTIONS: 5 * 60 * 1000,     // 5 minutos - datos más dinámicos pero cacheable
-    QUESTION_COUNTS: 5 * 60 * 1000, // 5 minutos - se actualiza con preguntas
-    QUESTION_RELATIONS: 10 * 60 * 1000, // 10 minutos - relaciones question-mockexam
-    ALL_USER_QUESTIONS: 5 * 60 * 1000, // 5 minutos - todas las preguntas del usuario
-    ALL_QUESTION_RELATIONS: 10 * 60 * 1000, // 10 minutos - todas las relaciones del usuario
-    USER_STATS: 3 * 60 * 1000,    // 3 minutos - estadísticas de usuario
-    TRASHED_QUESTIONS: 10 * 60 * 1000, // 10 minutos - preguntas eliminadas
+    SUBJECTS: 60 * 60 * 1000,     // 60 minutos - datos muy estáticos
+    TOPICS: 60 * 60 * 1000,       // 60 minutos - datos muy estáticos
+    MOCK_EXAMS: 30 * 60 * 1000,   // 30 minutos - cambian raramente
+    QUESTIONS: 10 * 60 * 1000,    // 10 minutos - datos más dinámicos pero cacheable
+    QUESTION_COUNTS: 10 * 60 * 1000, // 10 minutos - se actualiza con preguntas
+    QUESTION_RELATIONS: 20 * 60 * 1000, // 20 minutos - relaciones question-mockexam
+    ALL_USER_QUESTIONS: 10 * 60 * 1000, // 10 minutos - todas las preguntas del usuario
+    ALL_QUESTION_RELATIONS: 20 * 60 * 1000, // 20 minutos - todas las relaciones del usuario
+    USER_STATS: 5 * 60 * 1000,    // 5 minutos - estadísticas de usuario
+    TRASHED_QUESTIONS: 15 * 60 * 1000, // 15 minutos - preguntas eliminadas
   };
 
   private generateKey(prefix: string, userId: string, params?: any): string {
