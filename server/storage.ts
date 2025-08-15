@@ -826,6 +826,36 @@ export class Storage {
     return mockExamIds;
   }
 
+  async getAllQuestionRelations(firebaseUid: string): Promise<Map<number, number[]>> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<Map<number, number[]>>('ALL_QUESTION_RELATIONS', firebaseUid);
+    if (cached) {
+      return cached;
+    }
+
+    const snapshot = await firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS)
+      .where('createdBy', '==', firebaseUid)
+      .get();
+
+    const relationMap = new Map<number, number[]>();
+    
+    snapshot.docs.forEach(doc => {
+      const relation = doc.data() as FirestoreQuestionMockExam;
+      const questionId = relation.questionId;
+      const mockExamId = relation.mockExamId;
+      
+      if (!relationMap.has(questionId)) {
+        relationMap.set(questionId, []);
+      }
+      relationMap.get(questionId)!.push(mockExamId);
+    });
+
+    // Guardar en cache
+    cache.set('ALL_QUESTION_RELATIONS', firebaseUid, relationMap);
+
+    return relationMap;
+  }
+
   async getQuestionsForMockExam(mockExamId: number, firebaseUid: string): Promise<number[]> {
     // Cache para conteos de preguntas por mock exam
     const cacheKey = `mockExam_${mockExamId}`;
