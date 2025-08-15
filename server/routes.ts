@@ -322,10 +322,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subjectMap = new Map(subjects.map(subject => [subject.id, subject]));
       const topicMap = new Map(topics.map(topic => [topic.id, topic]));
 
-      // Add relations to questions
-      const questionsWithRelations = await Promise.all(questions.map(async question => {
-        // Get mock exams for this question
-        const questionMockExamIds = await storage.getQuestionMockExams(question.id, firebaseUid);
+      // Optimized: Get all question-mockexam relations in batch
+      const allQuestionIds = questions.map(q => q.id);
+      const questionMockExamMap = new Map<number, number[]>();
+      
+      // Batch query for all question-mockexam relations
+      if (allQuestionIds.length > 0) {
+        const batches = [];
+        for (let i = 0; i < allQuestionIds.length; i += 10) {
+          batches.push(allQuestionIds.slice(i, i + 10));
+        }
+
+        for (const batch of batches) {
+          const relationSnapshot = await firestore.collection('question_mock_exams')
+            .where('questionId', 'in', batch)
+            .where('createdBy', '==', firebaseUid)
+            .get();
+
+          relationSnapshot.docs.forEach(doc => {
+            const relation = doc.data();
+            if (!questionMockExamMap.has(relation.questionId)) {
+              questionMockExamMap.set(relation.questionId, []);
+            }
+            questionMockExamMap.get(relation.questionId)!.push(relation.mockExamId);
+          });
+        }
+      }
+
+      // Add relations to questions (now much faster)
+      const questionsWithRelations = questions.map(question => {
+        const questionMockExamIds = questionMockExamMap.get(question.id) || [];
         const questionMockExams = questionMockExamIds
           .map(id => mockExamMap.get(id))
           .filter(Boolean)
@@ -342,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           topic: convertFirestoreToDate(topicMap.get(question.topicId)) || { id: question.topicId, name: 'Unknown', createdAt: new Date() },
           createdBy: req.user
         };
-      }));
+      });
       console.log("Found questions:", questions.length); // Added debugging
       if (questions.length > 0) {
         console.log("First question:", questions[0]); // Added debugging
@@ -729,6 +755,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to get detailed user stats" });
     }
   });
+
+  // Cache statistics endpoint (solo para desarrollo)
+  if (process.env.NODE_ENV === 'development') {
+    app.get("/api/cache/stats", (req, res) => {
+      const { cache } = require('./cache.js');
+      res.json(cache.getStats());
+    });
+
+    app.delete("/api/cache", (req, res) => {
+      const { cache } = require('./cache.js');
+      cache.clear();
+      res.json({ message: "Cache cleared" });
+    });
+  }
 
   const httpServer = createServer(app);
   return httpServer;
