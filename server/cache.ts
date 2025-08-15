@@ -144,6 +144,7 @@ class Cache {
         this.invalidate('ALL_USER_QUESTIONS', userId);
         this.invalidate('ALL_QUESTION_RELATIONS', userId);
         this.invalidate('QUESTION_COUNTS', userId);
+        this.invalidate('DETAILED_STATS', userId); // Invalidar estadísticas detalladas
         break;
       case 'update':
         // Para actualizaciones, invalidar específicamente
@@ -152,6 +153,7 @@ class Cache {
         }
         this.invalidate('ALL_USER_QUESTIONS', userId);
         this.invalidate('QUESTION_COUNTS', userId);
+        this.invalidate('DETAILED_STATS', userId); // Invalidar estadísticas detalladas
         break;
       case 'delete':
         // Para eliminaciones, invalidar todo lo relacionado
@@ -159,6 +161,7 @@ class Cache {
         this.invalidate('ALL_USER_QUESTIONS', userId);
         this.invalidate('ALL_QUESTION_RELATIONS', userId);
         this.invalidate('QUESTION_COUNTS', userId);
+        this.invalidate('DETAILED_STATS', userId); // Invalidar estadísticas detalladas
         break;
     }
   }
@@ -177,6 +180,8 @@ class Cache {
         return 20 * 60 * 1000; // 20 minutos para relaciones
       case 'USER_STATS':
         return 5 * 60 * 1000; // 5 minutos
+      case 'DETAILED_STATS':
+        return 30 * 60 * 1000; // 30 minutos - estadísticas detalladas
       case 'TRASHED_QUESTIONS':
         return 10 * 60 * 1000; // 10 minutos
       default:

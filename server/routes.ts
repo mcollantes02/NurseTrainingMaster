@@ -613,10 +613,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get detailed user statistics
+  // Get detailed user statistics (optimizado con caché inteligente)
   app.get("/api/user/detailed-stats", requireAuth, async (req, res) => {
     try {
       const userId = req.firebaseUid!;
+
+      // Intentar obtener del caché primero
+      const cached = cache.get('DETAILED_STATS', userId);
+      if (cached) {
+        console.log("Returning detailed stats from cache for user:", userId);
+        return res.json(cached);
+      }
+
+      console.log("Calculating detailed stats from database for user:", userId);
 
       // OPTIMIZACIÓN: Hacer todas las consultas en paralelo (solo 4 consultas a BD)
       const [questions, subjects, topics, mockExams] = await Promise.all([
@@ -742,7 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         questions: stats.weeklyActivityMap[day] || 0
       }));
 
-      res.json({
+      const result = {
         totalQuestions: stats.totalQuestions,
         learnedQuestions: stats.learnedQuestions,
         doubtQuestions: stats.doubtQuestions,
@@ -759,7 +768,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         failureDistribution,
         weeklyActivity,
         theoryDistribution
-      });
+      };
+
+      // Guardar en caché con TTL de 30 minutos (ya que las estadísticas no cambian frecuentemente)
+      cache.set('DETAILED_STATS', userId, result, undefined, 30 * 60 * 1000);
+
+      res.json(result);
     } catch (error) {
       console.error("Error getting detailed user stats:", error);
       res.status(500).json({ error: "Failed to get detailed user stats" });

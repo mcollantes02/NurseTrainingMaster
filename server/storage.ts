@@ -71,6 +71,7 @@ export class Storage {
     // Invalidate cache
     cache.invalidate('MOCK_EXAMS', mockExamData.createdBy);
     cache.invalidate('USER_STATS', mockExamData.createdBy);
+    cache.invalidate('DETAILED_STATS', mockExamData.createdBy);
 
     return mockExam;
   }
@@ -180,6 +181,7 @@ export class Storage {
     cache.invalidate('SUBJECTS', subjectData.createdBy);
     cache.invalidate('SUBJECT_BY_NAME', subjectData.createdBy);
     cache.invalidate('USER_STATS', subjectData.createdBy);
+    cache.invalidate('DETAILED_STATS', subjectData.createdBy);
     return subject;
   }
 
@@ -293,6 +295,7 @@ export class Storage {
     cache.invalidate('TOPICS', topicData.createdBy);
     cache.invalidate('TOPIC_BY_NAME', topicData.createdBy);
     cache.invalidate('USER_STATS', topicData.createdBy);
+    cache.invalidate('DETAILED_STATS', topicData.createdBy);
     return topic;
   }
 
@@ -535,6 +538,7 @@ export class Storage {
 
     // INVALIDACIÓN MÍNIMA - solo actualizar la pregunta específica
     cache.invalidateSmartly('QUESTIONS', firebaseUid, 'update', questionId.toString());
+    cache.invalidate('DETAILED_STATS', firebaseUid); // Las estadísticas cambian cuando se marca como aprendida
 
     // Return the updated question with relations
     return this.getQuestionWithRelations(questionId, firebaseUid);
