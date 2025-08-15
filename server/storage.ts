@@ -514,6 +514,8 @@ export class Storage {
     cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
     cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
     cache.invalidate('QUESTION_COUNTS', firebaseUid);
+    cache.invalidate('DETAILED_STATS', firebaseUid);
+    cache.invalidate('USER_STATS', firebaseUid);
     if (mockExamIds) {
       cache.invalidate('MOCK_EXAMS', firebaseUid); // Para actualizar conteos
     }
@@ -536,9 +538,11 @@ export class Storage {
     const questionDoc = snapshot.docs[0];
     await questionDoc.ref.update({ isLearned });
 
-    // INVALIDACIÓN MÍNIMA - solo actualizar la pregunta específica
-    cache.invalidateSmartly('QUESTIONS', firebaseUid, 'update', questionId.toString());
-    cache.invalidate('DETAILED_STATS', firebaseUid); // Las estadísticas cambian cuando se marca como aprendida
+    // Invalidar todos los caches necesarios para estadísticas
+    cache.invalidate('QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('DETAILED_STATS', firebaseUid);
+    cache.invalidate('USER_STATS', firebaseUid);
 
     // Return the updated question with relations
     return this.getQuestionWithRelations(questionId, firebaseUid);
@@ -621,9 +625,11 @@ export class Storage {
   }
 
   async updateQuestionFailureCount(id: number, failureCount: number, firebaseUid: string): Promise<FirestoreQuestion | null> {
-    // Invalidate cache
+    // Invalidate cache incluyendo estadísticas
     cache.invalidate('QUESTIONS', firebaseUid);
     cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('DETAILED_STATS', firebaseUid);
+    cache.invalidate('USER_STATS', firebaseUid);
     return this.updateQuestion(id, { failureCount }, firebaseUid);
   }
 

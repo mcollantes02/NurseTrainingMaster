@@ -121,17 +121,23 @@ class Cache {
         // Solo invalidar los listados generales, no datos específicos
         this.invalidate('ALL_USER_QUESTIONS', userId);
         this.invalidate('ALL_QUESTION_RELATIONS', userId);
+        this.invalidate('DETAILED_STATS', userId);
+        this.invalidate('USER_STATS', userId);
         break;
       case 'update':
         // Invalidar datos específicos y generales
         this.invalidate(namespace, userId);
         this.invalidate('ALL_USER_QUESTIONS', userId);
+        this.invalidate('DETAILED_STATS', userId);
+        this.invalidate('USER_STATS', userId);
         break;
       case 'delete':
         // Invalidar todo para deletes
         this.invalidate(namespace, userId);
         this.invalidate('ALL_USER_QUESTIONS', userId);
         this.invalidate('ALL_QUESTION_RELATIONS', userId);
+        this.invalidate('DETAILED_STATS', userId);
+        this.invalidate('USER_STATS', userId);
         break;
     }
   }
@@ -144,7 +150,8 @@ class Cache {
         this.invalidate('ALL_USER_QUESTIONS', userId);
         this.invalidate('ALL_QUESTION_RELATIONS', userId);
         this.invalidate('QUESTION_COUNTS', userId);
-        this.invalidate('DETAILED_STATS', userId); // Invalidar estadísticas detalladas
+        this.invalidate('DETAILED_STATS', userId);
+        this.invalidate('USER_STATS', userId);
         break;
       case 'update':
         // Para actualizaciones, invalidar específicamente
@@ -153,7 +160,8 @@ class Cache {
         }
         this.invalidate('ALL_USER_QUESTIONS', userId);
         this.invalidate('QUESTION_COUNTS', userId);
-        this.invalidate('DETAILED_STATS', userId); // Invalidar estadísticas detalladas
+        this.invalidate('DETAILED_STATS', userId);
+        this.invalidate('USER_STATS', userId);
         break;
       case 'delete':
         // Para eliminaciones, invalidar todo lo relacionado
@@ -161,7 +169,8 @@ class Cache {
         this.invalidate('ALL_USER_QUESTIONS', userId);
         this.invalidate('ALL_QUESTION_RELATIONS', userId);
         this.invalidate('QUESTION_COUNTS', userId);
-        this.invalidate('DETAILED_STATS', userId); // Invalidar estadísticas detalladas
+        this.invalidate('DETAILED_STATS', userId);
+        this.invalidate('USER_STATS', userId);
         break;
     }
   }
