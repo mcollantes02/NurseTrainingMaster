@@ -441,9 +441,11 @@ export class Storage {
 
     await batch.commit();
 
-    // Invalidar específicamente solo los caches necesarios para la nueva pregunta
+    // Invalidar inmediatamente todos los caches relacionados con preguntas
     cache.invalidate('QUESTIONS', questionData.createdBy);
+    cache.invalidate('ALL_USER_QUESTIONS', questionData.createdBy);
     cache.invalidate('ALL_QUESTION_RELATIONS', questionData.createdBy);
+    cache.invalidate('QUESTION_COUNTS', questionData.createdBy);
     
     return question;
   }
