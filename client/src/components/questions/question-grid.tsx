@@ -137,7 +137,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
 
   if (groupByExam) {
     // Group questions by mock exam
-    const questionsByExam = questions.reduce((acc, question) => {
+    const questionsByExam = currentQuestions.reduce((acc, question) => {
       // Check if question has mockExams array (for questions belonging to multiple exams)
       if (question.mockExams && Array.isArray(question.mockExams) && question.mockExams.length > 0) {
         // Add question to each mock exam it belongs to
@@ -187,7 +187,15 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
     });
 
     return (
-      <>
+      <div className="space-y-3">
+        {/* Total Questions Counter */}
+        <div className="flex items-center justify-between -mt-2">
+          <span className="text-sm text-gray-600">
+            <span className="font-medium">{questions.length}</span>{" "}
+            {questions.length === 1 ? t("question.single") : t("questions.found")}
+          </span>
+        </div>
+
         <div className="space-y-8">
           {examOrder.map((examTitle) => {
             const examQuestions = questionsByExam[examTitle];
@@ -217,7 +225,29 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
           onClose={handleEditModalClose}
           question={editingQuestion}
         />
-      </>
+
+        {/* Load More Button */}
+        {hasMore && (
+          <div className="flex items-center justify-center border-t border-gray-200 pt-4">
+            <div className="text-center">
+              <div className="text-sm text-gray-600 mb-3">
+                {t("pagination.showing")}{" "}
+                <span className="font-medium">{currentQuestions.length}</span>{" "}
+                {t("pagination.of")}{" "}
+                <span className="font-medium">{questions.length}</span>{" "}
+                {t("pagination.questions")}
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleLoadMore}
+                className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+              >
+                {t("loadMore")}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 
