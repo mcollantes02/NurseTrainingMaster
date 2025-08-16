@@ -413,6 +413,7 @@ export default function Dashboard() {
                       groupByExam={true}
                       sortBy={sortBy}
                       isAllTab={true}
+                      mockExamsForGrouping={sortedMockExamsForGrouping}
                     />
                   </TabsContent>
 

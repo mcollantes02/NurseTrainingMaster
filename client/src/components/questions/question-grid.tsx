@@ -26,9 +26,10 @@ interface QuestionGridProps {
   groupByExam?: boolean;
   sortBy?: "newest" | "oldest" | "nameAsc";
   isAllTab?: boolean;
+  mockExamsForGrouping?: any[];
 }
 
-export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", isAllTab = false }: QuestionGridProps) {
+export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", isAllTab = false, mockExamsForGrouping }: QuestionGridProps) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [editingQuestion, setEditingQuestion] = useState<QuestionWithRelations | null>(null);
@@ -136,8 +137,8 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
   }
 
   if (groupByExam) {
-    // Group questions by mock exam
-    const questionsByExam = currentQuestions.reduce((acc, question) => {
+    // Group ALL questions by mock exam (not just current visible ones)
+    const questionsByExam = questions.reduce((acc, question) => {
       // Check if question has mockExams array (for questions belonging to multiple exams)
       if (question.mockExams && Array.isArray(question.mockExams) && question.mockExams.length > 0) {
         // Add question to each mock exam it belongs to
@@ -162,29 +163,43 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
       return acc;
     }, {} as Record<string, typeof questions>);
 
-      // Get exam order based on sorting criteria
-    const examOrder = Object.keys(questionsByExam).sort((examTitleA, examTitleB) => {
-      const questionsA = questionsByExam[examTitleA];
-      const questionsB = questionsByExam[examTitleB];
+    // Get exam order based on sorting criteria using mockExamsForGrouping
+    let examOrder: string[];
+    
+    if (mockExamsForGrouping && mockExamsForGrouping.length > 0) {
+      // Use the sorted mock exams from dashboard
+      examOrder = mockExamsForGrouping
+        .filter(exam => questionsByExam[exam.title]) // Only include exams that have questions
+        .map(exam => exam.title);
+    } else {
+      // Fallback to sorting based on question data
+      examOrder = Object.keys(questionsByExam).sort((examTitleA, examTitleB) => {
+        const questionsA = questionsByExam[examTitleA];
+        const questionsB = questionsByExam[examTitleB];
 
-      if (questionsA.length === 0 || questionsB.length === 0) return 0;
+        if (questionsA.length === 0 || questionsB.length === 0) return 0;
 
-      // Use the first question's mockExam data to compare
-      const examA = questionsA[0]?.mockExam;
-      const examB = questionsB[0]?.mockExam;
+        // Use the first question's mockExam data to compare
+        const examA = questionsA[0]?.mockExam;
+        const examB = questionsB[0]?.mockExam;
 
-      // Safety check: ensure both exams exist
-      if (!examA || !examB) return 0;
+        // Safety check: ensure both exams exist
+        if (!examA || !examB) return 0;
 
-      if (sortBy === "newest") {
-        return new Date(examB.createdAt).getTime() - new Date(examA.createdAt).getTime();
-      } else if (sortBy === "oldest") {
-        return new Date(examA.createdAt).getTime() - new Date(examB.createdAt).getTime();
-      } else if (sortBy === "nameAsc") {
-        return examA.title.localeCompare(examB.title);
-      }
-      return 0;
-    });
+        if (sortBy === "newest") {
+          return new Date(examB.createdAt).getTime() - new Date(examA.createdAt).getTime();
+        } else if (sortBy === "oldest") {
+          return new Date(examA.createdAt).getTime() - new Date(examB.createdAt).getTime();
+        } else if (sortBy === "nameAsc") {
+          return examA.title.localeCompare(examB.title);
+        }
+        return 0;
+      });
+    }
+
+    // Apply pagination to exam order (showing only the first visibleCount/75 exams)
+    const examsPerPage = Math.ceil(visibleCount / 75);
+    const currentExamOrder = examOrder.slice(0, examsPerPage);
 
     return (
       <div className="space-y-3">
@@ -197,7 +212,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
         </div>
 
         <div className="space-y-8">
-          {examOrder.map((examTitle) => {
+          {currentExamOrder.map((examTitle) => {
             const examQuestions = questionsByExam[examTitle];
             return (
             <div key={examTitle}>
@@ -227,15 +242,15 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
         />
 
         {/* Load More Button */}
-        {hasMore && (
+        {examOrder.length > currentExamOrder.length && (
           <div className="flex items-center justify-center border-t border-gray-200 pt-4">
             <div className="text-center">
               <div className="text-sm text-gray-600 mb-3">
-                {t("pagination.showing")}{" "}
-                <span className="font-medium">{currentQuestions.length}</span>{" "}
-                {t("pagination.of")}{" "}
-                <span className="font-medium">{questions.length}</span>{" "}
-                {t("pagination.questions")}
+                Mostrando{" "}
+                <span className="font-medium">{currentExamOrder.length}</span>{" "}
+                de{" "}
+                <span className="font-medium">{examOrder.length}</span>{" "}
+                simulacros
               </div>
               <Button
                 variant="outline"
