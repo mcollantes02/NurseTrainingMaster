@@ -123,6 +123,7 @@ class Cache {
         this.invalidate('ALL_QUESTION_RELATIONS', userId);
         this.invalidate('DETAILED_STATS', userId);
         this.invalidate('USER_STATS', userId);
+        this.invalidate('DASHBOARD_DATA', userId);
         break;
       case 'update':
         // Invalidar datos específicos y generales
@@ -130,6 +131,7 @@ class Cache {
         this.invalidate('ALL_USER_QUESTIONS', userId);
         this.invalidate('DETAILED_STATS', userId);
         this.invalidate('USER_STATS', userId);
+        this.invalidate('DASHBOARD_DATA', userId);
         break;
       case 'delete':
         // Invalidar todo para deletes
@@ -138,6 +140,7 @@ class Cache {
         this.invalidate('ALL_QUESTION_RELATIONS', userId);
         this.invalidate('DETAILED_STATS', userId);
         this.invalidate('USER_STATS', userId);
+        this.invalidate('DASHBOARD_DATA', userId);
         break;
     }
   }
@@ -191,6 +194,8 @@ class Cache {
         return 5 * 60 * 1000; // 5 minutos
       case 'DETAILED_STATS':
         return 30 * 60 * 1000; // 30 minutos - estadísticas detalladas
+      case 'DASHBOARD_DATA':
+        return 5 * 60 * 1000; // 5 minutos - datos consolidados del dashboard
       case 'TRASHED_QUESTIONS':
         return 10 * 60 * 1000; // 10 minutos
       default:

@@ -291,6 +291,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Consolidated dashboard data endpoint
+  app.get("/api/dashboard-data", requireAuth, async (req, res) => {
+    try {
+      const firebaseUid = req.firebaseUid!;
+      
+      // Try to get from cache first
+      const cached = cache.get('DASHBOARD_DATA', firebaseUid);
+      if (cached) {
+        return res.json(cached);
+      }
+
+      // Single batch fetch of all data needed for dashboard
+      const [questions, subjects, topics, mockExams] = await Promise.all([
+        storage.getQuestions({ firebaseUid: firebaseUid }),
+        storage.getSubjects(firebaseUid),
+        storage.getTopics(firebaseUid),
+        storage.getMockExams(firebaseUid)
+      ]);
+
+      // Get all relations in one go
+      const questionMockExamMap = await storage.getAllQuestionRelations(firebaseUid);
+
+      // Create lookup maps
+      const mockExamMap = new Map(mockExams.map(exam => [exam.id, exam]));
+      const subjectMap = new Map(subjects.map(subject => [subject.id, subject]));
+      const topicMap = new Map(topics.map(topic => [topic.id, topic]));
+
+      // Process questions with relations
+      const questionsWithRelations = questions.map(question => {
+        const questionMockExamIds = questionMockExamMap.get(question.id) || [];
+        const questionMockExams = questionMockExamIds
+          .map(id => mockExamMap.get(id))
+          .filter(Boolean)
+          .map(exam => convertFirestoreToDate(exam));
+
+        const firstMockExam = questionMockExams[0] || null;
+
+        return {
+          ...convertFirestoreToDate(question),
+          mockExam: firstMockExam,
+          mockExams: questionMockExams,
+          subject: convertFirestoreToDate(subjectMap.get(question.subjectId)) || { id: question.subjectId, name: 'Unknown', createdAt: new Date() },
+          topic: convertFirestoreToDate(topicMap.get(question.topicId)) || { id: question.topicId, name: 'Unknown', createdAt: new Date() },
+          createdBy: req.user
+        };
+      });
+
+      // Add question counts to mock exams
+      const mockExamsWithCounts = mockExams.map(exam => {
+        const questionIds = questions.filter(q => {
+          const examIds = questionMockExamMap.get(q.id) || [];
+          return examIds.includes(exam.id);
+        });
+        return {
+          ...convertFirestoreToDate(exam),
+          questionCount: questionIds.length
+        };
+      });
+
+      const dashboardData = {
+        questions: questionsWithRelations,
+        mockExams: mockExamsWithCounts,
+        subjects: convertFirestoreArrayToDate(subjects),
+        topics: convertFirestoreArrayToDate(topics)
+      };
+
+      // Cache for 5 minutes
+      cache.set('DASHBOARD_DATA', firebaseUid, dashboardData, undefined, 5 * 60 * 1000);
+
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Get dashboard data error:", error);
+      res.status(500).json({ message: "Failed to get dashboard data" });
+    }
+  });
+
   // Question routes
   app.get("/api/questions", requireAuth, async (req, res) => {
     try {

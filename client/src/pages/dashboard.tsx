@@ -35,6 +35,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { MockExamWithQuestionCount } from "@shared/schema";
+import { useDashboardData } from "../hooks/useDashboardData";
 
 interface FiltersState {
   mockExamIds: number[];
@@ -73,7 +74,14 @@ export default function Dashboard() {
   });
   const [appliedFilters, setAppliedFilters] = useState<FiltersState>(filters);
 
-  const { data: mockExams = [], isLoading: isLoadingExams } = useQuery<MockExamWithQuestionCount[]>({
+  const { data: dashboardData, isLoading } = useDashboardData();
+
+  const questions = dashboardData?.questions || [];
+  const mockExams = dashboardData?.mockExams || [];
+  const subjects = dashboardData?.subjects || [];
+  const topics = dashboardData?.topics || [];
+
+  const { data: mockExamsWithCounts = [], isLoading: isLoadingExams } = useQuery<MockExamWithQuestionCount[]>({
     queryKey: ["/api/mock-exams"],
     staleTime: 30 * 1000, // 30 segundos - para actualizar conteos más rápido
     gcTime: 5 * 60 * 1000, // 5 minutos
@@ -83,9 +91,9 @@ export default function Dashboard() {
 
   // Sort mock exams based on selected criteria
   const sortedMockExamsForGrouping = useMemo(() => {
-    if (!mockExams.length) return mockExams;
+    if (!mockExamsWithCounts.length) return mockExamsWithCounts;
 
-    const sorted = [...mockExams];
+    const sorted = [...mockExamsWithCounts];
 
     switch (sortBy) {
       case "newest":
@@ -97,11 +105,11 @@ export default function Dashboard() {
       default:
         return sorted;
     }
-  }, [mockExams, sortBy]);
+  }, [mockExamsWithCounts, sortBy]);
 
   const tabMockExams = useMemo(() => {
-    return [...mockExams].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-  }, [mockExams])
+    return [...mockExamsWithCounts].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  }, [mockExamsWithCounts])
 
   const createExamMutation = useMutation({
     mutationFn: async (title: string) => {
