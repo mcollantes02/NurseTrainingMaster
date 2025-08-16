@@ -428,7 +428,8 @@ export default function Dashboard() {
                           keywords: appliedFilters.keywords,
                           learningStatus: appliedFilters.learningStatus,
                           failureCount: appliedFilters.failureCount
-                        }} 
+                        }}
+                        sortBy={sortBy}
                       />
                     </TabsContent>
                   ))}

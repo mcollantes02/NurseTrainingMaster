@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -67,6 +67,11 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
     queryParams.append('failureCountMax', filters.failureCount.max.toString());
   }
 
+  // Add sorting parameters to the query if groupByExam is false
+  if (!groupByExam) {
+    queryParams.append('sortBy', sortBy);
+  }
+
   // Mock isLoadingUser to be false for the purpose of this example as it's not provided
   const isLoadingUser = false; 
 
@@ -87,12 +92,29 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
     retryDelay: 1000,
   });
 
+  // Apply sorting to questions when groupByExam is false
+  const sortedQuestions = useMemo(() => {
+    if (groupByExam || !questions) return questions;
+
+    return [...questions].sort((a, b) => {
+      if (sortBy === "newest") {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      } else if (sortBy === "oldest") {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      } else if (sortBy === "nameAsc") {
+        // Assuming 'name' property exists and is sortable, adjust if needed
+        return (a.questionText || "").localeCompare(b.questionText || "");
+      }
+      return 0;
+    });
+  }, [questions, sortBy, groupByExam]);
+
   // Eliminar el refetch automático al cambiar filtros - usar solo el cache de React Query
   // Esto evita solicitudes innecesarias
 
-  const currentQuestions = questions.slice(0, visibleCount);
-  const hasMore = questions.length > visibleCount;
-  
+  const currentQuestions = sortedQuestions.slice(0, visibleCount);
+  const hasMore = sortedQuestions.length > visibleCount;
+
   const handleLoadMore = () => {
     const increment = isAllTab ? 75 : 25;
     setVisibleCount(prev => prev + increment);
@@ -133,7 +155,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
 
   // Debug: log the first question to see its structure
   if (questions.length > 0) {
-    
+
   }
 
   if (groupByExam) {
@@ -165,7 +187,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
 
     // Get exam order based on sorting criteria using mockExamsForGrouping
     let examOrder: string[];
-    
+
     if (mockExamsForGrouping && mockExamsForGrouping.length > 0) {
       // Use the sorted mock exams from dashboard
       examOrder = mockExamsForGrouping
@@ -200,7 +222,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
     // Calculate how many questions we've shown so far to implement pagination correctly
     let questionsShown = 0;
     const examsToShow: string[] = [];
-    
+
     for (const examTitle of examOrder) {
       const examQuestions = questionsByExam[examTitle];
       if (questionsShown + examQuestions.length <= visibleCount) {
