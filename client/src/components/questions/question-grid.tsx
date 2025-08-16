@@ -137,69 +137,29 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
   }
 
   if (groupByExam) {
-    // Group ALL questions by mock exam (not just current visible ones)
-    const questionsByExam = questions.reduce((acc, question) => {
-      // Check if question has mockExams array (for questions belonging to multiple exams)
-      if (question.mockExams && Array.isArray(question.mockExams) && question.mockExams.length > 0) {
-        // Add question to each mock exam it belongs to
-        question.mockExams.forEach(mockExam => {
-          if (mockExam && mockExam.title) {
-            const examTitle = mockExam.title;
-            if (!acc[examTitle]) {
-              acc[examTitle] = [];
-            }
-            acc[examTitle].push(question);
-          }
-        });
-      } else if (question.mockExam && question.mockExam.title) {
-        // Fallback to single mockExam if mockExams array is not available
-        const examTitle = question.mockExam.title;
-        if (!acc[examTitle]) {
-          acc[examTitle] = [];
-        }
-        acc[examTitle].push(question);
-      }
-
-      return acc;
-    }, {} as Record<string, typeof questions>);
-
-    // Get exam order based on sorting criteria using mockExamsForGrouping
-    let examOrder: string[];
+    // Sort questions based on exam order from mockExamsForGrouping
+    let sortedQuestions = [...questions];
     
     if (mockExamsForGrouping && mockExamsForGrouping.length > 0) {
-      // Use the sorted mock exams from dashboard
-      examOrder = mockExamsForGrouping
-        .filter(exam => questionsByExam[exam.title]) // Only include exams that have questions
-        .map(exam => exam.title);
-    } else {
-      // Fallback to sorting based on question data
-      examOrder = Object.keys(questionsByExam).sort((examTitleA, examTitleB) => {
-        const questionsA = questionsByExam[examTitleA];
-        const questionsB = questionsByExam[examTitleB];
+      // Create a map of exam titles to their sort order
+      const examOrderMap = new Map();
+      mockExamsForGrouping.forEach((exam, index) => {
+        examOrderMap.set(exam.title, index);
+      });
 
-        if (questionsA.length === 0 || questionsB.length === 0) return 0;
-
-        // Use the first question's mockExam data to compare
-        const examA = questionsA[0]?.mockExam;
-        const examB = questionsB[0]?.mockExam;
-
-        // Safety check: ensure both exams exist
+      // Sort questions based on their exam's position in the sorted exam list
+      sortedQuestions.sort((a, b) => {
+        const examA = a.mockExam?.title || (a.mockExams?.[0]?.title);
+        const examB = b.mockExam?.title || (b.mockExams?.[0]?.title);
+        
         if (!examA || !examB) return 0;
-
-        if (sortBy === "newest") {
-          return new Date(examB.createdAt).getTime() - new Date(examA.createdAt).getTime();
-        } else if (sortBy === "oldest") {
-          return new Date(examA.createdAt).getTime() - new Date(examB.createdAt).getTime();
-        } else if (sortBy === "nameAsc") {
-          return examA.title.localeCompare(examB.title);
-        }
-        return 0;
+        
+        const orderA = examOrderMap.get(examA) ?? Number.MAX_SAFE_INTEGER;
+        const orderB = examOrderMap.get(examB) ?? Number.MAX_SAFE_INTEGER;
+        
+        return orderA - orderB;
       });
     }
-
-    // Apply pagination to exam order (showing only the first visibleCount/75 exams)
-    const examsPerPage = Math.ceil(visibleCount / 75);
-    const currentExamOrder = examOrder.slice(0, examsPerPage);
 
     return (
       <div className="space-y-3">
@@ -211,30 +171,19 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
           </span>
         </div>
 
-        <div className="space-y-8">
-          {currentExamOrder.map((examTitle) => {
-            const examQuestions = questionsByExam[examTitle];
-            return (
-            <div key={examTitle}>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-                {examTitle} ({examQuestions.length} {examQuestions.length === 1 ? t("question.single") : t("questions.label")})
-              </h3>
-              <div className="space-y-2">
-                {examQuestions.map((question) => (
-                  <QuestionCard
-                    key={question.id}
-                    question={question}
-                    onClick={() => handleQuestionClick(question)}
-                    onEdit={() => handleQuestionEdit(question)}
-                  />
-                ))}
-              </div>
-            </div>
-            );
-          })}
+        {/* Questions List - showing first visibleCount questions in exam order */}
+        <div className="space-y-3">
+          {sortedQuestions.slice(0, visibleCount).map((question) => (
+            <QuestionCard
+              key={question.id}
+              question={question}
+              onClick={() => handleQuestionClick(question)}
+              onEdit={() => handleQuestionEdit(question)}
+            />
+          ))}
         </div>
 
-        {/* Edit Question Modal for grouped view */}
+        {/* Edit Question Modal */}
         <EditQuestionModal
           isOpen={isEditModalOpen}
           onClose={handleEditModalClose}
@@ -242,15 +191,15 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", 
         />
 
         {/* Load More Button */}
-        {examOrder.length > currentExamOrder.length && (
+        {sortedQuestions.length > visibleCount && (
           <div className="flex items-center justify-center border-t border-gray-200 pt-4">
             <div className="text-center">
               <div className="text-sm text-gray-600 mb-3">
-                Mostrando{" "}
-                <span className="font-medium">{currentExamOrder.length}</span>{" "}
-                de{" "}
-                <span className="font-medium">{examOrder.length}</span>{" "}
-                simulacros
+                {t("pagination.showing")}{" "}
+                <span className="font-medium">{visibleCount}</span>{" "}
+                {t("pagination.of")}{" "}
+                <span className="font-medium">{sortedQuestions.length}</span>{" "}
+                {t("pagination.questions")}
               </div>
               <Button
                 variant="outline"
