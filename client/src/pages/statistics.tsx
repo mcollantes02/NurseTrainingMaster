@@ -276,21 +276,50 @@ export default function Statistics() {
               </Card>
             </div>
 
-            {/* Theory Sources */}
+            {/* Difficulty Distribution */}
             <Card>
               <CardHeader>
-                <CardTitle>{t("statistics.theorySources")}</CardTitle>
+                <CardTitle>{t("statistics.difficultyDistribution")}</CardTitle>
+                <p className="text-sm text-gray-600">{t("statistics.difficultySubtitle")}</p>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {stats.theoryDistribution.map((theory, index) => (
-                    <div key={theory.theory} className="text-center">
-                      <div className="text-2xl font-bold" style={{ color: PIE_COLORS[index % PIE_COLORS.length] }}>
-                        {theory.count}
+                  {stats.failureDistribution.map((difficulty, index) => {
+                    const color = difficulty.range === "0" ? "#16A34A" : 
+                                 difficulty.range === "1-2" ? "#FF9800" : 
+                                 difficulty.range === "3-5" ? "#F44336" : "#B91C1C";
+                    const label = difficulty.range === "0" ? t("statistics.easyQuestions") : 
+                                 difficulty.range === "1-2" ? t("statistics.mediumQuestions") : 
+                                 difficulty.range === "3-5" ? t("statistics.hardQuestions") : t("statistics.veryHardQuestions");
+                    
+                    return (
+                      <div key={difficulty.range} className="text-center p-4 rounded-lg border">
+                        <div className="text-3xl font-bold mb-2" style={{ color }}>
+                          {difficulty.count}
+                        </div>
+                        <div className="text-sm font-medium text-gray-900 mb-1">{label}</div>
+                        <div className="text-xs text-gray-500">
+                          {difficulty.range === "0" ? t("statistics.noFailures") : 
+                           difficulty.range.includes("+") ? `${difficulty.range} ${t("statistics.failures")}` :
+                           `${difficulty.range} ${t("statistics.failures")}`}
+                        </div>
+                        <div className="mt-2">
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="h-2 rounded-full transition-all duration-300" 
+                              style={{ 
+                                width: `${(difficulty.count / stats.totalQuestions) * 100}%`,
+                                backgroundColor: color 
+                              }}
+                            ></div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {Math.round((difficulty.count / stats.totalQuestions) * 100)}%
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-sm text-gray-600">{theory.theory}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
