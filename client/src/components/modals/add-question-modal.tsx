@@ -96,7 +96,6 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
         subjectName: "",
         topicName: "",
         type: "error",
-        theory: "",
         isLearned: false,
         failureCount: 0,
       });
@@ -164,29 +163,80 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
       });
       return response.json();
     },
-    onSuccess: (newQuestion, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/mock-exams"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+    onMutate: async (variables) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/questions"] });
 
-      // Invalidate specific mock exam queries for each selected exam
-      if (variables.mockExamIds && Array.isArray(variables.mockExamIds)) {
-        variables.mockExamIds.forEach(mockExamId => {
-          queryClient.invalidateQueries({ 
-            queryKey: ["/api/questions"],
-            predicate: (query) => {
-              const queryString = query.queryKey[1] as string;
-              return queryString && queryString.includes(`mockExamIds=${mockExamId}`);
-            }
-          });
-        });
-      }
+      // Snapshot previous state
+      const previousQuestions = queryClient.getQueriesData({ queryKey: ["/api/questions"] });
+
+      // Generate temporary ID for optimistic update
+      const tempId = Date.now();
+
+      // Create optimistic question immediately
+      const optimisticQuestion = {
+        id: tempId,
+        subjectId: subjects.find(s => s.name === variables.subjectName)?.id || 0,
+        topicId: topics.find(t => t.name === variables.topicName)?.id || 0,
+        type: variables.type,
+        theory: variables.theory,
+        isLearned: variables.isLearned,
+        failureCount: variables.failureCount,
+        createdBy: { uid: "current-user" },
+        createdAt: new Date().toISOString(),
+        mockExam: mockExams.find(exam => variables.mockExamIds.includes(exam.id)) || null,
+        mockExams: mockExams.filter(exam => variables.mockExamIds.includes(exam.id)),
+        subject: subjects.find(s => s.name === variables.subjectName) || { name: variables.subjectName },
+        topic: topics.find(t => t.name === variables.topicName) || { name: variables.topicName }
+      };
+
+      // Optimistically update all question queries
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return [optimisticQuestion];
+        return [optimisticQuestion, ...old];
+      });
+
+      // Optimistically update mock exam counts
+      queryClient.setQueryData(["/api/mock-exams"], (old: any) => {
+        if (!old) return old;
+        return old.map((exam: any) => 
+          variables.mockExamIds.includes(exam.id) 
+            ? { ...exam, questionCount: (exam.questionCount || 0) + 1 }
+            : exam
+        );
+      });
+
+      return { previousQuestions, tempId };
+    },
+    onSuccess: (newQuestion, variables, context) => {
+      // Replace the optimistic update with real data
+      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
+        if (!old) return [newQuestion];
+
+        const questionWithRelations = {
+          ...newQuestion,
+          mockExam: mockExams.find(exam => variables.mockExamIds.includes(exam.id)) || null,
+          mockExams: mockExams.filter(exam => variables.mockExamIds.includes(exam.id)),
+          subject: subjects.find(s => s.name === variables.subjectName) || { name: variables.subjectName },
+          topic: topics.find(t => t.name === variables.topicName) || { name: variables.topicName },
+          createdBy: { uid: newQuestion.createdBy }
+        };
+
+        // Replace temp question with real one
+        return old.map((q: any) => q.id === context?.tempId ? questionWithRelations : q);
+      });
+
+      // Invalidate cache to sync in background
+      queryClient.invalidateQueries({
+        queryKey: ["/api/questions"],
+        refetchType: "none"
+      });
 
       form.reset({
         mockExamIds: preSelectedMockExamId ? [preSelectedMockExamId] : [],
         subjectName: "",
         topicName: "",
         type: "error",
-        theory: "",
         isLearned: false,
         failureCount: 0,
       });
@@ -196,7 +246,24 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
         description: t("question.createdDescription"),
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousQuestions) {
+        context.previousQuestions.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      
+      // Rollback mock exam counts
+      queryClient.setQueryData(["/api/mock-exams"], (old: any) => {
+        if (!old) return old;
+        return old.map((exam: any) => 
+          variables.mockExamIds.includes(exam.id) 
+            ? { ...exam, questionCount: Math.max(0, (exam.questionCount || 0) - 1) }
+            : exam
+        );
+      });
+
       console.error("Create question error:", error);
       toast({
         title: t("error.title"),

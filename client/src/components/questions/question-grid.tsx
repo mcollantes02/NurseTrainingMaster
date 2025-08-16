@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/hooks/useLanguage";
 import { QuestionCard } from "./question-card";
@@ -29,6 +29,7 @@ interface QuestionGridProps {
 
 export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }: QuestionGridProps) {
   const { t } = useLanguage();
+  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [editingQuestion, setEditingQuestion] = useState<QuestionWithRelations | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -65,6 +66,9 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
     queryParams.append('failureCountMax', filters.failureCount.max.toString());
   }
 
+  // Mock isLoadingUser to be false for the purpose of this example as it's not provided
+  const isLoadingUser = false; 
+
   const { data: questions = [], isLoading, refetch } = useQuery({
     queryKey: ["/api/questions", queryParams.toString()],
     queryFn: async () => {
@@ -73,17 +77,17 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
       return response.json();
     },
     refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    staleTime: 30 * 1000, // 30 segundos - menor tiempo para ver cambios más rápido
+    gcTime: 2 * 60 * 1000, // 2 minutos
     enabled: true,
-    keepPreviousData: true, // Keep previous data while fetching new data
-    refetchOnMount: false, // Don't refetch on component mount if data is fresh
+    retry: 1,
+    retryDelay: 1000,
   });
 
-  // Force refetch when filters change to ensure fresh data across tabs
-  useEffect(() => {
-    refetch();
-  }, [filters, refetch]);
+  // Eliminar el refetch automático al cambiar filtros - usar solo el cache de React Query
+  // Esto evita solicitudes innecesarias
 
   const totalPages = Math.ceil(questions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -125,7 +129,7 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
 
   // Debug: log the first question to see its structure
   if (questions.length > 0) {
-    console.log("First question structure:", questions[0]);
+    
   }
 
   if (groupByExam) {
@@ -191,8 +195,8 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
               </h3>
               <div className="space-y-2">
                 {examQuestions.map((question) => (
-                  <QuestionCard 
-                    key={question.id} 
+                  <QuestionCard
+                    key={question.id}
                     question={question}
                     onClick={() => handleQuestionClick(question)}
                     onEdit={() => handleQuestionEdit(question)}

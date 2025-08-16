@@ -91,17 +91,13 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: true,
-      staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
-      gcTime: 10 * 60 * 1000, // Keep unused data in cache for 10 minutes
-      retry: (failureCount, error) => {
-        // Don't retry auth errors
-        if (error.message.includes('401')) return false;
-        return failureCount < 1; // Only retry once
-      },
-      retryDelay: 200, // Faster retry
-      networkMode: 'online',
-      refetchOnMount: false, // Prevent unnecessary refetches
+      staleTime: 2 * 60 * 1000, // 2 minutos - reducir solicitudes
+      gcTime: 5 * 60 * 1000, // 5 minutos
+      refetchOnWindowFocus: false,
+      refetchOnMount: false, // No refetch automático al montar - usar cache
+      refetchOnReconnect: false,
+      retry: 1,
+      retryDelay: 1000,
     },
     mutations: {
       retry: false,

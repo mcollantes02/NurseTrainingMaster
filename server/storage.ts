@@ -9,6 +9,7 @@ import {
   type FirestoreQuestionMockExam,
   type FirestoreTrashedQuestion
 } from './firestore-schema.js';
+import { cache } from './cache.js'; // Assuming a cache utility is available
 
 // Define QuestionWithRelations type for clarity
 interface QuestionWithRelations {
@@ -33,12 +34,23 @@ export class Storage {
 
   // Mock Exam methods
   async getMockExams(firebaseUid: string): Promise<FirestoreMockExam[]> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<FirestoreMockExam[]>('MOCK_EXAMS', firebaseUid);
+    if (cached) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.MOCK_EXAMS)
       .where('createdBy', '==', firebaseUid)
       .get();
     const mockExams = snapshot.docs.map(doc => doc.data() as FirestoreMockExam);
-    // Sort in memory to avoid Firestore composite index requirement
-    return mockExams.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+    // Sort in memory to avoid Firestore index requirement
+    const sortedMockExams = mockExams.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+
+    // Guardar en cache
+    cache.set('MOCK_EXAMS', firebaseUid, sortedMockExams);
+
+    return sortedMockExams;
   }
 
   async createMockExam(mockExamData: Omit<FirestoreMockExam, 'id' | 'createdAt'>): Promise<FirestoreMockExam> {
@@ -55,6 +67,12 @@ export class Storage {
     };
 
     await docRef.set(mockExam);
+
+    // Invalidate cache
+    cache.invalidate('MOCK_EXAMS', mockExamData.createdBy);
+    cache.invalidate('USER_STATS', mockExamData.createdBy);
+    cache.invalidate('DETAILED_STATS', mockExamData.createdBy);
+
     return mockExam;
   }
 
@@ -98,21 +116,51 @@ export class Storage {
 
   // Subject methods
   async getSubjects(firebaseUid: string): Promise<FirestoreSubject[]> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<FirestoreSubject[]>('SUBJECTS', firebaseUid);
+    if (cached) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
       .where('createdBy', '==', firebaseUid)
       .get();
     const subjects = snapshot.docs.map(doc => doc.data() as FirestoreSubject);
-    return subjects.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort in memory to avoid Firestore index requirement
+    const sortedSubjects = subjects.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Guardar en cache con TTL largo
+    cache.set('SUBJECTS', firebaseUid, sortedSubjects);
+
+    // También cachear cada subject individualmente
+    const subjectMap: Record<string, FirestoreSubject> = {};
+    sortedSubjects.forEach(subject => {
+      subjectMap[subject.name] = subject;
+    });
+    cache.setBatch('SUBJECT_BY_NAME', firebaseUid, subjectMap);
+
+    return sortedSubjects;
   }
 
   async getSubjectByName(name: string, firebaseUid: string): Promise<FirestoreSubject | null> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<FirestoreSubject>('SUBJECT_BY_NAME', firebaseUid, name);
+    if (cached !== null) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.SUBJECTS)
       .where('name', '==', name)
       .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
-    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreSubject;
+    const subject = snapshot.empty ? null : snapshot.docs[0].data() as FirestoreSubject;
+
+    // Guardar en cache
+    cache.set('SUBJECT_BY_NAME', firebaseUid, subject, name);
+
+    return subject;
   }
 
   async createSubject(subjectData: Omit<FirestoreSubject, 'id' | 'createdAt'>): Promise<FirestoreSubject> {
@@ -129,6 +177,11 @@ export class Storage {
     };
 
     await docRef.set(subject);
+    // Invalidate cache for subjects and related caches
+    cache.invalidate('SUBJECTS', subjectData.createdBy);
+    cache.invalidate('SUBJECT_BY_NAME', subjectData.createdBy);
+    cache.invalidate('USER_STATS', subjectData.createdBy);
+    cache.invalidate('DETAILED_STATS', subjectData.createdBy);
     return subject;
   }
 
@@ -143,6 +196,9 @@ export class Storage {
 
     const doc = snapshot.docs[0];
     await doc.ref.update(updates);
+
+    // Invalidate cache for subjects
+    cache.invalidate('SUBJECTS', firebaseUid);
 
     const updatedDoc = await doc.ref.get();
     return updatedDoc.data() as FirestoreSubject;
@@ -167,26 +223,58 @@ export class Storage {
     if (snapshot.empty) return false;
 
     await snapshot.docs[0].ref.delete();
+    // Invalidate cache for subjects
+    cache.invalidate('SUBJECTS', firebaseUid);
     return true;
   }
 
   // Topic methods
   async getTopics(firebaseUid: string): Promise<FirestoreTopic[]> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<FirestoreTopic[]>('TOPICS', firebaseUid);
+    if (cached) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
       .where('createdBy', '==', firebaseUid)
       .get();
     const topics = snapshot.docs.map(doc => doc.data() as FirestoreTopic);
-    return topics.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort in memory to avoid Firestore index requirement
+    const sortedTopics = topics.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Guardar en cache con TTL largo
+    cache.set('TOPICS', firebaseUid, sortedTopics);
+
+    // También cachear cada topic individualmente
+    const topicMap: Record<string, FirestoreTopic> = {};
+    sortedTopics.forEach(topic => {
+      topicMap[topic.name] = topic;
+    });
+    cache.setBatch('TOPIC_BY_NAME', firebaseUid, topicMap);
+
+    return sortedTopics;
   }
 
   async getTopicByName(name: string, firebaseUid: string): Promise<FirestoreTopic | null> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<FirestoreTopic>('TOPIC_BY_NAME', firebaseUid, name);
+    if (cached !== null) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.TOPICS)
       .where('name', '==', name)
       .where('createdBy', '==', firebaseUid)
       .limit(1)
       .get();
 
-    return snapshot.empty ? null : snapshot.docs[0].data() as FirestoreTopic;
+    const topic = snapshot.empty ? null : snapshot.docs[0].data() as FirestoreTopic;
+
+    // Guardar en cache
+    cache.set('TOPIC_BY_NAME', firebaseUid, topic, name);
+
+    return topic;
   }
 
   async createTopic(topicData: Omit<FirestoreTopic, 'id' | 'createdAt'>): Promise<FirestoreTopic> {
@@ -203,6 +291,11 @@ export class Storage {
     };
 
     await docRef.set(topic);
+    // Invalidate cache for topics and related caches
+    cache.invalidate('TOPICS', topicData.createdBy);
+    cache.invalidate('TOPIC_BY_NAME', topicData.createdBy);
+    cache.invalidate('USER_STATS', topicData.createdBy);
+    cache.invalidate('DETAILED_STATS', topicData.createdBy);
     return topic;
   }
 
@@ -217,6 +310,9 @@ export class Storage {
 
     const doc = snapshot.docs[0];
     await doc.ref.update(updates);
+
+    // Invalidate cache for topics
+    cache.invalidate('TOPICS', firebaseUid);
 
     const updatedDoc = await doc.ref.get();
     return updatedDoc.data() as FirestoreTopic;
@@ -241,113 +337,74 @@ export class Storage {
     if (snapshot.empty) return false;
 
     await snapshot.docs[0].ref.delete();
+    // Invalidate cache for topics
+    cache.invalidate('TOPICS', firebaseUid);
     return true;
   }
 
   // Question methods
   async getQuestions(filters: QuestionFilters): Promise<FirestoreQuestion[]> {
-    let questionIds: number[] | undefined;
+    const cacheKey = JSON.stringify(filters);
 
-    // If mockExamIds filter is provided, get questions associated with those mock exams
-    if (filters.mockExamIds && filters.mockExamIds.length > 0) {
-      const relationSnapshot = await firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS)
-        .where('mockExamId', 'in', filters.mockExamIds)
-        .where('createdBy', '==', filters.firebaseUid)
-        .get();
+    return cache.getOrFetch(
+      `questions_${cacheKey}`,
+      async () => {
+        // Obtener todas las preguntas del usuario desde cache
+        const allQuestions = await this.getAllUserQuestions(filters.firebaseUid);
+        let results = [...allQuestions];
 
-      questionIds = relationSnapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).questionId);
+        // Si hay filtro por mockExamIds, aplicarlo primero usando las relaciones
+        if (filters.mockExamIds && filters.mockExamIds.length > 0) {
+          const relationMap = await this.getAllQuestionRelations(filters.firebaseUid);
+          const mockExamSet = new Set(filters.mockExamIds);
 
-      if (questionIds.length === 0) return []; // No questions found for these mock exams
-    }
+          results = results.filter(question => {
+            const questionMockExams = relationMap.get(question.id) || [];
+            return questionMockExams.some(mockExamId => mockExamSet.has(mockExamId));
+          });
+        }
 
-    let query = firestore.collection(COLLECTIONS.QUESTIONS)
-      .where('createdBy', '==', filters.firebaseUid);
+        // Aplicar todos los demás filtros en memoria (mucho más rápido)
+        if (filters.subjectIds && filters.subjectIds.length > 0) {
+          const subjectSet = new Set(filters.subjectIds);
+          results = results.filter(q => subjectSet.has(q.subjectId));
+        }
 
-    // Apply question ID filter if we have mockExam filtering
-    if (questionIds) {
-      if (questionIds.length === 0) return [];
-      // Firestore 'in' operator has a limit of 10 items, so we need to batch if necessary
-      const batches = [];
-      for (let i = 0; i < questionIds.length; i += 10) {
-        const batch = questionIds.slice(i, i + 10);
-        batches.push(batch);
-      }
+        if (filters.topicIds && filters.topicIds.length > 0) {
+          const topicSet = new Set(filters.topicIds);
+          results = results.filter(q => topicSet.has(q.topicId));
+        }
 
-      const results: FirestoreQuestion[] = [];
-      for (const batch of batches) {
-        const batchQuery = firestore.collection(COLLECTIONS.QUESTIONS)
-          .where('createdBy', '==', filters.firebaseUid)
-          .where('id', 'in', batch);
+        if (filters.learningStatus && filters.learningStatus.length === 1) {
+          results = results.filter(q => q.isLearned === filters.learningStatus![0]);
+        }
 
-        const snapshot = await batchQuery.get();
-        results.push(...snapshot.docs.map(doc => doc.data() as FirestoreQuestion));
-      }
+        if (filters.keywords) {
+          const keywords = filters.keywords.toLowerCase();
+          results = results.filter(q => 
+            q.theory.toLowerCase().includes(keywords) ||
+            q.type.toLowerCase().includes(keywords)
+          );
+        }
 
-      // Apply other filters to results
-      let filteredResults = results;
+        if (filters.failureCountExact !== undefined) {
+          results = results.filter(q => (q.failureCount || 0) === filters.failureCountExact!);
+        }
 
-      if (filters.subjectIds && filters.subjectIds.length > 0) {
-        filteredResults = filteredResults.filter(q => filters.subjectIds!.includes(q.subjectId));
-      }
-      if (filters.topicIds && filters.topicIds.length > 0) {
-        filteredResults = filteredResults.filter(q => filters.topicIds!.includes(q.topicId));
-      }
-      if (filters.learningStatus && filters.learningStatus.length === 1) {
-        filteredResults = filteredResults.filter(q => q.isLearned === filters.learningStatus![0]);
-      }
-      if (filters.keywords) {
-        const keywords = filters.keywords.toLowerCase();
-        filteredResults = filteredResults.filter(q => 
-          q.theory.toLowerCase().includes(keywords) ||
-          q.type.toLowerCase().includes(keywords)
-        );
-      }
-      if (filters.failureCountExact !== undefined) {
-        filteredResults = filteredResults.filter(q => q.failureCount === filters.failureCountExact);
-      }
-      if (filters.failureCountMin !== undefined) {
-        filteredResults = filteredResults.filter(q => q.failureCount >= filters.failureCountMin!);
-      }
-      if (filters.failureCountMax !== undefined) {
-        filteredResults = filteredResults.filter(q => q.failureCount <= filters.failureCountMax!);
-      }
+        if (filters.failureCountMin !== undefined) {
+          results = results.filter(q => (q.failureCount || 0) >= filters.failureCountMin!);
+        }
 
-      return filteredResults.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-    }
+        if (filters.failureCountMax !== undefined) {
+          results = results.filter(q => (q.failureCount || 0) <= filters.failureCountMax!);
+        }
 
-    // Apply other filters to query
-    if (filters.subjectIds && filters.subjectIds.length > 0) {
-      query = query.where('subjectId', 'in', filters.subjectIds.slice(0, 10));
-    }
-    if (filters.topicIds && filters.topicIds.length > 0) {
-      query = query.where('topicId', 'in', filters.topicIds.slice(0, 10));
-    }
-    if (filters.learningStatus && filters.learningStatus.length === 1) {
-      query = query.where('isLearned', '==', filters.learningStatus[0]);
-    }
-
-    const snapshot = await query.get();
-    let questions = snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
-
-    // Apply keyword and failure count filters in memory
-    if (filters.keywords) {
-      const keywords = filters.keywords.toLowerCase();
-      questions = questions.filter(q => 
-        q.theory.toLowerCase().includes(keywords) ||
-        q.type.toLowerCase().includes(keywords)
-      );
-    }
-    if (filters.failureCountExact !== undefined) {
-      questions = questions.filter(q => q.failureCount === filters.failureCountExact);
-    }
-    if (filters.failureCountMin !== undefined) {
-      questions = questions.filter(q => q.failureCount >= filters.failureCountMin!);
-    }
-    if (filters.failureCountMax !== undefined) {
-      questions = questions.filter(q => q.failureCount <= filters.failureCountMax!);
-    }
-
-    return questions.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+        return results;
+      },
+      'QUESTIONS',
+      filters.firebaseUid,
+      cacheKey
+    )
   }
 
   async createQuestion(questionData: Omit<FirestoreQuestion, 'id' | 'createdAt'>, mockExamIds: number[]): Promise<FirestoreQuestion> {
@@ -363,30 +420,36 @@ export class Storage {
       createdAt: Timestamp.now(),
     };
 
-    // Use batch to create question and relations atomically
+    // Use batch for atomic operation
     const batch = firestore.batch();
     batch.set(docRef, question);
 
     // Create question-mockexam relations
     for (const mockExamId of mockExamIds) {
       const relationRef = firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS).doc();
-      const relationId = Math.abs(relationRef.id.split('').reduce((a, b) => {
+      const relationNumericId = Math.abs(relationRef.id.split('').reduce((a, b) => {
         a = ((a << 5) - a) + b.charCodeAt(0);
         return a & a;
       }, 0)) % 1000000;
 
       const relation: FirestoreQuestionMockExam = {
-        id: relationId,
+        id: relationNumericId,
         questionId: numericId,
         mockExamId,
         createdBy: questionData.createdBy,
         createdAt: Timestamp.now(),
       };
-
       batch.set(relationRef, relation);
     }
 
     await batch.commit();
+
+    // Invalidar inmediatamente todos los caches relacionados con preguntas
+    cache.invalidate('QUESTIONS', questionData.createdBy);
+    cache.invalidate('ALL_USER_QUESTIONS', questionData.createdBy);
+    cache.invalidate('ALL_QUESTION_RELATIONS', questionData.createdBy);
+    cache.invalidate('QUESTION_COUNTS', questionData.createdBy);
+    
     return question;
   }
 
@@ -446,6 +509,17 @@ export class Storage {
 
     await batch.commit();
 
+    // Invalidar todos los caches relacionados para asegurar consistencia
+    cache.invalidate('QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
+    cache.invalidate('QUESTION_COUNTS', firebaseUid);
+    cache.invalidate('DETAILED_STATS', firebaseUid);
+    cache.invalidate('USER_STATS', firebaseUid);
+    if (mockExamIds) {
+      cache.invalidate('MOCK_EXAMS', firebaseUid); // Para actualizar conteos
+    }
+
     const updatedDoc = await doc.ref.get();
     return updatedDoc.data() as FirestoreQuestion;
   }
@@ -463,6 +537,12 @@ export class Storage {
 
     const questionDoc = snapshot.docs[0];
     await questionDoc.ref.update({ isLearned });
+
+    // Invalidar todos los caches necesarios para estadísticas
+    cache.invalidate('QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('DETAILED_STATS', firebaseUid);
+    cache.invalidate('USER_STATS', firebaseUid);
 
     // Return the updated question with relations
     return this.getQuestionWithRelations(questionId, firebaseUid);
@@ -534,11 +614,22 @@ export class Storage {
 
     await batch.commit();
 
+    // Invalidate cache
+    cache.invalidate('QUESTIONS', firebaseUid);
+    cache.invalidate('QUESTION_COUNTS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
+
     // Return the duplicated question with relations
     return this.getQuestionWithRelations(newQuestionId, firebaseUid);
   }
 
   async updateQuestionFailureCount(id: number, failureCount: number, firebaseUid: string): Promise<FirestoreQuestion | null> {
+    // Invalidate cache incluyendo estadísticas
+    cache.invalidate('QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('DETAILED_STATS', firebaseUid);
+    cache.invalidate('USER_STATS', firebaseUid);
     return this.updateQuestion(id, { failureCount }, firebaseUid);
   }
 
@@ -630,25 +721,112 @@ export class Storage {
     });
 
     await batch.commit();
+
+    // Invalidate cache
+    cache.invalidate('QUESTIONS', firebaseUid);
+    cache.invalidate('QUESTION_COUNTS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
+
     return true;
   }
 
   async getQuestionMockExams(questionId: number, firebaseUid: string): Promise<number[]> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<number[]>('QUESTION_RELATIONS', firebaseUid, questionId.toString());
+    if (cached !== null) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS)
       .where('questionId', '==', questionId)
       .where('createdBy', '==', firebaseUid)
       .get();
 
-    return snapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).mockExamId);
+    const mockExamIds = snapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).mockExamId);
+
+    // Guardar en cache
+    cache.set('QUESTION_RELATIONS', firebaseUid, mockExamIds, questionId.toString());
+
+    return mockExamIds;
+  }
+
+  // Cache global de todas las preguntas del usuario para minimizar consultas
+  async getAllUserQuestions(firebaseUid: string): Promise<FirestoreQuestion[]> {
+    return cache.getOrFetch(
+      `all_user_questions_${firebaseUid}`,
+      async () => {
+        console.log("Loading all user questions from Firestore - this should happen VERY rarely");
+        const snapshot = await firestore.collection(COLLECTIONS.QUESTIONS)
+          .where('createdBy', '==', firebaseUid)
+          .get();
+
+        const questions = snapshot.docs.map(doc => doc.data() as FirestoreQuestion);
+        // Sort in memory
+        questions.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+
+        return questions;
+      },
+      'ALL_USER_QUESTIONS',
+      firebaseUid,
+      undefined,
+      60 * 60 * 1000 // 1 hora - cache muy largo
+    );
+  }
+
+  async getAllQuestionRelations(firebaseUid: string): Promise<Map<number, number[]>> {
+    return cache.getOrFetch(
+      `all_question_relations_${firebaseUid}`,
+      async () => {
+        console.log("Loading all question relations from Firestore - this should happen VERY rarely");
+        const snapshot = await firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS)
+          .where('createdBy', '==', firebaseUid)
+          .get();
+
+        const relationMap = new Map<number, number[]>();
+
+        snapshot.docs.forEach(doc => {
+          const relation = doc.data() as FirestoreQuestionMockExam;
+          const questionId = relation.questionId;
+          const mockExamId = relation.mockExamId;
+
+          if (!relationMap.has(questionId)) {
+            relationMap.set(questionId, []);
+          }
+          relationMap.get(questionId)!.push(mockExamId);
+        });
+
+        return relationMap;
+      },
+      'ALL_QUESTION_RELATIONS',
+      firebaseUid,
+      undefined,
+      90 * 60 * 1000 // 1.5 horas - cache muy largo
+    );
   }
 
   async getQuestionsForMockExam(mockExamId: number, firebaseUid: string): Promise<number[]> {
+    // Cache para conteos de preguntas por mock exam
+    const cacheKey = `mockExam_${mockExamId}`;
+    const cached = cache.get<number[]>('QUESTION_COUNTS', firebaseUid, cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.QUESTION_MOCK_EXAMS)
       .where('mockExamId', '==', mockExamId)
       .where('createdBy', '==', firebaseUid)
       .get();
 
-    return snapshot.docs.map(doc => (doc.data() as FirestoreQuestionMockExam).questionId);
+    const questionIds = snapshot.docs.map(doc => {
+      const relation = doc.data() as FirestoreQuestionMockExam;
+      return relation.questionId;
+    });
+
+    // Guardar en cache
+    cache.set('QUESTION_COUNTS', firebaseUid, questionIds, cacheKey);
+
+    return questionIds;
   }
 
   // Helper to get question with its mock exam relations
@@ -671,6 +849,12 @@ export class Storage {
 
   // User stats
   async getUserStats(firebaseUid: string) {
+    // Intentar obtener del cache primero
+    const cached = cache.get<any>('USER_STATS', firebaseUid);
+    if (cached) {
+      return cached;
+    }
+
     const [mockExams, subjects, topics, questions, trashedQuestions] = await Promise.all([
       this.getMockExams(firebaseUid),
       this.getSubjects(firebaseUid),
@@ -682,7 +866,7 @@ export class Storage {
     const learnedQuestions = questions.filter(q => q.isLearned);
     const unlearnedQuestions = questions.filter(q => !q.isLearned);
 
-    return {
+    const stats = {
       totalMockExams: mockExams.length,
       totalSubjects: subjects.length,
       totalTopics: topics.length,
@@ -691,15 +875,31 @@ export class Storage {
       unlearnedQuestions: unlearnedQuestions.length,
       trashedQuestions: trashedQuestions.length,
     };
+
+    // Guardar en cache
+    cache.set('USER_STATS', firebaseUid, stats);
+
+    return stats;
   }
 
   // Trash methods
   async getTrashedQuestions(firebaseUid: string): Promise<FirestoreTrashedQuestion[]> {
+    // Intentar obtener del cache primero
+    const cached = cache.get<FirestoreTrashedQuestion[]>('TRASHED_QUESTIONS', firebaseUid);
+    if (cached) {
+      return cached;
+    }
+
     const snapshot = await firestore.collection(COLLECTIONS.TRASHED_QUESTIONS)
       .where('createdBy', '==', firebaseUid)
       .get();
     const trashedQuestions = snapshot.docs.map(doc => doc.data() as FirestoreTrashedQuestion);
-    return trashedQuestions.sort((a, b) => b.deletedAt.seconds - a.deletedAt.seconds);
+    const sortedTrashedQuestions = trashedQuestions.sort((a, b) => b.deletedAt.seconds - a.deletedAt.seconds);
+
+    // Guardar en cache
+    cache.set('TRASHED_QUESTIONS', firebaseUid, sortedTrashedQuestions);
+
+    return sortedTrashedQuestions;
   }
 
   async restoreQuestion(trashedQuestionId: number, firebaseUid: string): Promise<boolean> {
@@ -758,6 +958,16 @@ export class Storage {
     batch.delete(trashedSnapshot.docs[0].ref);
 
     await batch.commit();
+
+    // Invalidate cache completamente
+    cache.invalidate('QUESTIONS', firebaseUid);
+    cache.invalidate('QUESTION_COUNTS', firebaseUid);
+    cache.invalidate('ALL_USER_QUESTIONS', firebaseUid);
+    cache.invalidate('ALL_QUESTION_RELATIONS', firebaseUid);
+    cache.invalidate('TRASHED_QUESTIONS', firebaseUid);
+    cache.invalidate('USER_STATS', firebaseUid);
+
+    console.log("Question restored successfully with ID:", questionId);
     return true;
   }
 
@@ -771,6 +981,8 @@ export class Storage {
     if (snapshot.empty) return false;
 
     await snapshot.docs[0].ref.delete();
+    // Invalidate cache for trashed questions
+    cache.invalidate('TRASHED_QUESTIONS', firebaseUid);
     return true;
   }
 
@@ -785,6 +997,8 @@ export class Storage {
     });
 
     await batch.commit();
+    // Invalidate cache for trashed questions
+    cache.invalidate('TRASHED_QUESTIONS', firebaseUid);
   }
 }
 
