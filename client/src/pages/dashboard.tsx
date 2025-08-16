@@ -412,6 +412,7 @@ export default function Dashboard() {
                       filters={appliedFilters}
                       groupByExam={true}
                       sortBy={sortBy}
+                      isAllTab={true}
                     />
                   </TabsContent>
 

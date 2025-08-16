@@ -25,20 +25,20 @@ interface QuestionGridProps {
   filters: FiltersState;
   groupByExam?: boolean;
   sortBy?: "newest" | "oldest" | "nameAsc";
+  isAllTab?: boolean;
 }
 
-export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }: QuestionGridProps) {
+export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest", isAllTab = false }: QuestionGridProps) {
   const { t } = useLanguage();
   const queryClient = useQueryClient();
-  const [currentPage, setCurrentPage] = useState(1);
   const [editingQuestion, setEditingQuestion] = useState<QuestionWithRelations | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const itemsPerPage = 12;
+  const [visibleCount, setVisibleCount] = useState(() => isAllTab ? 75 : 25);
 
-  // Reset page when filters change
+  // Reset visible count when filters change
   useEffect(() => {
-    setCurrentPage(1);
-  }, [filters]);
+    setVisibleCount(isAllTab ? 75 : 25);
+  }, [filters, isAllTab]);
 
   const queryParams = new URLSearchParams();
   if (filters.mockExamIds?.length) {
@@ -89,10 +89,13 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
   // Eliminar el refetch automático al cambiar filtros - usar solo el cache de React Query
   // Esto evita solicitudes innecesarias
 
-  const totalPages = Math.ceil(questions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentQuestions = questions.slice(startIndex, endIndex);
+  const currentQuestions = questions.slice(0, visibleCount);
+  const hasMore = questions.length > visibleCount;
+  
+  const handleLoadMore = () => {
+    const increment = isAllTab ? 75 : 25;
+    setVisibleCount(prev => prev + increment);
+  };
 
   const handleQuestionClick = (question: QuestionWithRelations) => {
     // Question click is now handled by the card itself for expansion
@@ -249,48 +252,23 @@ export function QuestionGrid({ filters, groupByExam = false, sortBy = "newest" }
         question={editingQuestion}
       />
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-          <div className="text-sm text-gray-600">
-            {t("pagination.showing")}{" "}
-            <span className="font-medium">{startIndex + 1}-{Math.min(endIndex, questions.length)}</span>{" "}
-            {t("pagination.of")}{" "}
-            <span className="font-medium">{questions.length}</span>{" "}
-            {t("pagination.questions")}
-          </div>
-          <div className="flex items-center space-x-2">
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="flex items-center justify-center border-t border-gray-200 pt-4">
+          <div className="text-center">
+            <div className="text-sm text-gray-600 mb-3">
+              {t("pagination.showing")}{" "}
+              <span className="font-medium">{currentQuestions.length}</span>{" "}
+              {t("pagination.of")}{" "}
+              <span className="font-medium">{questions.length}</span>{" "}
+              {t("pagination.questions")}
+            </div>
             <Button
               variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
+              onClick={handleLoadMore}
+              className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
             >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-              return (
-                <Button
-                  key={pageNum}
-                  variant={currentPage === pageNum ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={currentPage === pageNum ? "bg-blue-600 text-white" : ""}
-                >
-                  {pageNum}
-                </Button>
-              );
-            })}
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              <ChevronRight className="h-4 w-4" />
+              {t("loadMore")}
             </Button>
           </div>
         </div>

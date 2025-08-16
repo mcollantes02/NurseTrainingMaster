@@ -178,6 +178,7 @@ export const translations = {
     "search": "Buscar",
     "cancel": "Cancelar",
     "create": "Crear",
+    "loadMore": "Ver más",
     "save": "Guardar",
     "delete": "Eliminar",
     "edit": "Editar",
