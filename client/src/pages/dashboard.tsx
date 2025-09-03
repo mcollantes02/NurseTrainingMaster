@@ -195,7 +195,7 @@ export default function Dashboard() {
       <Header onUserProfileClick={() => setIsUserProfileModalOpen(true)} />
 
       <div className="px-0 py-6">
-        <div className="flex flex-col lg:flex-row h-full">
+        <div className="flex flex-col lg:flex-row h-full gap-4">
           {/* Sidebar Filters */}
           <div className="lg:w-80 flex-shrink-0 px-4 sm:px-6">
             <AdvancedFilters
