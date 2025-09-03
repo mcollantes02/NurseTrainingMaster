@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Plus, ChevronDown, ArrowUpDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -139,25 +139,6 @@ export default function Dashboard() {
   if (!isLoadingExams && tabMockExams.length > 0 && !activeTab) {
     setActiveTab("all");
   }
-
-  // Invalidate specific question queries when changing tabs to ensure fresh data
-  useEffect(() => {
-    if (activeTab && activeTab !== "all") {
-      const examId = parseInt(activeTab);
-      // Invalidate the specific query for this exam
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/questions"],
-        predicate: (query) => {
-          const queryKey = query.queryKey;
-          if (queryKey.length > 1 && typeof queryKey[1] === 'string') {
-            const params = new URLSearchParams(queryKey[1]);
-            return params.get('mockExamIds') === examId.toString();
-          }
-          return false;
-        }
-      });
-    }
-  }, [activeTab, queryClient]);
 
   const handleApplyFilters = () => {
     setAppliedFilters({ ...filters });
@@ -438,7 +419,6 @@ export default function Dashboard() {
                   {/* All Mock Exams Tab Content */}
                   <TabsContent value="all" className="p-6">
                     <QuestionGrid 
-                      key={`all-questions-${tabMockExams.reduce((sum, exam) => sum + exam.questionCount, 0)}-${activeTab}`}
                       filters={appliedFilters}
                       groupByExam={true}
                       sortBy={sortBy}
@@ -451,7 +431,6 @@ export default function Dashboard() {
                   {tabMockExams.map((exam) => (
                     <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
                       <QuestionGrid 
-                        key={`exam-${exam.id}-questions-${exam.questionCount}-${activeTab}-${Date.now()}`}
                         filters={{
                           mockExamIds: [exam.id],
                           subjectIds: appliedFilters.subjectIds,
