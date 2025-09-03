@@ -207,6 +207,8 @@ export default function Dashboard() {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0"></div>
+        </div>
+      </div>
             {appliedFilters.mockExamIds.length > 0 ? (
               /* Filtered Mock Exams View */
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
@@ -446,9 +448,6 @@ export default function Dashboard() {
                 </Tabs>
               </div>
             )}
-          </div>
-        </div>
-      </div>
 
       {/* Modals */}
       <AddQuestionModal
