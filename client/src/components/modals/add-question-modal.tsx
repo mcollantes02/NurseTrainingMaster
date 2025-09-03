@@ -190,10 +190,22 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
         topic: topics.find(t => t.name === variables.topicName) || { name: variables.topicName }
       };
 
-      // Optimistically update all question queries
-      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
-        if (!old) return [optimisticQuestion];
-        return [optimisticQuestion, ...old];
+      // Optimistically update only relevant question queries
+      queryClient.getQueryCache().findAll({ queryKey: ["/api/questions"] }).forEach(query => {
+        const queryParams = new URLSearchParams(query.queryKey[1] as string || '');
+        const queryMockExamIds = queryParams.getAll('mockExamIds').map(Number);
+        
+        // Only update queries that should include this question
+        const shouldUpdateQuery = 
+          queryMockExamIds.length === 0 || // "All" tab or no specific mock exam filter
+          queryMockExamIds.some(id => variables.mockExamIds.includes(id)); // Overlapping mock exams
+        
+        if (shouldUpdateQuery) {
+          queryClient.setQueryData(query.queryKey, (old: any) => {
+            if (!old) return [optimisticQuestion];
+            return [optimisticQuestion, ...old];
+          });
+        }
       });
 
       // Optimistically update mock exam counts
@@ -209,21 +221,32 @@ export function AddQuestionModal({ isOpen, onClose, preSelectedMockExamId }: Add
       return { previousQuestions, tempId };
     },
     onSuccess: (newQuestion, variables, context) => {
-      // Replace the optimistic update with real data
-      queryClient.setQueriesData({ queryKey: ["/api/questions"] }, (old: any) => {
-        if (!old) return [newQuestion];
+      // Replace the optimistic update with real data only in relevant queries
+      const questionWithRelations = {
+        ...newQuestion,
+        mockExam: mockExams.find(exam => variables.mockExamIds.includes(exam.id)) || null,
+        mockExams: mockExams.filter(exam => variables.mockExamIds.includes(exam.id)),
+        subject: subjects.find(s => s.name === variables.subjectName) || { name: variables.subjectName },
+        topic: topics.find(t => t.name === variables.topicName) || { name: variables.topicName },
+        createdBy: { uid: newQuestion.createdBy }
+      };
 
-        const questionWithRelations = {
-          ...newQuestion,
-          mockExam: mockExams.find(exam => variables.mockExamIds.includes(exam.id)) || null,
-          mockExams: mockExams.filter(exam => variables.mockExamIds.includes(exam.id)),
-          subject: subjects.find(s => s.name === variables.subjectName) || { name: variables.subjectName },
-          topic: topics.find(t => t.name === variables.topicName) || { name: variables.topicName },
-          createdBy: { uid: newQuestion.createdBy }
-        };
-
-        // Replace temp question with real one
-        return old.map((q: any) => q.id === context?.tempId ? questionWithRelations : q);
+      queryClient.getQueryCache().findAll({ queryKey: ["/api/questions"] }).forEach(query => {
+        const queryParams = new URLSearchParams(query.queryKey[1] as string || '');
+        const queryMockExamIds = queryParams.getAll('mockExamIds').map(Number);
+        
+        // Only update queries that should include this question
+        const shouldUpdateQuery = 
+          queryMockExamIds.length === 0 || // "All" tab or no specific mock exam filter
+          queryMockExamIds.some(id => variables.mockExamIds.includes(id)); // Overlapping mock exams
+        
+        if (shouldUpdateQuery) {
+          queryClient.setQueryData(query.queryKey, (old: any) => {
+            if (!old) return [questionWithRelations];
+            // Replace temp question with real one
+            return old.map((q: any) => q.id === context?.tempId ? questionWithRelations : q);
+          });
+        }
       });
 
       // Invalidate cache to sync in background
