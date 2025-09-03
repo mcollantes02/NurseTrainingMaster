@@ -194,10 +194,10 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50">
       <Header onUserProfileClick={() => setIsUserProfileModalOpen(true)} />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
+      <div className="px-0 py-6">
+        <div className="flex flex-col lg:flex-row h-full">
           {/* Sidebar Filters */}
-          <div className="lg:w-80 flex-shrink-0">
+          <div className="lg:w-80 flex-shrink-0 px-4 sm:px-6">
             <AdvancedFilters
               filters={filters}
               onFiltersChange={setFilters}
@@ -206,7 +206,7 @@ export default function Dashboard() {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 px-4 sm:px-6">
             {appliedFilters.mockExamIds.length > 0 ? (
               /* Filtered Mock Exams View */
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
