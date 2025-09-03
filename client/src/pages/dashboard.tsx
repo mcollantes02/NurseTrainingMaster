@@ -432,7 +432,7 @@ export default function Dashboard() {
                   {tabMockExams.map((exam) => (
                     <TabsContent key={exam.id} value={exam.id.toString()} className="p-6">
                       <QuestionGrid 
-                        key={`exam-${exam.id}-questions`}
+                        key={`exam-${exam.id}-${exam.questionCount}-${activeTab}`}
                         filters={{
                           mockExamIds: [exam.id],
                           subjectIds: appliedFilters.subjectIds,
